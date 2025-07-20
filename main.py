@@ -211,14 +211,6 @@ class App:
         pyx.cls(0)
         # pyx.text(55, 41, "Hello World!", 5)
 
-        # pyx.pset(world.player.position.x, world.player.position.y, 1)
-        # pyx.rect(
-        #     world.player.position.x,
-        #     world.player.position.y,
-        #     world.player.scale.x,
-        #     world.player.scale.y,
-        #     1
-        # )
         world.player.draw()
         if self.hud_visible:
             pyx.text(
@@ -227,6 +219,5 @@ class App:
                 "liam",
                 1
             )
-
 
 App()
