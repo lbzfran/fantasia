@@ -3,7 +3,7 @@
 # only support x86_64 by default.
 # usage: ./setup.sh <TARGET_OR_NONE_SPECIFIED>
 
-TARGET=${1:-"windows"}
+TARGET=${1:-$(shell uname | tr '[:upper:]' '[:lower:]')}
 RAYLIB_VERSION=5.5
 
 if [ "$TARGET" = "linux" ]; then
