@@ -79,7 +79,7 @@ void MobUpdate(Mob *mob, Vector2 direction, float32 dt) {
     }
 
     Vector2 velocity = Vector2Subtract(mob->position, mob->last_position);
-    Vector2 acceleration = (Vector2){ 0.0f };
+    Vector2 acceleration = (Vector2){ 0.0f, 0.0f };
 
     if (mob->position.x < 0.0f) {
         mob->position.x = 0.0f;

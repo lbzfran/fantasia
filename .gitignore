@@ -1,2 +1,4 @@
 .venv
-libraylib.a
+lib/
+bin/
+build/
