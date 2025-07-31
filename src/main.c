@@ -7,7 +7,6 @@
 #include <stddef.h>
 #include <uchar.h>
 
-
 #include <stdio.h>
 
 typedef char        byte;
@@ -66,9 +65,11 @@ typedef struct Mob {
     bool32 initialized;
 } Mob;
 
-void Vector2Print(Vector2 v) {
-    printf("v:(%f, %f)\n", v.x, v.y);
+void Vector2Print_(Vector2 v, const char *name) {
+    printf("%s:(%f, %f)\n", name, v.x, v.y);
 }
+
+#define Vector2Print(v) Vector2Print_(v, #v)
 
 void MobUpdate(Mob *mob, Vector2 direction, float32 dt) {
     if (not mob->initialized) {
@@ -118,7 +119,6 @@ void MobUpdate(Mob *mob, Vector2 direction, float32 dt) {
         acceleration = Vector2Add(acceleration, Vector2Scale(direction, mob->speed));
     }
     else if (Vector2Length(velocity) > 0) {
-        printf("total move: %f\n", Vector2Length(velocity));
         acceleration = Vector2Subtract(acceleration, Vector2Scale(velocity, mob->friction));
     }
 
