@@ -70,11 +70,13 @@ void Vector2Print(Vector2 v) {
     printf("v:(%f, %f)\n", v.x, v.y);
 }
 
-
 void MobUpdate(Mob *mob, Vector2 direction, float32 dt) {
     if (not mob->initialized) {
         init_if_null(mob->position.x, (float)GetScreenWidth()/2);
         init_if_null(mob->position.y, (float)GetScreenHeight()/2);
+
+        init_if_null(mob->last_position.x, mob->position.x);
+        init_if_null(mob->last_position.y, mob->position.y);
 
         init_if_null(mob->scale.x, 100.0f);
         init_if_null(mob->scale.y, 100.0f);
@@ -82,8 +84,8 @@ void MobUpdate(Mob *mob, Vector2 direction, float32 dt) {
         init_if_null(mob->direction.x, 1.0f);
         init_if_null(mob->direction.y, 1.0f);
 
-        init_if_null(mob->speed, 80.0f);
-        init_if_null(mob->friction, 0.1f);
+        init_if_null(mob->speed, 500.0f);
+        init_if_null(mob->friction, 1.0f);
 
         mob->initialized = true;
     }
@@ -113,23 +115,17 @@ void MobUpdate(Mob *mob, Vector2 direction, float32 dt) {
     direction = Vector2Normalize(direction);
 
     if (Vector2Length(direction) > 0) {
-        acceleration = Vector2Add(acceleration, Vector2Scale(direction, 4000.0f * mob->speed));
+        acceleration = Vector2Add(acceleration, Vector2Scale(direction, mob->speed));
     }
     else if (Vector2Length(velocity) > 0) {
+        printf("total move: %f\n", Vector2Length(velocity));
         acceleration = Vector2Subtract(acceleration, Vector2Scale(velocity, mob->friction));
     }
 
     mob->last_position = mob->position;
     // NOTE: mob->position += (velocity + acceleration * dt) * dt;
-    Vector2 new_position;
-    new_position = Vector2Scale(acceleration, dt);
-    new_position = Vector2Add(velocity, new_position);
-    new_position = Vector2Scale(new_position, dt);
+    mob->position = Vector2Add(mob->position, Vector2Scale(Vector2Add(velocity, acceleration), dt));
 
-    mob->position = Vector2Add(mob->position, new_position);
-
-    Vector2Print(velocity);
-    Vector2Print(acceleration);
 }
 
 void MobRender(Mob *mob) {
