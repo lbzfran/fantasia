@@ -3,8 +3,20 @@
 # only support x86_64 by default.
 # usage: ./setup.sh <TARGET_OR_NONE_SPECIFIED>
 
-TARGET=${1:-$(shell uname | tr '[:upper:]' '[:lower:]')}
+TARGET=${1:-$(uname | tr '[:upper:]' '[:lower:]')}
 RAYLIB_VERSION=5.5
+
+case "$TARGET" in
+    *"linux"*)
+        TARGET=linux
+        ;;
+    *"windows"*)
+        TARGET=windows
+        ;;
+    *)
+        ;;
+esac
+
 
 if [ "$TARGET" = "linux" ]; then
     RAYLIB_BUILD=linux_amd64
@@ -60,8 +72,7 @@ cd build && printf "\tCD build\n"
     cp -a $RAYLIB_DIR/include/. ../include/ && \
         printf "\tCP $RAYLIB_DIR/include/ ../include/\n"
 
-    [ -d "$RAYLIB_ZIP" ] && \
-        rm -f $RAYLIB_ZIP && \
+    rm -f $RAYLIB_ZIP && \
         printf "\tRM $RAYLIB_ZIP\n"
 
     case "$confirm" in

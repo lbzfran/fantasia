@@ -1,7 +1,7 @@
 .POSIX:
 .SUFFIXES:
 
-PLATFORM ?= $(shell uname | tr '[:upper:]' '[:lower:]')
+PLATFORM ?= windows
 
 BIN := fantasia
 EXT :=
