@@ -1,4 +1,5 @@
 
+#include <string.h>
 #define RAYLIB_IMPLEMENTATION
 #include <raylib.h>
 #include <raymath.h>
@@ -44,6 +45,9 @@ typedef uintptr_t   uintptr;
 #define and     &&
 #define or      ||
 
+#define local   static
+#define global  static
+
 #define null    0
 #define kilobytes(x)    ((x)*1024LL)
 #define megabytes(x)    (kilobytes(x)*1024LL)
@@ -51,6 +55,54 @@ typedef uintptr_t   uintptr;
 
 #define min(x,y)        ((x) < (y) ? (x) : (y))
 #define max(x,y)        ((x) > (y) ? (x) : (y))
+
+typedef struct allocator {
+    void *(*make)   (void *ctx, ssize);
+    void  (*free)   (void *ctx, void *, ssize);
+    void *(*resize) (void *ctx, void *, ssize, ssize);
+    void *ctx;
+} Allocator;
+
+#include <stdlib.h>
+global void *heap_allocator_make(void *ctx, ssize size) {
+    (void)ctx;
+    void *result = malloc(size);
+    assert(result && "ERROR: Reached Out-Of-Memory state.");
+
+    return result;
+}
+
+global void heap_allocator_free(void *ctx, void *ptr, ssize size) {
+    (void)ctx;
+    (void)size;
+
+    free(ptr);
+    ptr = null;
+}
+
+global void *heap_allocator_resize(void *ctx, void *ptr, ssize old, ssize new) {
+    (void)ctx;
+    void *result = heap_allocator_make(ctx, new);
+
+    if (ptr isnt null) {
+        if (new > old) {
+            memcpy(result, ptr, old);
+        }
+        else {
+            memmove(result, ptr, old);
+        }
+        heap_allocator_free(ctx, ptr, old);
+    }
+
+    return result;
+}
+
+Allocator global_allocator = {
+    .make   = heap_allocator_make,
+    .free   = heap_allocator_free,
+    .resize = heap_allocator_resize,
+    .ctx    = null
+};
 
 typedef struct Mob {
     Vector2 position;
@@ -62,16 +114,17 @@ typedef struct Mob {
     Vector2 direction;
     Vector2 last_position;
 
+    Vector2 offset;
+
     bool32 initialized;
 } Mob;
 
 void Vector2Print_(Vector2 v, const char *name) {
     printf("%s:(%f, %f)\n", name, v.x, v.y);
 }
-
 #define Vector2Print(v) Vector2Print_(v, #v)
 
-void MobUpdate(Mob *mob, Vector2 direction, float32 dt) {
+void MobUpdate(Mob *mob, Vector2 direction, Vector2 offset, float32 dt) {
     if (not mob->initialized) {
         init_if_null(mob->position.x, (float)GetScreenWidth()/2);
         init_if_null(mob->position.y, (float)GetScreenHeight()/2);
@@ -126,9 +179,11 @@ void MobUpdate(Mob *mob, Vector2 direction, float32 dt) {
     // NOTE: mob->position += (velocity + acceleration * dt) * dt;
     mob->position = Vector2Add(mob->position, Vector2Scale(Vector2Add(velocity, acceleration), dt));
 
+    mob->offset = offset;
 }
 
 void MobRender(Mob *mob) {
+    DrawRectangleV(Vector2Add(mob->position, mob->offset), mob->scale, GRAY);
     DrawRectangleV(mob->position, mob->scale, BLACK);
 }
 
@@ -143,10 +198,11 @@ int main(void) {
     InitWindow(800, 600, "Fantasia");
     bool running = true;
     world.mobs[world.mob_count++] = (Mob){ 0 };
+    Vector2 player_offset = Vector2Zero();
 
     while (running) {
         float dt = GetFrameTime();
-        if (WindowShouldClose() || IsKeyPressed(KEY_Q)) {
+        if (WindowShouldClose() || IsKeyPressed(KEY_ESCAPE)) {
             running = false;
         }
 
@@ -164,15 +220,40 @@ int main(void) {
             player_direction.x += 1;
         }
 
+        if (IsKeyDown(KEY_I)) {
+            player_offset.y += 1000.0f * dt;
+            if (player_offset.y >= 200.0f) {
+                player_offset.y = 200.0f;
+            }
+        }
+        if (IsKeyDown(KEY_K)) {
+            player_offset.y -= 1000.0f * dt;
+            if (player_offset.y <= 0.0f) {
+                player_offset.y = 0.0f;
+            }
+        }
+        if (IsKeyDown(KEY_J)) {
+            player_offset.x += 1000.0f * dt;
+            if (player_offset.x >= 200.0f) {
+                player_offset.x = 200.0f;
+            }
+        }
+        if (IsKeyDown(KEY_L)) {
+            player_offset.x -= 1000.0f * dt;
+            if (player_offset.x <= 0.0f) {
+                player_offset.x = 0.0f;
+            }
+        }
+
         BeginDrawing();
             ClearBackground(RAYWHITE);
 
             for (uint8 i = 0; i < world.mob_count; i++) {
                 if (i == 0) {
-                    MobUpdate(&world.mobs[i], player_direction, dt);
+                    MobUpdate(&world.mobs[i], player_direction, player_offset, dt);
                 }
                 else {
-                    MobUpdate(&world.mobs[i], Vector2One(), dt);
+                    MobUpdate(&world.mobs[i], Vector2One(), Vector2Zero(), dt);
                 }
                 MobRender(&world.mobs[i]);
             }
