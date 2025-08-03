@@ -9,6 +9,7 @@
 #include <uchar.h>
 
 #include <stdio.h>
+#include <stdlib.h>
 
 typedef char        byte;
 typedef char        char8;
@@ -53,8 +54,13 @@ typedef uintptr_t   uintptr;
 #define megabytes(x)    (kilobytes(x)*1024LL)
 #define gigabytes(x)    (megabytes(x)*1024LL)
 
-#define min(x,y)        ((x) < (y) ? (x) : (y))
-#define max(x,y)        ((x) > (y) ? (x) : (y))
+// #define min(x,y)        ((x) < (y) ? (x) : (y))
+// #define max(x,y)        ((x) > (y) ? (x) : (y))
+
+void Vector2Print_(Vector2 v, const char *name) {
+    printf("%s:(%f, %f)\n", name, v.x, v.y);
+}
+#define Vector2Print(v) Vector2Print_(v, #v)
 
 typedef struct allocator {
     void *(*make)   (void *ctx, ssize);
@@ -63,7 +69,6 @@ typedef struct allocator {
     void *ctx;
 } Allocator;
 
-#include <stdlib.h>
 global void *heap_allocator_make(void *ctx, ssize size) {
     (void)ctx;
     void *result = malloc(size);
@@ -97,7 +102,7 @@ global void *heap_allocator_resize(void *ctx, void *ptr, ssize old, ssize new) {
     return result;
 }
 
-Allocator global_allocator = {
+Allocator heap_allocator = {
     .make   = heap_allocator_make,
     .free   = heap_allocator_free,
     .resize = heap_allocator_resize,
@@ -119,10 +124,99 @@ typedef struct Mob {
     bool32 initialized;
 } Mob;
 
-void Vector2Print_(Vector2 v, const char *name) {
-    printf("%s:(%f, %f)\n", name, v.x, v.y);
+#define MetaStorage(name, T)  typedef struct name##Storage { \
+                                   uint32 *sparse;           \
+                                   uint32 *dense;            \
+                                   T      *data;             \
+                                   uint32  size;             \
+                                   uint32  capacity;         \
+                              } name##Storage
+
+// WARN: no bounds check
+#define MetaStorageAdd(storage, id) do{                     \
+        (storage)->sparse[id] = (storage)->size;            \
+        (storage)->dense[(storage)->size++] = (uint32)id;   \
+    }while(0);
+
+// WARN: no bounds check
+#define MetaStorageDelete(storage, id, count_ptr) do{                  \
+        (storage)->dense[(storage)->sparse[id]] = (uint32)0;           \
+        (storage)->parse[id] = (uint32)0;                              \
+        (storage)->data[(storage)->size--] = typeof((storage)->data)0; \
+    }while(0);
+
+typedef struct CMovement {
+    Vector2 position;
+    Vector2 last_position;
+
+    Vector2 direction;
+
+    float32 speed;
+    float32 friction;
+
+    bool32 initialized;
+} CMovement;
+
+MetaStorage(CMovement, CMovement);
+
+typedef Vector2 CScale;
+MetaStorage(CScale, Vector2);
+
+/*
+ * type: System
+ */
+void MovementUpdate(CMovement *m, Vector2 scale, Vector2 direction, float dt) {
+    if (not m->initialized) {
+        init_if_null(m->position.x, (float)GetScreenWidth()/2);
+        init_if_null(m->position.y, (float)GetScreenHeight()/2);
+
+        init_if_null(m->last_position.x, m->position.x);
+        init_if_null(m->last_position.y, m->position.y);
+
+        init_if_null(m->direction.x, 1.0f);
+        init_if_null(m->direction.y, 1.0f);
+
+        init_if_null(m->speed, 500.0f);
+        init_if_null(m->friction, 1.0f);
+
+        m->initialized = true;
+    }
+
+    Vector2 velocity = Vector2Subtract(m->position, m->last_position);
+    Vector2 acceleration = Vector2Zero();
+
+    if (m->position.x < 0.0f) {
+        m->position.x = 0.0f;
+        m->last_position.x = m->position.x + velocity.x;
+    }
+    else if (m->position.x > GetScreenWidth() - scale.x) {
+        m->position.x = GetScreenWidth() - scale.x;
+        m->last_position.x = m->position.x + velocity.x;
+    }
+    if (m->position.y < 0.0f) {
+        m->position.y = 0.0f;
+        m->last_position.y = m->position.y + velocity.y;
+    }
+    else if (m->position.y > GetScreenHeight() - scale.y) {
+        m->position.y = GetScreenHeight() - scale.y;
+        m->last_position.y = m->position.y + velocity.y;
+    }
+
+    m->direction.x = coalesce(direction.x, m->direction.x);
+    m->direction.y = coalesce(direction.y, m->direction.y);
+    direction = Vector2Normalize(direction);
+
+    if (Vector2Length(direction) > 0) {
+        acceleration = Vector2Add(acceleration, Vector2Scale(direction, m->speed));
+    }
+    else if (Vector2Length(velocity) > 0) {
+        acceleration = Vector2Subtract(acceleration, Vector2Scale(velocity, m->friction));
+    }
+
+    m->last_position = m->position;
+    // NOTE: c->position += (velocity + acceleration * dt) * dt;
+    m->position = Vector2Add(m->position, Vector2Scale(Vector2Add(velocity, acceleration), dt));
 }
-#define Vector2Print(v) Vector2Print_(v, #v)
 
 void MobUpdate(Mob *mob, Vector2 direction, Vector2 offset, float32 dt) {
     if (not mob->initialized) {
@@ -190,6 +284,8 @@ void MobRender(Mob *mob) {
 typedef struct World {
     Mob mobs[255];
     uint8 mob_count;
+
+    uint8 entities[255];
 } World;
 World world = {};
 
