@@ -124,22 +124,22 @@ typedef struct Mob {
     bool32 initialized;
 } Mob;
 
-#define MetaStorage(name, T)  typedef struct name##Storage { \
-                                   uint32 *sparse;           \
-                                   uint32 *dense;            \
-                                   T      *data;             \
-                                   uint32  size;             \
-                                   uint32  capacity;         \
+#define ComponentStorage(name, T)  typedef struct name##Storage { \
+                                   uint32 *sparse;                \
+                                   uint32 *dense;                 \
+                                   T      *data;                  \
+                                   uint32  size;                  \
+                                   uint32  capacity;              \
                               } name##Storage
 
 // WARN: no bounds check
-#define MetaStorageAdd(storage, id) do{                     \
+#define ComponentStorageAdd(storage, id) do{                \
         (storage)->sparse[id] = (storage)->size;            \
         (storage)->dense[(storage)->size++] = (uint32)id;   \
     }while(0);
 
 // WARN: no bounds check
-#define MetaStorageDelete(storage, id, count_ptr) do{                  \
+#define ComponentStorageDelete(storage, id, count_ptr) do{             \
         (storage)->dense[(storage)->sparse[id]] = (uint32)0;           \
         (storage)->parse[id] = (uint32)0;                              \
         (storage)->data[(storage)->size--] = typeof((storage)->data)0; \
@@ -157,10 +157,10 @@ typedef struct CMovement {
     bool32 initialized;
 } CMovement;
 
-MetaStorage(CMovement, CMovement);
+ComponentStorage(CMovement, CMovement);
 
 typedef Vector2 CScale;
-MetaStorage(CScale, Vector2);
+ComponentStorage(CScale, Vector2);
 
 /*
  * type: System
