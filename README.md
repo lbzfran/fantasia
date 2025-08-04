@@ -1,4 +1,13 @@
 
+# Milestone
+
+[x] Entity-Component System
+[ ] Textures
+[ ] Animations
+[ ] Collisions
+[ ] Interactions
+[ ] Maps
+
 # Build
 
 ```sh
