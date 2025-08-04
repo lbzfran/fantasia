@@ -1,12 +1,12 @@
 
 # Milestone
 
-[x] Entity-Component System
-[ ] Textures
-[ ] Animations
-[ ] Collisions
-[ ] Interactions
-[ ] Maps
+- [x] Entity-Component System
+- [ ] Textures
+- [ ] Animations
+- [ ] Collisions
+- [ ] Interactions
+- [ ] Maps
 
 # Build
 
@@ -29,3 +29,4 @@ To specify the platform for the setup script:
 
 Additionally, the setup script will ask for input on certain behavior(s).
 Simply answer as necessary.
+
