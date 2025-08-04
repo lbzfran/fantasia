@@ -4,7 +4,8 @@
 #include <raylib.h>
 #include <raymath.h>
 
-#include <stdint.h>
+// #include <stdint.h>
+#include <inttypes.h>
 #include <stddef.h>
 #include <uchar.h>
 
@@ -58,7 +59,7 @@ typedef uintptr_t   uintptr;
 // #define max(x,y)        ((x) > (y) ? (x) : (y))
 
 void Vector2Print_(Vector2 v, const char *name) {
-    printf("%s:(%f, %f)\n", name, v.x, v.y);
+    printf("%s: (%f, %f)\n", name, v.x, v.y);
 }
 #define Vector2Print(v) Vector2Print_(v, #v)
 
@@ -113,22 +114,37 @@ Allocator heap_allocator = {
     typedef struct name##Storage {       \
          int32 *sparse;                  \
          int32 *dense;                   \
-        T      *data;                    \
-        uint32  size;                    \
-        uint32  capacity;                \
+             T *data;                    \
+         ssize  size;                    \
+         ssize  capacity;                \
     } name##Storage
 
-// WARN: no bounds check
-#define ComponentStorageAdd(storage, id) do{              \
-        (storage)->sparse[id] = (storage)->size;          \
-        (storage)->dense[(storage)->size++] = (int32)id;  \
+#define ComponentStorageCreate(storage, mem, size) do{                                 \
+    (storage)->sparse   = (mem)->make((mem)->ctx, sizeof(*(storage)->sparse) * size);  \
+    (storage)->dense    = (mem)->make((mem)->ctx, sizeof(*(storage)->dense)  * size);  \
+    (storage)->data     = (mem)->make((mem)->ctx, sizeof(*(storage)->data)   * size);  \
+    (storage)->capacity = size;                                                        \
+    memset((storage)->sparse, -1, sizeof(*(storage)->sparse) * size);                  \
+    memset((storage)->dense,  -1, sizeof(*(storage)->dense)  * size);                  \
+    memset((storage)->data,    0, sizeof(*(storage)->data)   * size);                  \
+    }while(0);
+
+// WARN: assert on fail
+#define ComponentStorageAdd(storage, id) do{                            \
+        (storage)->sparse[id] = (storage)->size;                        \
+        (storage)->dense[(storage)->size % (storage)->capacity] = (id); \
+        (storage)->size++;                                              \
+        if ((storage)->size >= (storage)->capacity)                     \
+            assert(false && "Out of Memory!");                          \
     }while(0);
 
 // WARN: no bounds check
-#define ComponentStorageDelete(storage, id, count_ptr) do{             \
-        (storage)->dense[(storage)->sparse[id]] = (int32)0;            \
-        (storage)->parse[id] = (int32)0;                               \
-        (storage)->data[(storage)->size--] = typeof((storage)->data)0; \
+#define ComponentStorageDelete(storage, id, count_ptr) do{                      \
+        (storage)->dense[(storage)->sparse[id]] = (typeof(*(storage)->dense))0; \
+        (storage)->parse[id] = (typeof(*(storage)->parse))-1;                   \
+        (storage)->data[(storage)->size] = typeof(*(storage)->data) {0};        \
+        if ((storage)->size > 0)                                                \
+            (storage)->size--;                                                  \
     }while(0);
 
 typedef struct CMovement {
@@ -150,8 +166,20 @@ typedef struct CBody {
     bool32  initialized;
 } CBody;
 
+typedef struct CTexture {
+    Texture2D texture;
+
+    Vector2   index;
+    Vector2   size;
+
+    bool32 initialized;
+} CTexture;
+
 ComponentStorageDeclare(CMovement, CMovement);
 ComponentStorageDeclare(CBody, CBody);
+
+ComponentStorageDeclare(CColor, Color);
+ComponentStorageDeclare(CTexture, CTexture);
 
 /*
  * type: System
@@ -245,9 +273,41 @@ void BodyUpdate(CBody *b, Vector2 scale, Vector2 offset, float dt) {
  * type: System
  * component(s): CBody, CMovement
  */
-void BodyRender(CBody *b, CMovement *m) {
-    DrawRectangleV(Vector2Add(m->position, b->offset), b->scale, GRAY);
-    DrawRectangleV(m->position, b->scale, BLACK);
+void BodyRender(CBody *b, CMovement *m, Color color, CTexture *t) {
+    // DrawRectangleV(Vector2Add(m->position, b->offset), b->scale, GRAY);
+
+    if (t is null) {
+        DrawRectangleV(m->position, b->scale, color);
+    }
+    else {
+
+        Vector2 texture_size = {
+            (t->size.x) ? t->size.x : t->texture.width,
+            (t->size.y) ? t->size.y : t->texture.height
+        };
+
+        Rectangle src = (Rectangle) {
+            t->index.x * texture_size.x,
+            t->index.y * texture_size.y,
+            texture_size.x,
+            texture_size.y
+        };
+        Rectangle dst = (Rectangle) {
+            m->position.x,
+            m->position.y,
+            b->scale.x,
+            b->scale.y
+        };
+
+        DrawTexturePro(
+            t->texture,
+            src,
+            dst,
+            (Vector2) { 0.0f, 0.0f },
+            0.0f,
+            color
+        );
+    }
 }
 
 enum SpecialEntity {
@@ -258,6 +318,8 @@ typedef struct World {
     uint8            entity_count;
     CBodyStorage     c_body;
     CMovementStorage c_movement;
+    CColorStorage    c_color;
+    CTextureStorage  c_texture;
 } World;
 World world = {};
 
@@ -271,31 +333,26 @@ int main(void) {
 
     ssize component_size  = kilobytes(1);
 
-    world.c_body.sparse   = heap_allocator.make(null, sizeof(int32) * component_size);
-    world.c_body.dense    = heap_allocator.make(null, sizeof(int32) * component_size);
-    world.c_body.data     = heap_allocator.make(null, sizeof(CBody) * component_size);
-    world.c_body.capacity = component_size;
-
-    memset(world.c_body.sparse, -1, sizeof(int32) * component_size);
-    memset( world.c_body.dense, -1, sizeof(int32) * component_size);
-    memset(  world.c_body.data,  0, sizeof(CBody) * component_size);
-
-    world.c_movement.sparse   = heap_allocator.make(null, sizeof(int32)     * component_size);
-    world.c_movement.dense    = heap_allocator.make(null, sizeof(int32)     * component_size);
-    world.c_movement.data     = heap_allocator.make(null, sizeof(CMovement) * component_size);
-    world.c_movement.capacity = component_size;
-
-    memset(world.c_movement.sparse, -1,     sizeof(int32) * component_size);
-    memset( world.c_movement.dense, -1,     sizeof(int32) * component_size);
-    memset(  world.c_movement.data,  0, sizeof(CMovement) * component_size);
+    ComponentStorageCreate(&world.c_body,     &heap_allocator, component_size);
+    ComponentStorageCreate(&world.c_movement, &heap_allocator, component_size);
+    ComponentStorageCreate(&world.c_color,    &heap_allocator, component_size);
+    ComponentStorageCreate(&world.c_texture,  &heap_allocator, component_size);
 
     // world.c_body.sparse[world.entity_count]
     ComponentStorageAdd(    &world.c_body, world.entity_count);
     ComponentStorageAdd(&world.c_movement, world.entity_count);
+
+    ComponentStorageAdd( &world.c_texture, world.entity_count);
+    int32 local_index = world.c_texture.sparse[world.entity_count];
+    world.c_texture.data[local_index].texture = LoadTexture("./resources/mewee.png");
+
     world.entity_count++;
 
     ComponentStorageAdd(    &world.c_body, world.entity_count);
     ComponentStorageAdd(&world.c_movement, world.entity_count);
+    ComponentStorageAdd(   &world.c_color, world.entity_count);
+    local_index = world.c_color.sparse[world.entity_count];
+    world.c_color.data[local_index] = (Color){ 0, 0, 0, 255 };
     world.entity_count++;
 
     while (running) {
@@ -350,8 +407,8 @@ int main(void) {
 
 
         if (called_object_dump) {
-            printf("Total Component 'Body' size/capacity:    \t%d/%d\n", world.c_body.size, world.c_body.capacity);
-            printf("Total Component 'Movement' size/capacity:\t%d/%d\n", world.c_movement.size, world.c_movement.capacity);
+            printf("Total Component 'Body' size/capacity:    \t%zu/%zu\n", world.c_body.size, world.c_body.capacity);
+            printf("Total Component 'Movement' size/capacity:\t%zu/%zu\n", world.c_movement.size, world.c_movement.capacity);
         }
 
         BeginDrawing();
@@ -360,7 +417,7 @@ int main(void) {
             if (called_object_dump) {
                 printf("[CMovement]\n");
             }
-            for (uint32 i = 0; i < world.c_movement.size; i++) {
+            for (ssize i = 0; i < world.c_movement.size; i++) {
                 int32 local_id = world.c_movement.dense[i];
                 if (local_id == -1) {
                     continue;
@@ -383,7 +440,7 @@ int main(void) {
 
                 if (called_object_dump) {
                     printf("\tlocal_id: %d\n", local_id);
-                    printf("\tlocal_movement_index: %d\n", i);
+                    printf("\tlocal_movement_index: %zu\n", i);
                     printf("\tlocal_body_index: %d\n", local_body_index);
                     printf("\tlocal_movement->initialized: %s\n", local_movement->initialized ? "true" : "false");
                     printf("\tlocal_movement->speed: %f\n", local_movement->speed);
@@ -400,7 +457,7 @@ int main(void) {
             if (called_object_dump) {
                 printf("[CBody]\n");
             }
-            for (uint32 i = 0; i < world.c_body.size; i++) {
+            for (ssize i = 0; i < world.c_body.size; i++) {
                 int32 local_id = world.c_body.dense[i];
                 if (local_id == -1) {
                     continue;
@@ -417,15 +474,28 @@ int main(void) {
 
                 int32 local_movement_index = world.c_movement.sparse[local_id];
                 if (local_movement_index == -1) {
+                    // NOTE(liam): skip render if not found
                     continue;
                 }
-
                 CMovement *local_movement = &world.c_movement.data[local_movement_index];
-                BodyRender(local_body, local_movement);
+
+                int32 local_texture_index = world.c_texture.sparse[local_id];
+                CTexture *local_texture = null;
+                if (local_texture_index != -1) {
+                    local_texture = &world.c_texture.data[local_texture_index];
+                }
+
+                int32 local_color_index = world.c_color.sparse[local_id];
+                Color local_color = (Color){ 255, 255, 255, 255 };
+                if (local_color_index != -1) {
+                    local_color = world.c_color.data[local_color_index];
+                }
+
+                BodyRender(local_body, local_movement, local_color, local_texture);
 
                 if (called_object_dump) {
                     printf("\tlocal_id: %d\n", local_id);
-                    printf("\tlocal_body_index: %d\n", i);
+                    printf("\tlocal_body_index: %zu\n", i);
                     printf("\tlocal_movement_index: %d\n", local_movement_index);
                     printf("\tlocal_body->initialized: %s\n", local_body->initialized ? "true" : "false");
                     printf("\t");
@@ -436,6 +506,13 @@ int main(void) {
             }
         EndDrawing();
         called_object_dump = false;
+    }
+
+    for (ssize i = 0; i < world.c_texture.size; i++) {
+        if (world.c_texture.dense[i] == -1) {
+            continue;
+        }
+        UnloadTexture(world.c_texture.data[i].texture);
     }
 
     CloseWindow();

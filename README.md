@@ -2,7 +2,8 @@
 # Milestone
 
 - [x] Entity-Component System
-- [ ] Textures
+- [x] Textures
+    - [ ] Z-sorting/Render Ordering
 - [ ] Animations
 - [ ] Collisions
 - [ ] Interactions
@@ -10,7 +11,7 @@
 
 # Build
 
-For Windows builds, the Makefile will target `mingw64` and use the mingw64 toolchain. 
+For Windows builds, the Makefile will target `mingw64` and use the mingw64 toolchain.
 Linux builds will use the native gcc compiler available.
 
 ```sh
