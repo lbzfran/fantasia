@@ -9,7 +9,7 @@ EXT :=
 BUILD_DIR := build
 BIN_DIR := bin
 
-CFLAGS := -Wall -Wextra -I include -L lib
+CFLAGS := -Wall -Wextra -I include -L lib -g
 LDFLAGS :=
 CC := gcc
 
