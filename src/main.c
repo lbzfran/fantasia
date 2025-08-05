@@ -172,11 +172,22 @@ typedef struct CTexture {
     Vector2   size;
 } CTexture;
 
+typedef struct CBehavior {
+    enum BehaviorType {
+        BehaviorType_None   = 0,
+        BehaviorType_Random = 1
+    } type;
+    float64 start_time;
+    float64 duration;
+} CBehavior;
+
 ComponentStorageDeclare(CMovement, CMovement);
 ComponentStorageDeclare(CBody, CBody);
 
 ComponentStorageDeclare(CColor, Color);
 ComponentStorageDeclare(CTexture, CTexture);
+
+ComponentStorageDeclare(CBehavior, CBehavior);
 
 /*
  * type: System
@@ -278,14 +289,20 @@ void TextureUpdate(CTexture *t, Vector2 index, Vector2 size, float dt) {
     t->size.y = coalesce(size.y, t->size.y);
 }
 
+enum RenderFlags {
+    RenderFlag_FlipX = (1 << 0),
+    RenderFlag_FlipY = (1 << 1)
+};
 /*
  * type: System
  * component(s): CBody, CMovement
  */
-void BodyRender(CBody *b, CMovement *m, Color color, CTexture *t) {
-    // DrawRectangleV(Vector2Add(m->position, b->offset), b->scale, GRAY);
+void BodyRender(CBody *b, CMovement *m, Color color, CTexture *t, int32 flags) {
 
     if (t is null) {
+        if (Vector2Length(b->offset) > 0.0f) {
+            DrawRectangleV(Vector2Add(m->position, b->offset), b->scale, GRAY);
+        }
         DrawRectangleV(m->position, b->scale, color);
     }
     else {
@@ -298,8 +315,8 @@ void BodyRender(CBody *b, CMovement *m, Color color, CTexture *t) {
         Rectangle src = (Rectangle) {
             t->index.x * texture_size.x,
             t->index.y * texture_size.y,
-            texture_size.x,
-            texture_size.y
+            (flags & RenderFlag_FlipX) ? m->direction.x * texture_size.x : texture_size.x,
+            (flags & RenderFlag_FlipY) ? m->direction.y * texture_size.y : texture_size.y
         };
         Rectangle dst = (Rectangle) {
             m->position.x,
@@ -307,6 +324,23 @@ void BodyRender(CBody *b, CMovement *m, Color color, CTexture *t) {
             b->scale.x,
             b->scale.y
         };
+
+        Rectangle dst_shadow = (Rectangle) {
+            m->position.x + b->offset.x,
+            m->position.y + b->offset.y,
+            b->scale.x,
+            b->scale.y
+        };
+
+        if (Vector2Length(b->offset) > 0.0f) {
+            DrawTexturePro(
+                t->texture,
+                src,
+                dst_shadow,
+                (Vector2) { 0.0f, 0.0f },
+                0.0f,
+                GRAY);
+        }
 
         DrawTexturePro(
             t->texture,
@@ -324,11 +358,14 @@ enum SpecialEntity {
 };
 
 typedef struct World {
-    uint8            entity_count;
-    CBodyStorage     c_body;
-    CMovementStorage c_movement;
-    CColorStorage    c_color;
-    CTextureStorage  c_texture;
+    uint8             entity_count;
+    CBodyStorage      c_body;
+    CMovementStorage  c_movement;
+    CColorStorage     c_color;
+    CTextureStorage   c_texture;
+    CBehaviorStorage  c_behavior;
+
+    float64           current_time;
 } World;
 World world = {};
 
@@ -340,28 +377,60 @@ int main(void) {
     bool32 called_object_dump = false;
     Vector2 player_offset = Vector2Zero();
 
+    SetRandomSeed(12398);
+
     ssize component_size  = kilobytes(1);
 
     ComponentStorageCreate(&world.c_body,     &heap_allocator, component_size);
     ComponentStorageCreate(&world.c_movement, &heap_allocator, component_size);
     ComponentStorageCreate(&world.c_color,    &heap_allocator, component_size);
     ComponentStorageCreate(&world.c_texture,  &heap_allocator, component_size);
+    ComponentStorageCreate(&world.c_behavior, &heap_allocator, component_size);
+
+    int32 local_behavior_index, local_color_index, local_texture_index, local_movement_index;
 
     // world.c_body.sparse[world.entity_count]
     ComponentStorageAdd(    &world.c_body, world.entity_count);
     ComponentStorageAdd(&world.c_movement, world.entity_count);
-
     ComponentStorageAdd( &world.c_texture, world.entity_count);
-    int32 local_index = world.c_texture.sparse[world.entity_count];
-    world.c_texture.data[local_index].texture = LoadTexture("./resources/mewee.png");
 
+    local_texture_index = world.c_texture.sparse[world.entity_count];
+    world.c_texture.data[local_texture_index].texture = LoadTexture("./resources/mewee.png");
+    world.c_texture.data[local_texture_index + 1].texture = world.c_texture.data[local_texture_index].texture;
+    world.c_texture.data[local_texture_index + 2].texture = world.c_texture.data[local_texture_index].texture;
     world.entity_count++;
 
     ComponentStorageAdd(    &world.c_body, world.entity_count);
     ComponentStorageAdd(&world.c_movement, world.entity_count);
     ComponentStorageAdd(   &world.c_color, world.entity_count);
-    local_index = world.c_color.sparse[world.entity_count];
-    world.c_color.data[local_index] = (Color){ 0, 0, 0, 255 };
+    ComponentStorageAdd( &world.c_texture, world.entity_count);
+    ComponentStorageAdd(&world.c_behavior, world.entity_count);
+
+    local_movement_index    = world.c_movement.sparse[world.entity_count];
+    local_color_index = world.c_color.sparse[world.entity_count];
+    local_behavior_index = world.c_behavior.sparse[world.entity_count];
+
+    world.c_movement.data[local_movement_index].speed = 400.0f;
+    world.c_color.data[local_color_index] = (Color){ 50, 255, 255, 255 };
+    world.c_behavior.data[local_behavior_index].type = BehaviorType_Random;
+    world.c_behavior.data[local_behavior_index].duration = 0.2f;
+    world.entity_count++;
+
+    ComponentStorageAdd(    &world.c_body, world.entity_count);
+    ComponentStorageAdd(&world.c_movement, world.entity_count);
+    ComponentStorageAdd(   &world.c_color, world.entity_count);
+    ComponentStorageAdd( &world.c_texture, world.entity_count);
+    ComponentStorageAdd(&world.c_behavior, world.entity_count);
+
+    local_movement_index    = world.c_movement.sparse[world.entity_count];
+    local_color_index    = world.c_color.sparse[world.entity_count];
+    local_behavior_index = world.c_behavior.sparse[world.entity_count];
+
+    world.c_movement.data[local_movement_index].speed = 300.0f;
+    world.c_color.data[local_color_index] = (Color){ 255, 50, 255, 255 };
+    world.c_behavior.data[local_behavior_index].type = BehaviorType_Random;
+    world.c_behavior.data[local_behavior_index].duration = 0.5f;
+
     world.entity_count++;
 
     while (running) {
@@ -384,26 +453,26 @@ int main(void) {
             player_direction.x += 1;
         }
 
-        if (IsKeyDown(KEY_I)) {
-            player_offset.y += 1000.0f * dt;
+        if (IsKeyDown(KEY_K)) {
+            player_offset.y += 500.0f * dt;
             if (player_offset.y >= 200.0f) {
                 player_offset.y = 200.0f;
             }
         }
-        if (IsKeyDown(KEY_K)) {
-            player_offset.y -= 1000.0f * dt;
+        if (IsKeyDown(KEY_I)) {
+            player_offset.y -= 500.0f * dt;
             if (player_offset.y <= 0.0f) {
                 player_offset.y = 0.0f;
             }
         }
-        if (IsKeyDown(KEY_J)) {
-            player_offset.x += 1000.0f * dt;
+        if (IsKeyDown(KEY_L)) {
+            player_offset.x += 500.0f * dt;
             if (player_offset.x >= 200.0f) {
                 player_offset.x = 200.0f;
             }
         }
-        if (IsKeyDown(KEY_L)) {
-            player_offset.x -= 1000.0f * dt;
+        if (IsKeyDown(KEY_J)) {
+            player_offset.x -= 500.0f * dt;
             if (player_offset.x <= 0.0f) {
                 player_offset.x = 0.0f;
             }
@@ -414,10 +483,16 @@ int main(void) {
             printf("[[DEBUG INFO]]\n");
         }
 
+        world.current_time = GetTime();
 
         if (called_object_dump) {
-            printf("Total Component 'Body' size/capacity:    \t%zu/%zu\n", world.c_body.size, world.c_body.capacity);
+            printf("current_time: %.3f\n", world.current_time);
+
+            printf("Total Component 'Body' size/capacity:\t%zu/%zu\n", world.c_body.size, world.c_body.capacity);
             printf("Total Component 'Movement' size/capacity:\t%zu/%zu\n", world.c_movement.size, world.c_movement.capacity);
+            printf("Total Component 'Color' size/capacity:\t%zu/%zu\n", world.c_color.size, world.c_color.capacity);
+            printf("Total Component 'Texture' size/capacity:\t%zu/%zu\n", world.c_texture.size, world.c_texture.capacity);
+            printf("Total Component 'Behavior' size/capacity:\t%zu/%zu\n", world.c_behavior.size, world.c_behavior.capacity);
         }
 
         BeginDrawing();
@@ -433,6 +508,7 @@ int main(void) {
                 }
 
                 CMovement *local_movement = &world.c_movement.data[i];
+                CBehavior *local_behavior = null;
 
                 int32 local_body_index = world.c_body.sparse[local_id];
                 CBody *local_body = null;
@@ -444,22 +520,52 @@ int main(void) {
                     MovementUpdate(local_movement, local_body, player_direction, dt);
                 }
                 else {
-                    MovementUpdate(local_movement, local_body, Vector2One(), dt);
+                    int32 local_behavior_index = world.c_behavior.sparse[local_id];
+                    Vector2 local_direction = Vector2Zero();
+                    if (local_behavior_index != -1) {
+                        local_behavior = &world.c_behavior.data[local_behavior_index];
+
+                        switch (local_behavior->type) {
+                            case BehaviorType_Random: {
+                                if (world.current_time - local_behavior->start_time > local_behavior->duration) {
+                                    local_direction = (Vector2) {
+                                        GetRandomValue(-1, 1),
+                                        GetRandomValue(-1, 1)
+                                    };
+                                    local_behavior->start_time = world.current_time;
+                                }
+                                else {
+                                    // keeps entity moving rather than staying still
+                                    local_direction = local_movement->direction;
+                                }
+                            } break;
+                            case BehaviorType_None:
+                            default: {
+                                printf("Failing\n");
+                            } break;
+                        }
+                    }
+                    MovementUpdate(local_movement, local_body, local_direction, dt);
                 }
 
                 if (called_object_dump) {
                     printf("\tlocal_id: %d\n", local_id);
                     printf("\tlocal_movement_index: %zu\n", i);
-                    printf("\tlocal_body_index: %d\n", local_body_index);
                     printf("\tlocal_movement->initialized: %s\n", local_movement->initialized ? "true" : "false");
                     printf("\tlocal_movement->speed: %f\n", local_movement->speed);
-                    printf("\tlocal_movement->speed: %f\n", local_movement->friction);
+                    printf("\tlocal_movement->friction: %f\n", local_movement->friction);
                     printf("\t");
                     Vector2Print(local_movement->position);
                     printf("\t");
                     Vector2Print(local_movement->last_position);
                     printf("\t");
                     Vector2Print(local_movement->direction);
+
+                    if (local_behavior isnt null) {
+                        printf("\tlocal_behavior->type: %d\n", local_behavior->type);
+                        printf("\tlocal_behavior->start_time: %f\n", local_behavior->start_time);
+                        printf("\tlocal_behavior->duration: %f\n", local_behavior->duration);
+                    }
                 }
             }
 
@@ -502,12 +608,11 @@ int main(void) {
                     local_color = world.c_color.data[local_color_index];
                 }
 
-                BodyRender(local_body, local_movement, local_color, local_texture);
+                BodyRender(local_body, local_movement, local_color, local_texture, RenderFlag_FlipX);
 
                 if (called_object_dump) {
                     printf("\tlocal_id: %d\n", local_id);
                     printf("\tlocal_body_index: %zu\n", i);
-                    printf("\tlocal_movement_index: %d\n", local_movement_index);
                     printf("\tlocal_body->initialized: %s\n", local_body->initialized ? "true" : "false");
                     printf("\t");
                     Vector2Print(local_body->scale);
