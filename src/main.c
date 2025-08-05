@@ -4,7 +4,6 @@
 #include <raylib.h>
 #include <raymath.h>
 
-// #include <stdint.h>
 #include <inttypes.h>
 #include <stddef.h>
 #include <uchar.h>
@@ -171,8 +170,6 @@ typedef struct CTexture {
 
     Vector2   index;
     Vector2   size;
-
-    bool32 initialized;
 } CTexture;
 
 ComponentStorageDeclare(CMovement, CMovement);
@@ -252,12 +249,10 @@ void MovementUpdate(CMovement *m, CBody *b, Vector2 direction, float dt) {
  * component(s): CBody
  */
 void BodyUpdate(CBody *b, Vector2 scale, Vector2 offset, float dt) {
+    (void)dt;
     if (not b->initialized) {
         init_if_null( b->scale.x, 100.0f);
         init_if_null( b->scale.y, 100.0f);
-
-        init_if_null(b->offset.x, 0.0f);
-        init_if_null(b->offset.y, 0.0f);
 
         b->initialized = true;
     }
@@ -267,6 +262,20 @@ void BodyUpdate(CBody *b, Vector2 scale, Vector2 offset, float dt) {
 
     b->offset.x = coalesce(offset.x, b->offset.x);
     b->offset.y = coalesce(offset.y, b->offset.y);
+}
+
+/*
+ * type: System
+ * component(s): CTexture
+ */
+void TextureUpdate(CTexture *t, Vector2 index, Vector2 size, float dt) {
+    (void)dt;
+
+    t->index.x = coalesce(index.x, t->index.x);
+    t->index.y = coalesce(index.y, t->index.y);
+
+    t->size.x = coalesce(size.x, t->size.x);
+    t->size.y = coalesce(size.y, t->size.y);
 }
 
 /*
@@ -483,6 +492,8 @@ int main(void) {
                 CTexture *local_texture = null;
                 if (local_texture_index != -1) {
                     local_texture = &world.c_texture.data[local_texture_index];
+
+                    TextureUpdate(local_texture, Vector2Zero(), Vector2Zero(), dt);
                 }
 
                 int32 local_color_index = world.c_color.sparse[local_id];
@@ -504,6 +515,8 @@ int main(void) {
                     Vector2Print(local_body->offset);
                 }
             }
+
+            DrawFPS(2, 2);
         EndDrawing();
         called_object_dump = false;
     }
