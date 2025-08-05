@@ -137,6 +137,17 @@ Allocator heap_allocator = {
             assert(false && "Out of Memory!");                          \
     }while(0);
 
+
+#define ComponentStorageArgs(storage, id, ...) do{                                                      \
+        assert((storage)->sparse[id] != -1 && "Attempted to pass component args to unassigned entity"); \
+        (storage)->data[(storage)->sparse[id]] = (typeof(*(storage)->data)){__VA_ARGS__};               \
+    }while(0);
+
+#define ComponentStorageAddArgs(storage, id, ...) do{ \
+    ComponentStorageAdd(storage, id);                 \
+    ComponentStorageArgs(storage, id, __VA_ARGS__);   \
+}while(0);
+
 // WARN: no bounds check
 #define ComponentStorageDelete(storage, id, count_ptr) do{                      \
         (storage)->dense[(storage)->sparse[id]] = (typeof(*(storage)->dense))0; \
@@ -435,81 +446,65 @@ int main(void) {
     ComponentStorageCreate(&world.c_texture,  &heap_allocator, component_size);
     ComponentStorageCreate(&world.c_behavior, &heap_allocator, component_size);
 
-    int32 local_behavior_index, local_color_index, local_body_index,
-          local_texture_index, local_movement_index;
+    int32 local_texture_index;
 
     // world.c_body.sparse[world.entity_count]
+    // ComponentStorageAdd(    &world.c_body, world.entity_count);
     ComponentStorageAdd(    &world.c_body, world.entity_count);
     ComponentStorageAdd(&world.c_movement, world.entity_count);
-    ComponentStorageAdd( &world.c_texture, world.entity_count);
+    ComponentStorageAdd(&world.c_texture, world.entity_count);
+
+    ComponentStorageArgs(&world.c_texture, world.entity_count,
+        .texture = LoadTexture("./resources/mewee.png")
+    );
 
     local_texture_index = world.c_texture.sparse[world.entity_count];
-    world.c_texture.data[local_texture_index].texture = LoadTexture("./resources/mewee.png");
+    // world.c_texture.data[local_texture_index].texture = LoadTexture("./resources/mewee.png");
     world.c_texture.data[local_texture_index + 1].texture = world.c_texture.data[local_texture_index].texture;
     world.c_texture.data[local_texture_index + 2].texture = world.c_texture.data[local_texture_index].texture;
     world.entity_count++;
 
     ComponentStorageAdd(    &world.c_body, world.entity_count);
-    ComponentStorageAdd(&world.c_movement, world.entity_count);
+    ComponentStorageAdd( &world.c_texture, world.entity_count);
+    ComponentStorageAddArgs(&world.c_movement, world.entity_count, .speed = 400.0f);
+    ComponentStorageAddArgs(&world.c_color, world.entity_count, 50, 255, 255, 255);
+    ComponentStorageAddArgs(&world.c_behavior, world.entity_count,
+        .type = BehaviorType_Random,
+        .duration = 0.2f
+    );
+
+    world.entity_count++;
+
+    ComponentStorageAdd(    &world.c_body, world.entity_count);
     ComponentStorageAdd(   &world.c_color, world.entity_count);
     ComponentStorageAdd( &world.c_texture, world.entity_count);
     ComponentStorageAdd(&world.c_behavior, world.entity_count);
 
-    local_movement_index    = world.c_movement.sparse[world.entity_count];
-    local_color_index = world.c_color.sparse[world.entity_count];
-    local_behavior_index = world.c_behavior.sparse[world.entity_count];
-
-    world.c_movement.data[local_movement_index].speed = 400.0f;
-    world.c_color.data[local_color_index] = (Color){ 50, 255, 255, 255 };
-    world.c_behavior.data[local_behavior_index].type = BehaviorType_Random;
-    world.c_behavior.data[local_behavior_index].duration = 0.2f;
-    world.entity_count++;
-
-    ComponentStorageAdd(    &world.c_body, world.entity_count);
-    ComponentStorageAdd(&world.c_movement, world.entity_count);
-    ComponentStorageAdd(   &world.c_color, world.entity_count);
-    ComponentStorageAdd( &world.c_texture, world.entity_count);
-    ComponentStorageAdd(&world.c_behavior, world.entity_count);
-
-    local_movement_index    = world.c_movement.sparse[world.entity_count];
-    local_color_index    = world.c_color.sparse[world.entity_count];
-    local_behavior_index = world.c_behavior.sparse[world.entity_count];
-
-    world.c_movement.data[local_movement_index].speed = 300.0f;
-    world.c_color.data[local_color_index] = (Color){ 255, 50, 255, 255 };
-    world.c_behavior.data[local_behavior_index].type = BehaviorType_Random;
-    world.c_behavior.data[local_behavior_index].duration = 0.5f;
+    ComponentStorageAddArgs(&world.c_movement, world.entity_count, .speed = 300.0f);
+    ComponentStorageAddArgs(&world.c_color, world.entity_count, 255, 50, 255, 255);
+    ComponentStorageAddArgs(&world.c_behavior, world.entity_count,
+        .type = BehaviorType_Random,
+        .duration = 0.5f
+    );
 
     world.entity_count++;
 
-    ComponentStorageAdd(    &world.c_body, world.entity_count);
-    ComponentStorageAdd(&world.c_movement, world.entity_count);
-    ComponentStorageAdd(   &world.c_color, world.entity_count);
-
-    local_body_index = world.c_body.sparse[world.entity_count];
-    local_movement_index    = world.c_movement.sparse[world.entity_count];
-    local_color_index = world.c_color.sparse[world.entity_count];
-    local_behavior_index = world.c_behavior.sparse[world.entity_count];
-
-    world.c_movement.data[local_movement_index].position = (Vector2){ 200.0f, 300.0f };
-    world.c_color.data[local_color_index] = (Color){ 50, 255, 50, 255 };
+    ComponentStorageAdd(&world.c_body, world.entity_count);
+    ComponentStorageAddArgs(&world.c_movement, world.entity_count,
+        .position = (Vector2){ 200.0f, 300.0f }
+    );
+    ComponentStorageAddArgs(&world.c_color, world.entity_count, 50, 255, 50, 255);
 
     world.entity_count++;
 
-    ComponentStorageAdd(    &world.c_body, world.entity_count);
+    ComponentStorageAddArgs(    &world.c_body, world.entity_count,
+        .layer = 1,
+        .scale = (Vector2){ GetScreenWidth(), GetScreenHeight() }
+    );
     ComponentStorageAdd(&world.c_movement, world.entity_count);
-    ComponentStorageAdd(   &world.c_color, world.entity_count);
-
-    local_movement_index = world.c_movement.sparse[world.entity_count];
-    local_body_index = world.c_body.sparse[world.entity_count];
-    local_color_index    = world.c_color.sparse[world.entity_count];
-
-    world.c_body.data[local_body_index].layer = 1;
-    world.c_body.data[local_body_index].scale = (Vector2){ GetScreenWidth(), GetScreenHeight() };
-    world.c_color.data[local_color_index] = (Color){ 175, 175, 175, 255 };
+    ComponentStorageAddArgs(&world.c_color, world.entity_count, 175, 165, 175, 255);
 
     int32 background_id = world.entity_count;
-
     world.entity_count++;
 
     while (running) {
@@ -649,7 +644,7 @@ int main(void) {
             }
 
             if (called_object_dump) {
-                printf("[CBody]\n");
+                printf("[CBody : Y-axis ordered]\n");
             }
 
             RenderEntry temp_array[128] = { { -1, 0.0f, 0 } };
