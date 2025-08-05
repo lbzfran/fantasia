@@ -162,6 +162,8 @@ typedef struct CBody {
     Vector2 scale;
     Vector2 offset;
 
+    int32   layer;
+
     bool32  initialized;
 } CBody;
 
@@ -353,6 +355,46 @@ void BodyRender(CBody *b, CMovement *m, Color color, CTexture *t, int32 flags) {
     }
 }
 
+typedef struct RenderEntry {
+    int32   id;
+    float32 height;
+    int32   layer;
+} RenderEntry;
+
+int32 SortRenderPartition_(RenderEntry *entries, int32 low, int32 high) {
+    RenderEntry pivot = entries[high];
+    RenderEntry temp;
+
+    int32 i = low - 1;
+
+    for (int32 j = low; j <= high - 1; j++) {
+        if ((entries[j].layer < pivot.layer) or \
+            (entries[j].layer == pivot.layer and entries[j].height < pivot.height)) {
+            i++;
+            temp = entries[j];
+            entries[j] = entries[i];
+            entries[i] = temp;
+        }
+    }
+
+    temp = entries[i + 1];
+    entries[i + 1] = entries[high];
+    entries[high] = temp;
+
+    return i + 1;
+}
+
+void SortRender(RenderEntry *entries, int32 low, int32 high) {
+    // qsort in-place
+    if (low < high) {
+        int32 pi = SortRenderPartition_(entries, low, high);
+
+        SortRender(entries, low, pi - 1);
+        SortRender(entries, pi + 1, high);
+    }
+}
+
+
 enum SpecialEntity {
     Entity_Player_One = 0,
 };
@@ -387,12 +429,16 @@ int main(void) {
     ComponentStorageCreate(&world.c_texture,  &heap_allocator, component_size);
     ComponentStorageCreate(&world.c_behavior, &heap_allocator, component_size);
 
-    int32 local_behavior_index, local_color_index, local_texture_index, local_movement_index;
+    int32 local_behavior_index, local_color_index, local_body_index,
+          local_texture_index, local_movement_index;
 
     // world.c_body.sparse[world.entity_count]
     ComponentStorageAdd(    &world.c_body, world.entity_count);
     ComponentStorageAdd(&world.c_movement, world.entity_count);
     ComponentStorageAdd( &world.c_texture, world.entity_count);
+
+    // local_body_index = world.c_body.sparse[world.entity_count];
+    // world.c_body.data[local_body_index].layer = 1;
 
     local_texture_index = world.c_texture.sparse[world.entity_count];
     world.c_texture.data[local_texture_index].texture = LoadTexture("./resources/mewee.png");
@@ -431,6 +477,18 @@ int main(void) {
     world.c_behavior.data[local_behavior_index].type = BehaviorType_Random;
     world.c_behavior.data[local_behavior_index].duration = 0.5f;
 
+    world.entity_count++;
+
+    ComponentStorageAdd(    &world.c_body, world.entity_count);
+    ComponentStorageAdd(&world.c_movement, world.entity_count);
+    ComponentStorageAdd(   &world.c_color, world.entity_count);
+
+    local_movement_index    = world.c_movement.sparse[world.entity_count];
+    local_color_index = world.c_color.sparse[world.entity_count];
+    local_behavior_index = world.c_behavior.sparse[world.entity_count];
+
+    world.c_movement.data[local_movement_index].position = (Vector2){ 200.0f, 300.0f };
+    world.c_color.data[local_color_index] = (Color){ 50, 255, 50, 255 };
     world.entity_count++;
 
     while (running) {
@@ -572,13 +630,40 @@ int main(void) {
             if (called_object_dump) {
                 printf("[CBody]\n");
             }
+
+            RenderEntry temp_array[128] = { { -1, 0.0f, 0 } };
             for (ssize i = 0; i < world.c_body.size; i++) {
                 int32 local_id = world.c_body.dense[i];
                 if (local_id == -1) {
                     continue;
                 }
-
                 CBody *local_body = &world.c_body.data[i];
+
+                int32 local_movement_index = world.c_movement.sparse[local_id];
+                if (local_movement_index == -1) {
+                    // won't render anyways
+                    continue;
+                }
+                CMovement *local_movement = &world.c_movement.data[local_movement_index];
+
+                temp_array[i] = (RenderEntry) {
+                    local_id,
+                    local_movement->position.y + local_body->scale.y,
+                    local_body->layer
+                };
+            }
+
+            SortRender(temp_array, 0, world.c_body.size - 1);
+
+            for (ssize i = 0; i < world.c_body.size; i++) {
+                // int32 local_id = world.c_body.dense[i];
+                int32 local_id = temp_array[i].id;
+                if (local_id == -1) {
+                    continue;
+                }
+
+                int32 local_body_index = world.c_body.sparse[local_id];
+                CBody *local_body = &world.c_body.data[local_body_index];
 
                 if (local_id == Entity_Player_One) {
                     BodyUpdate(local_body, Vector2Zero(), player_offset, dt);
