@@ -494,8 +494,6 @@ int main(void) {
     world.c_movement.data[local_movement_index].position = (Vector2){ 200.0f, 300.0f };
     world.c_color.data[local_color_index] = (Color){ 50, 255, 50, 255 };
 
-    int32 background_id = world.entity_count;
-
     world.entity_count++;
 
     ComponentStorageAdd(    &world.c_body, world.entity_count);
@@ -509,6 +507,9 @@ int main(void) {
     world.c_body.data[local_body_index].layer = 1;
     world.c_body.data[local_body_index].scale = (Vector2){ GetScreenWidth(), GetScreenHeight() };
     world.c_color.data[local_color_index] = (Color){ 175, 175, 175, 255 };
+
+    int32 background_id = world.entity_count;
+
     world.entity_count++;
 
     while (running) {
@@ -564,7 +565,7 @@ int main(void) {
         world.current_time = GetTime();
 
         if (called_object_dump) {
-            printf("current_time: %.3f\n", world.current_time);
+            printf("\tcurrent_time: %.3f\n", world.current_time);
 
             printf("Total Component 'Body' size/capacity:\t%zu/%zu\n", world.c_body.size, world.c_body.capacity);
             printf("Total Component 'Movement' size/capacity:\t%zu/%zu\n", world.c_movement.size, world.c_movement.capacity);
@@ -692,7 +693,7 @@ int main(void) {
                     new_offset = player_offset;
                 }
                 else if (local_id == background_id) {
-                    // new_scale = (Vector2){ GetScreenWidth(), GetScreenHeight() };
+                    new_scale = (Vector2){ GetScreenWidth(), GetScreenHeight() };
                 }
                 BodyUpdate(local_body, new_scale, new_offset, new_layer, dt);
 
@@ -721,7 +722,6 @@ int main(void) {
 
                 if (called_object_dump) {
                     printf("\tlocal_id: %d\n", local_id);
-                    printf("\tlocal_body_index: %zu\n", i);
                     printf("\tlocal_body_index: %zu\n", i);
                     printf("\tlocal_body->initialized: %s\n", local_body->initialized ? "true" : "false");
                     printf("\tlocal_body->layer: %d\n", local_body->layer);
