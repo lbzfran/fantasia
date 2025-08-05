@@ -261,11 +261,13 @@ void MovementUpdate(CMovement *m, CBody *b, Vector2 direction, float dt) {
  * type: System
  * component(s): CBody
  */
-void BodyUpdate(CBody *b, Vector2 scale, Vector2 offset, float dt) {
+void BodyUpdate(CBody *b, Vector2 scale, Vector2 offset, int32 layer, float dt) {
     (void)dt;
     if (not b->initialized) {
         init_if_null( b->scale.x, 100.0f);
         init_if_null( b->scale.y, 100.0f);
+
+        init_if_null( b->layer,   2);
 
         b->initialized = true;
     }
@@ -275,6 +277,10 @@ void BodyUpdate(CBody *b, Vector2 scale, Vector2 offset, float dt) {
 
     b->offset.x = coalesce(offset.x, b->offset.x);
     b->offset.y = coalesce(offset.y, b->offset.y);
+
+    if (layer != -1) {
+        b->layer = layer;
+    }
 }
 
 /*
@@ -437,9 +443,6 @@ int main(void) {
     ComponentStorageAdd(&world.c_movement, world.entity_count);
     ComponentStorageAdd( &world.c_texture, world.entity_count);
 
-    // local_body_index = world.c_body.sparse[world.entity_count];
-    // world.c_body.data[local_body_index].layer = 1;
-
     local_texture_index = world.c_texture.sparse[world.entity_count];
     world.c_texture.data[local_texture_index].texture = LoadTexture("./resources/mewee.png");
     world.c_texture.data[local_texture_index + 1].texture = world.c_texture.data[local_texture_index].texture;
@@ -483,12 +486,29 @@ int main(void) {
     ComponentStorageAdd(&world.c_movement, world.entity_count);
     ComponentStorageAdd(   &world.c_color, world.entity_count);
 
+    local_body_index = world.c_body.sparse[world.entity_count];
     local_movement_index    = world.c_movement.sparse[world.entity_count];
     local_color_index = world.c_color.sparse[world.entity_count];
     local_behavior_index = world.c_behavior.sparse[world.entity_count];
 
     world.c_movement.data[local_movement_index].position = (Vector2){ 200.0f, 300.0f };
     world.c_color.data[local_color_index] = (Color){ 50, 255, 50, 255 };
+
+    int32 background_id = world.entity_count;
+
+    world.entity_count++;
+
+    ComponentStorageAdd(    &world.c_body, world.entity_count);
+    ComponentStorageAdd(&world.c_movement, world.entity_count);
+    ComponentStorageAdd(   &world.c_color, world.entity_count);
+
+    local_movement_index = world.c_movement.sparse[world.entity_count];
+    local_body_index = world.c_body.sparse[world.entity_count];
+    local_color_index    = world.c_color.sparse[world.entity_count];
+
+    world.c_body.data[local_body_index].layer = 1;
+    world.c_body.data[local_body_index].scale = (Vector2){ GetScreenWidth(), GetScreenHeight() };
+    world.c_color.data[local_color_index] = (Color){ 175, 175, 175, 255 };
     world.entity_count++;
 
     while (running) {
@@ -665,12 +685,16 @@ int main(void) {
                 int32 local_body_index = world.c_body.sparse[local_id];
                 CBody *local_body = &world.c_body.data[local_body_index];
 
+                Vector2 new_scale = Vector2Zero();
+                Vector2 new_offset = Vector2Zero();
+                int32 new_layer = -1;
                 if (local_id == Entity_Player_One) {
-                    BodyUpdate(local_body, Vector2Zero(), player_offset, dt);
+                    new_offset = player_offset;
                 }
-                else {
-                    BodyUpdate(local_body, Vector2Zero(), Vector2Zero(), dt);
+                else if (local_id == background_id) {
+                    // new_scale = (Vector2){ GetScreenWidth(), GetScreenHeight() };
                 }
+                BodyUpdate(local_body, new_scale, new_offset, new_layer, dt);
 
                 int32 local_movement_index = world.c_movement.sparse[local_id];
                 if (local_movement_index == -1) {
@@ -698,7 +722,9 @@ int main(void) {
                 if (called_object_dump) {
                     printf("\tlocal_id: %d\n", local_id);
                     printf("\tlocal_body_index: %zu\n", i);
+                    printf("\tlocal_body_index: %zu\n", i);
                     printf("\tlocal_body->initialized: %s\n", local_body->initialized ? "true" : "false");
+                    printf("\tlocal_body->layer: %d\n", local_body->layer);
                     printf("\t");
                     Vector2Print(local_body->scale);
                     printf("\t");

@@ -3,7 +3,7 @@
 
 - [x] Entity-Component System
 - [x] Textures
-    - [ ] Render Ordering
+    - [x] Render Ordering
 - [ ] Animations
 - [ ] Collisions
 - [ ] Interactions
