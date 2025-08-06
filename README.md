@@ -4,10 +4,16 @@
 - [x] Entity-Component System
 - [x] Textures
     - [x] Render Ordering
-- [ ] Animations
-- [ ] Collisions
+- [x] Animations
+    - [ ] animation trigger
+    - [ ] refine animation control (loops, moving forward/backward)
+    - [ ] chaining animations (command pattern)
+- [ ] Collisions (AABB)
+- [ ] Behaviors
+    - [ ] dynamic behaviors (based on conditions, decision tree maybe..?)
 - [ ] Interactions
 - [ ] Maps
+- [ ] Loading/Saving Game Data (with versioning)
 
 # Build
 

@@ -302,8 +302,8 @@ void MovementUpdate(CMovement *m, CBody *b, FanVector2 direction, float dt) {
 void BodyUpdate(CBody *b, FanVector2 scale, FanVector2 offset, int32 layer, float dt) {
     (void)dt;
     if (not b->initialized) {
-        init_if_null(b->scale.x, 100.0f);
-        init_if_null(b->scale.y, 100.0f);
+        init_if_null(b->scale.x, 96.0f);
+        init_if_null(b->scale.y, 96.0f);
 
         init_if_null(b->layer,   2);
 
