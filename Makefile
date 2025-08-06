@@ -31,7 +31,7 @@ TARGET ?= win64_mingw-w64
 all: $(BIN_DIR)/$(BIN)$(EXT)
 $(BIN_DIR)/$(BIN)$(EXT): $(BUILD_DIR)/main.o
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
-$(BUILD_DIR)/main.o: src/main.c
+$(BUILD_DIR)/main.o: src/main.c src/platform.c
 	$(CC) $(CFLAGS) -c -o $@ $< $(LDFLAGS)
 clean:
 	rm -f $(BIN_DIR)/$(BIN)$(EXT) $(BUILD_DIR)/main.o

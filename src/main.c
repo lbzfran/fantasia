@@ -39,6 +39,8 @@ typedef uintptr_t   uintptr;
 #define coalesce(a, b)          ((a) ? (a) : (b))
 #define init_if_null(a, x)      ((a) = coalesce((a), (x)))
 
+#define true    1
+#define false   0
 #define not     !
 #define is      ==
 #define isnt    !=
@@ -178,7 +180,7 @@ typedef struct CBody {
 } CBody;
 
 typedef struct CTexture {
-    FanTexture2D texture;
+    FanTexture texture;
 
     Vector2   index;
     Vector2   size;
@@ -196,7 +198,7 @@ typedef struct CBehavior {
 ComponentStorageDeclare(CMovement, CMovement);
 ComponentStorageDeclare(CBody, CBody);
 
-ComponentStorageDeclare(CColor, Color);
+ComponentStorageDeclare(CColor, FanColor);
 ComponentStorageDeclare(CTexture, CTexture);
 
 ComponentStorageDeclare(CBehavior, CBehavior);
@@ -315,13 +317,13 @@ enum RenderFlags {
  * type: System
  * component(s): CBody, CMovement
  */
-void BodyRender(CBody *b, CMovement *m, Color color, CTexture *t, int32 flags) {
+void BodyRender(CBody *b, CMovement *m, FanColor color, CTexture *t, int32 flags) {
 
     if (t is null) {
         if (Vector2Length(b->offset) > 0.0f) {
-            DrawRectangleV(Vector2Add(m->position, b->offset), b->scale, GRAY);
+            FanDrawRectangleV(Vector2Add(m->position, b->offset), b->scale, (FanColor){ 50, 50, 50, 255 });
         }
-        DrawRectangleV(m->position, b->scale, color);
+        FanDrawRectangleV(m->position, b->scale, color);
     }
     else {
 
@@ -330,20 +332,20 @@ void BodyRender(CBody *b, CMovement *m, Color color, CTexture *t, int32 flags) {
             (t->size.y) ? t->size.y : t->texture.height
         };
 
-        Rectangle src = (Rectangle) {
+        FanRect src = (FanRect) {
             t->index.x * texture_size.x,
             t->index.y * texture_size.y,
             (flags & RenderFlag_FlipX) ? m->direction.x * texture_size.x : texture_size.x,
             (flags & RenderFlag_FlipY) ? m->direction.y * texture_size.y : texture_size.y
         };
-        Rectangle dst = (Rectangle) {
+        FanRect dst = (FanRect) {
             m->position.x,
             m->position.y,
             b->scale.x,
             b->scale.y
         };
 
-        Rectangle dst_shadow = (Rectangle) {
+        FanRect dst_shadow = (FanRect) {
             m->position.x + b->offset.x,
             m->position.y + b->offset.y,
             b->scale.x,
@@ -351,20 +353,20 @@ void BodyRender(CBody *b, CMovement *m, Color color, CTexture *t, int32 flags) {
         };
 
         if (Vector2Length(b->offset) > 0.0f) {
-            DrawTexturePro(
+            FanDrawTexture(
                 t->texture,
                 src,
                 dst_shadow,
-                (Vector2) { 0.0f, 0.0f },
+                (FanVector2) { 0.0f, 0.0f },
                 0.0f,
                 GRAY);
         }
 
-        DrawTexturePro(
+        FanDrawTexture(
             t->texture,
             src,
             dst,
-            (Vector2) { 0.0f, 0.0f },
+            (FanVector2) { 0.0f, 0.0f },
             0.0f,
             color
         );
@@ -429,13 +431,13 @@ World world = {};
 
 
 int main(void) {
-    InitWindow(800, 600, "Fantasia");
+    FanWindowCreate(800, 600, "Fantasia");
 
     bool32 running = true;
     bool32 called_object_dump = false;
     Vector2 player_offset = Vector2Zero();
 
-    SetRandomSeed(12398);
+    FanRandomSeed(12398);
 
     ssize component_size  = kilobytes(1);
 
@@ -454,7 +456,7 @@ int main(void) {
     ComponentStorageAdd(&world.c_texture, world.entity_count);
 
     ComponentStorageArgs(&world.c_texture, world.entity_count,
-        .texture = LoadTexture("./resources/mewee.png")
+        .texture = FanTextureLoad("./resources/mewee.png")
     );
 
     local_texture_index = world.c_texture.sparse[world.entity_count];
@@ -498,7 +500,7 @@ int main(void) {
 
     ComponentStorageAddArgs(    &world.c_body, world.entity_count,
         .layer = 1,
-        .scale = (Vector2){ GetScreenWidth(), GetScreenHeight() }
+        .scale = (Vector2){ FanWindowWidth(), FanWindowHeight() }
     );
     ComponentStorageAdd(&world.c_movement, world.entity_count);
     ComponentStorageAddArgs(&world.c_color, world.entity_count, 175, 165, 175, 255);
@@ -507,56 +509,56 @@ int main(void) {
     world.entity_count++;
 
     while (running) {
-        float dt = GetFrameTime();
-        if (WindowShouldClose() || IsKeyPressed(KEY_ESCAPE)) {
+        float dt = FanGetFrameTime();
+        if (FanWindowShouldClose() || FanKeyPressed(FanKey_ESCAPE)) {
             running = false;
         }
 
         Vector2 player_direction = Vector2Zero();
-        if (IsKeyDown(KEY_W)) {
+        if (FanKeyDown(FanKey_W)) {
             player_direction.y -= 1;
         }
-        if (IsKeyDown(KEY_S)) {
+        if (FanKeyDown(FanKey_S)) {
             player_direction.y += 1;
         }
-        if (IsKeyDown(KEY_A)) {
+        if (FanKeyDown(FanKey_A)) {
             player_direction.x -= 1;
         }
-        if (IsKeyDown(KEY_D)) {
+        if (FanKeyDown(FanKey_D)) {
             player_direction.x += 1;
         }
 
-        if (IsKeyDown(KEY_K)) {
+        if (FanKeyDown(FanKey_K)) {
             player_offset.y += 500.0f * dt;
             if (player_offset.y >= 200.0f) {
                 player_offset.y = 200.0f;
             }
         }
-        if (IsKeyDown(KEY_I)) {
+        if (FanKeyDown(FanKey_I)) {
             player_offset.y -= 500.0f * dt;
             if (player_offset.y <= 0.0f) {
                 player_offset.y = 0.0f;
             }
         }
-        if (IsKeyDown(KEY_L)) {
+        if (FanKeyDown(FanKey_L)) {
             player_offset.x += 500.0f * dt;
             if (player_offset.x >= 200.0f) {
                 player_offset.x = 200.0f;
             }
         }
-        if (IsKeyDown(KEY_J)) {
+        if (FanKeyDown(FanKey_J)) {
             player_offset.x -= 500.0f * dt;
             if (player_offset.x <= 0.0f) {
                 player_offset.x = 0.0f;
             }
         }
 
-        if (IsKeyPressed(KEY_P)) {
+        if (FanKeyPressed(FanKey_P)) {
             called_object_dump = true;
             printf("[[DEBUG INFO]]\n");
         }
 
-        world.current_time = GetTime();
+        world.current_time = FanGetTime();
 
         if (called_object_dump) {
             printf("\tcurrent_time: %.3f\n", world.current_time);
@@ -568,8 +570,8 @@ int main(void) {
             printf("Total Component 'Behavior' size/capacity:\t%zu/%zu\n", world.c_behavior.size, world.c_behavior.capacity);
         }
 
-        BeginDrawing();
-            ClearBackground(RAYWHITE);
+        FanDrawBegin();
+            FanDrawClear((FanColor){ 200, 200, 200, 255 });
 
             if (called_object_dump) {
                 printf("[CMovement]\n");
@@ -602,8 +604,8 @@ int main(void) {
                             case BehaviorType_Random: {
                                 if (world.current_time - local_behavior->start_time > local_behavior->duration) {
                                     local_direction = (Vector2) {
-                                        GetRandomValue(-1, 1),
-                                        GetRandomValue(-1, 1)
+                                        FanRandomInt(-1, 1),
+                                        FanRandomInt(-1, 1)
                                     };
                                     local_behavior->start_time = world.current_time;
                                 }
@@ -687,7 +689,7 @@ int main(void) {
                     new_offset = player_offset;
                 }
                 else if (local_id == background_id) {
-                    new_scale = (Vector2){ GetScreenWidth(), GetScreenHeight() };
+                    new_scale = (Vector2){ FanWindowWidth(), FanWindowHeight() };
                 }
                 BodyUpdate(local_body, new_scale, new_offset, new_layer, dt);
 
@@ -707,7 +709,7 @@ int main(void) {
                 }
 
                 int32 local_color_index = world.c_color.sparse[local_id];
-                Color local_color = (Color){ 255, 255, 255, 255 };
+                FanColor local_color = (FanColor){ 255, 255, 255, 255 };
                 if (local_color_index != -1) {
                     local_color = world.c_color.data[local_color_index];
                 }
@@ -726,8 +728,8 @@ int main(void) {
                 }
             }
 
-            DrawFPS(2, 2);
-        EndDrawing();
+            FanDrawFPS(2, 2);
+        FanDrawEnd();
         called_object_dump = false;
     }
 
@@ -735,9 +737,9 @@ int main(void) {
         if (world.c_texture.dense[i] == -1) {
             continue;
         }
-        UnloadTexture(world.c_texture.data[i].texture);
+        FanTextureUnload(world.c_texture.data[i].texture);
     }
 
-    CloseWindow();
+    FanWindowClose();
     return 0;
 }

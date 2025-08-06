@@ -5,10 +5,55 @@
 #  define FAN_API extern
 # endif
 
-typedef struct FanVector2   FanVector2;
-typedef struct FanColor     FanColor;
-typedef struct FanRect      FanRect;
-typedef struct FanTexture2D FanTexture2D;
+
+enum CtxErrorType {
+    CtxErr_None = 0,
+    CtxErr_Crash = 1,
+    CtxErr_Memory,
+
+    CtxErr_Lib_Init = 10,
+    CtxErr_Lib_Window,
+};
+
+typedef struct FanWindow {
+    void *handle;
+    int id;
+
+    int width;
+    int height;
+
+    int error;
+    unsigned char *memory;
+
+    // int keys[1024];
+} FanWindow;
+
+typedef struct FanVector2 {
+    int x;
+    int y;
+} FanVector2;
+
+typedef struct FanColor {
+    int r;
+    int g;
+    int b;
+    int a;
+} FanColor;
+
+typedef struct FanRect {
+    int x;
+    int y;
+    int width;
+    int height;
+} FanRect;
+
+typedef struct FanTexture {
+    unsigned int id;
+    int width;
+    int height;
+    int mipmaps;
+    int format;
+} FanTexture;
 
 typedef enum {
     FanKey_NULL            = 0,        // Key: NULL, used for no key pressed
@@ -120,16 +165,14 @@ typedef enum {
     FanKey_KP_ADD          = 334,      // Key: Keypad +
     FanKey_KP_ENTER        = 335,      // Key: Keypad Enter
     FanKey_KP_EQUAL        = 336,      // Key: Keypad =
-    // Android key buttons
-    FanKey_BACK            = 4,        // Key: Android back button
-    FanKey_MENU            = 5,        // Key: Android menu button
-    FanKey_VOLUME_UP       = 24,       // Key: Android volume up button
-    FanKey_VOLUME_DOWN     = 25        // Key: Android volume down button
 } FanKey;
 
-FAN_API void FanWindowInit(float width, float height, const char *title);
+FAN_API void FanWindowCreate(int width, int height, const char *title);
 FAN_API void FanWindowClose(void);
 FAN_API int FanWindowShouldClose(void);
+
+FAN_API int FanWindowWidth(void);
+FAN_API int FanWindowHeight(void);
 
 FAN_API double FanGetFrameTime(void);
 FAN_API double FanGetTime(void);
@@ -137,11 +180,11 @@ FAN_API double FanGetTime(void);
 FAN_API void FanRandomSeed(int seed);
 FAN_API int FanRandomInt(int min, int max);
 
-FAN_API void FanKeyPressed(FanKey key);
-FAN_API void FanKeyDown(FanKey key);
+FAN_API int FanKeyPressed(FanKey key);
+FAN_API int FanKeyDown(FanKey key);
 
-FAN_API FanTexture2D FanTextureLoad(const char *filepath);
-FAN_API void FanTextureUnload(FanTexture2D texture);
+FAN_API FanTexture FanTextureLoad(const char *filepath);
+FAN_API void FanTextureUnload(FanTexture texture);
 
 FAN_API void FanDrawBegin(void);
 FAN_API void FanDrawClear(FanColor color);
@@ -151,7 +194,7 @@ FAN_API void FanDrawEnd(void);
 FAN_API void FanDrawRectangle(int x, int y, int w, int h, FanColor color);
 FAN_API void FanDrawRectangleV(FanVector2 pos, FanVector2 scale, FanColor color);
 FAN_API void FanDrawRectangleR(FanRect rect, FanColor color);
-FAN_API void FanDrawTexture(FanTexture2D texture, FanRect src, FanRect dst, FanVector2 origin, float angle, FanColor);
+FAN_API void FanDrawTexture(FanTexture texture, FanRect src, FanRect dst, FanVector2 origin, float angle, FanColor);
 
 // quick maths
 
