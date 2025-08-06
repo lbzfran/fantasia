@@ -29,8 +29,8 @@ typedef struct FanWindow {
 } FanWindow;
 
 typedef struct FanVector2 {
-    int x;
-    int y;
+    float x;
+    float y;
 } FanVector2;
 
 typedef struct FanColor {
@@ -167,6 +167,9 @@ typedef enum {
     FanKey_KP_EQUAL        = 336,      // Key: Keypad =
 } FanKey;
 
+#define FAN_GRAY    (FanColor){  50,  50,  50, 255 }
+#define FAN_WHITE   (FanColor){ 210, 210, 210, 255 }
+
 FAN_API void FanWindowCreate(int width, int height, const char *title);
 FAN_API void FanWindowClose(void);
 FAN_API int FanWindowShouldClose(void);
@@ -188,33 +191,35 @@ FAN_API void FanTextureUnload(FanTexture texture);
 
 FAN_API void FanDrawBegin(void);
 FAN_API void FanDrawClear(FanColor color);
-FAN_API void FanDrawFPS(float x, float y);
+FAN_API void FanDrawFPS(int x, int y);
 FAN_API void FanDrawEnd(void);
 
-FAN_API void FanDrawRectangle(int x, int y, int w, int h, FanColor color);
-FAN_API void FanDrawRectangleV(FanVector2 pos, FanVector2 scale, FanColor color);
-FAN_API void FanDrawRectangleR(FanRect rect, FanColor color);
+FAN_API void FanDrawRect(int x, int y, int w, int h, FanColor color);
+FAN_API void FanDrawRectV(FanVector2 pos, FanVector2 scale, FanColor color);
+FAN_API void FanDrawRectR(FanRect rect, FanColor color);
 FAN_API void FanDrawTexture(FanTexture texture, FanRect src, FanRect dst, FanVector2 origin, float angle, FanColor);
 
 // quick maths
 
-// FAN_API float FanClamp(float value, float min, float max);
-// FAN_API float FanLerp(float a, float x, float b);
-// FAN_API float FanFloatEquals(float x, float y);
-//
-// FAN_API FanVector2 FanVector2Zero(void);
-// FAN_API FanVector2 FanVector2One(void);
-//
-// FAN_API FanVector2 FanVector2Add(FanVector2 v1, FanVector2 v2);
-// FAN_API FanVector2 FanVector2AddValue(FanVector2 v, float x);
-//
-// FAN_API FanVector2 FanVector2Sub(FanVector2 v1, FanVector2 v2);
-// FAN_API FanVector2 FanVector2SubValue(FanVector2 v, float x);
-//
-// FAN_API FanVector2 FanVector2Length(FanVector2 v);
-// FAN_API FanVector2 FanVector2LengthSqr(FanVector2 v);
-//
-// FAN_API FanVector2 FanVector2Scale(FanVector2 v, float scale);
-// FAN_API FanVector2 FanVector2Negate(FanVector2 v);
+FAN_API float FanClamp(float value, float min, float max);
+FAN_API float FanLerp(float a, float x, float b);
+FAN_API int FanFloatEquals(float x, float y);
+
+FAN_API FanVector2 FanVector2Zero(void);
+FAN_API FanVector2 FanVector2One(void);
+
+FAN_API FanVector2 FanVector2Add(FanVector2 v1, FanVector2 v2);
+FAN_API FanVector2 FanVector2AddValue(FanVector2 v, float x);
+
+FAN_API FanVector2 FanVector2Sub(FanVector2 v1, FanVector2 v2);
+FAN_API FanVector2 FanVector2SubValue(FanVector2 v, float x);
+
+FAN_API FanVector2 FanVector2Normalize(FanVector2 v);
+
+FAN_API float FanVector2Length(FanVector2 v);
+FAN_API float FanVector2LengthSqr(FanVector2 v);
+
+FAN_API FanVector2 FanVector2Scale(FanVector2 v, float scale);
+FAN_API FanVector2 FanVector2Negate(FanVector2 v);
 
 #endif

@@ -58,10 +58,10 @@ typedef uintptr_t   uintptr;
 // #define min(x,y)        ((x) < (y) ? (x) : (y))
 // #define max(x,y)        ((x) > (y) ? (x) : (y))
 
-void Vector2Print_(Vector2 v, const char *name) {
+void FanVector2Print_(FanVector2 v, const char *name) {
     printf("%s: (%f, %f)\n", name, v.x, v.y);
 }
-#define Vector2Print(v) Vector2Print_(v, #v)
+#define FanVector2Print(v) FanVector2Print_(v, #v)
 
 typedef struct allocator {
     void *(*make)   (void *ctx, ssize);
@@ -159,10 +159,10 @@ Allocator heap_allocator = {
     }while(0);
 
 typedef struct CMovement {
-    Vector2 position;
-    Vector2 last_position;
+    FanVector2 position;
+    FanVector2 last_position;
 
-    Vector2 direction;
+    FanVector2 direction;
 
     float32 speed;
     float32 friction;
@@ -171,8 +171,8 @@ typedef struct CMovement {
 } CMovement;
 
 typedef struct CBody {
-    Vector2 scale;
-    Vector2 offset;
+    FanVector2 scale;
+    FanVector2 offset;
 
     int32   layer;
 
@@ -182,8 +182,8 @@ typedef struct CBody {
 typedef struct CTexture {
     FanTexture texture;
 
-    Vector2   index;
-    Vector2   size;
+    FanVector2   index;
+    FanVector2   size;
 } CTexture;
 
 typedef struct CBehavior {
@@ -207,7 +207,7 @@ ComponentStorageDeclare(CBehavior, CBehavior);
  * type: System
  * component(s): CMovement, CBody (optional)
  */
-void MovementUpdate(CMovement *m, CBody *b, Vector2 direction, float dt) {
+void MovementUpdate(CMovement *m, CBody *b, FanVector2 direction, float dt) {
     if (not m->initialized) {
         init_if_null(m->position.x, 0.0f);
         init_if_null(m->position.y, 0.0f);
@@ -224,12 +224,12 @@ void MovementUpdate(CMovement *m, CBody *b, Vector2 direction, float dt) {
         m->initialized = true;
     }
 
-    Vector2 velocity = Vector2Subtract(m->position, m->last_position);
-    Vector2 acceleration = Vector2Zero();
+    FanVector2 velocity = FanVector2Sub(m->position, m->last_position);
+    FanVector2 acceleration = FanVector2Zero();
 
-    Vector2 screen_size = {
-        GetScreenWidth(),
-        GetScreenHeight()
+    FanVector2 screen_size = {
+        FanWindowWidth(),
+        FanWindowHeight()
     };
     if (b isnt null) {
         screen_size.x = screen_size.x - b->scale.x;
@@ -255,25 +255,25 @@ void MovementUpdate(CMovement *m, CBody *b, Vector2 direction, float dt) {
 
     m->direction.x = coalesce(direction.x, m->direction.x);
     m->direction.y = coalesce(direction.y, m->direction.y);
-    direction = Vector2Normalize(direction);
+    direction = FanVector2Normalize(direction);
 
-    if (Vector2Length(direction) > 0) {
-        acceleration = Vector2Add(acceleration, Vector2Scale(direction, m->speed));
+    if (FanVector2Length(direction) > 0) {
+        acceleration = FanVector2Add(acceleration, FanVector2Scale(direction, m->speed));
     }
-    else if (Vector2Length(velocity) > 0) {
-        acceleration = Vector2Subtract(acceleration, Vector2Scale(velocity, m->friction));
+    else if (FanVector2Length(velocity) > 0) {
+        acceleration = FanVector2Sub(acceleration, FanVector2Scale(velocity, m->friction));
     }
 
     m->last_position = m->position;
     // NOTE: c->position += (velocity + acceleration * dt) * dt;
-    m->position = Vector2Add(m->position, Vector2Scale(Vector2Add(velocity, acceleration), dt));
+    m->position = FanVector2Add(m->position, FanVector2Scale(FanVector2Add(velocity, acceleration), dt));
 }
 
 /*
  * type: System
  * component(s): CBody
  */
-void BodyUpdate(CBody *b, Vector2 scale, Vector2 offset, int32 layer, float dt) {
+void BodyUpdate(CBody *b, FanVector2 scale, FanVector2 offset, int32 layer, float dt) {
     (void)dt;
     if (not b->initialized) {
         init_if_null( b->scale.x, 100.0f);
@@ -299,7 +299,7 @@ void BodyUpdate(CBody *b, Vector2 scale, Vector2 offset, int32 layer, float dt) 
  * type: System
  * component(s): CTexture
  */
-void TextureUpdate(CTexture *t, Vector2 index, Vector2 size, float dt) {
+void TextureUpdate(CTexture *t, FanVector2 index, FanVector2 size, float dt) {
     (void)dt;
 
     t->index.x = coalesce(index.x, t->index.x);
@@ -320,14 +320,14 @@ enum RenderFlags {
 void BodyRender(CBody *b, CMovement *m, FanColor color, CTexture *t, int32 flags) {
 
     if (t is null) {
-        if (Vector2Length(b->offset) > 0.0f) {
-            FanDrawRectangleV(Vector2Add(m->position, b->offset), b->scale, (FanColor){ 50, 50, 50, 255 });
+        if (FanVector2Length(b->offset) > 0.0f) {
+            FanDrawRectV(FanVector2Add(m->position, b->offset), b->scale, (FanColor){ 50, 50, 50, 255 });
         }
-        FanDrawRectangleV(m->position, b->scale, color);
+        FanDrawRectV(m->position, b->scale, color);
     }
     else {
 
-        Vector2 texture_size = {
+        FanVector2 texture_size = {
             (t->size.x) ? t->size.x : t->texture.width,
             (t->size.y) ? t->size.y : t->texture.height
         };
@@ -352,14 +352,14 @@ void BodyRender(CBody *b, CMovement *m, FanColor color, CTexture *t, int32 flags
             b->scale.y
         };
 
-        if (Vector2Length(b->offset) > 0.0f) {
+        if (FanVector2Length(b->offset) > 0.0f) {
             FanDrawTexture(
                 t->texture,
                 src,
                 dst_shadow,
                 (FanVector2) { 0.0f, 0.0f },
                 0.0f,
-                GRAY);
+                FAN_GRAY);
         }
 
         FanDrawTexture(
@@ -435,7 +435,7 @@ int main(void) {
 
     bool32 running = true;
     bool32 called_object_dump = false;
-    Vector2 player_offset = Vector2Zero();
+    FanVector2 player_offset = FanVector2Zero();
 
     FanRandomSeed(12398);
 
@@ -492,7 +492,7 @@ int main(void) {
 
     ComponentStorageAdd(&world.c_body, world.entity_count);
     ComponentStorageAddArgs(&world.c_movement, world.entity_count,
-        .position = (Vector2){ 200.0f, 300.0f }
+        .position = (FanVector2){ 200.0f, 300.0f }
     );
     ComponentStorageAddArgs(&world.c_color, world.entity_count, 50, 255, 50, 255);
 
@@ -500,7 +500,7 @@ int main(void) {
 
     ComponentStorageAddArgs(    &world.c_body, world.entity_count,
         .layer = 1,
-        .scale = (Vector2){ FanWindowWidth(), FanWindowHeight() }
+        .scale = (FanVector2){ FanWindowWidth(), FanWindowHeight() }
     );
     ComponentStorageAdd(&world.c_movement, world.entity_count);
     ComponentStorageAddArgs(&world.c_color, world.entity_count, 175, 165, 175, 255);
@@ -514,7 +514,7 @@ int main(void) {
             running = false;
         }
 
-        Vector2 player_direction = Vector2Zero();
+        FanVector2 player_direction = FanVector2Zero();
         if (FanKeyDown(FanKey_W)) {
             player_direction.y -= 1;
         }
@@ -571,7 +571,7 @@ int main(void) {
         }
 
         FanDrawBegin();
-            FanDrawClear((FanColor){ 200, 200, 200, 255 });
+            FanDrawClear(FAN_WHITE);
 
             if (called_object_dump) {
                 printf("[CMovement]\n");
@@ -596,14 +596,14 @@ int main(void) {
                 }
                 else {
                     int32 local_behavior_index = world.c_behavior.sparse[local_id];
-                    Vector2 local_direction = Vector2Zero();
+                    FanVector2 local_direction = FanVector2Zero();
                     if (local_behavior_index != -1) {
                         local_behavior = &world.c_behavior.data[local_behavior_index];
 
                         switch (local_behavior->type) {
                             case BehaviorType_Random: {
                                 if (world.current_time - local_behavior->start_time > local_behavior->duration) {
-                                    local_direction = (Vector2) {
+                                    local_direction = (FanVector2) {
                                         FanRandomInt(-1, 1),
                                         FanRandomInt(-1, 1)
                                     };
@@ -630,11 +630,11 @@ int main(void) {
                     printf("\tlocal_movement->speed: %f\n", local_movement->speed);
                     printf("\tlocal_movement->friction: %f\n", local_movement->friction);
                     printf("\t");
-                    Vector2Print(local_movement->position);
+                    FanVector2Print(local_movement->position);
                     printf("\t");
-                    Vector2Print(local_movement->last_position);
+                    FanVector2Print(local_movement->last_position);
                     printf("\t");
-                    Vector2Print(local_movement->direction);
+                    FanVector2Print(local_movement->direction);
 
                     if (local_behavior isnt null) {
                         printf("\tlocal_behavior->type: %d\n", local_behavior->type);
@@ -682,14 +682,14 @@ int main(void) {
                 int32 local_body_index = world.c_body.sparse[local_id];
                 CBody *local_body = &world.c_body.data[local_body_index];
 
-                Vector2 new_scale = Vector2Zero();
-                Vector2 new_offset = Vector2Zero();
+                FanVector2 new_scale = FanVector2Zero();
+                FanVector2 new_offset = FanVector2Zero();
                 int32 new_layer = -1;
                 if (local_id == Entity_Player_One) {
                     new_offset = player_offset;
                 }
                 else if (local_id == background_id) {
-                    new_scale = (Vector2){ FanWindowWidth(), FanWindowHeight() };
+                    new_scale = (FanVector2){ FanWindowWidth(), FanWindowHeight() };
                 }
                 BodyUpdate(local_body, new_scale, new_offset, new_layer, dt);
 
@@ -705,7 +705,7 @@ int main(void) {
                 if (local_texture_index != -1) {
                     local_texture = &world.c_texture.data[local_texture_index];
 
-                    TextureUpdate(local_texture, Vector2Zero(), Vector2Zero(), dt);
+                    TextureUpdate(local_texture, FanVector2Zero(), FanVector2Zero(), dt);
                 }
 
                 int32 local_color_index = world.c_color.sparse[local_id];
@@ -722,9 +722,9 @@ int main(void) {
                     printf("\tlocal_body->initialized: %s\n", local_body->initialized ? "true" : "false");
                     printf("\tlocal_body->layer: %d\n", local_body->layer);
                     printf("\t");
-                    Vector2Print(local_body->scale);
+                    FanVector2Print(local_body->scale);
                     printf("\t");
-                    Vector2Print(local_body->offset);
+                    FanVector2Print(local_body->offset);
                 }
             }
 
