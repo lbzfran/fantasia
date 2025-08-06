@@ -1,7 +1,6 @@
 
 #include <string.h>
-#define RAYLIB_IMPLEMENTATION
-#include <raylib.h>
+#include "platform.h"
 #include <raymath.h>
 
 #include <inttypes.h>
@@ -179,7 +178,7 @@ typedef struct CBody {
 } CBody;
 
 typedef struct CTexture {
-    Texture2D texture;
+    FanTexture2D texture;
 
     Vector2   index;
     Vector2   size;
