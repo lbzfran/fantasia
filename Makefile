@@ -25,13 +25,19 @@ ifeq ($(PLATFORM),windows)
 	EXT := .exe
 endif
 
+OBJS := $(BUILD_DIR)/main.o $(BUILD_DIR)/platform.o
+TARGET := $(BIN_DIR)/$(BIN)$(EXT)
+
 RAYLIB_VERSION ?= 5.5
 TARGET ?= win64_mingw-w64
 
-all: $(BIN_DIR)/$(BIN)$(EXT)
-$(BIN_DIR)/$(BIN)$(EXT): $(BUILD_DIR)/main.o
-	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
+all: $(TARGET)
+$(TARGET): $(OBJS)
+	$(CC) $(CFLAGS) -o $@ $(OBJS) $(LDFLAGS)
+
 $(BUILD_DIR)/main.o: src/main.c
 	$(CC) $(CFLAGS) -c -o $@ $< $(LDFLAGS)
+$(BUILD_DIR)/platform.o: src/platform.c
+	$(CC) $(CFLAGS) -c -o $@ $< $(LDFLAGS)
 clean:
-	rm -f $(BIN_DIR)/$(BIN)$(EXT) $(BUILD_DIR)/main.o
+	rm -f $(BIN_DIR)/$(BIN)$(EXT) $(OBJS)
