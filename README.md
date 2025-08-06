@@ -37,5 +37,3 @@ Valid values: `linux`, `windows`
 
 Additionally, the setup script will ask for input on certain behavior(s).
 Simply answer as necessary.
-
-

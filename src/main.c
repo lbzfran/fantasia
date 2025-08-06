@@ -160,29 +160,27 @@ Allocator heap_allocator = {
 typedef struct CMovement {
     FanVector2 position;
     FanVector2 last_position;
-
     FanVector2 direction;
 
     float32 speed;
     float32 friction;
 
-    bool32  initialized;
+    bool32 initialized;
 } CMovement;
 
 typedef struct CBody {
     FanVector2 scale;
     FanVector2 offset;
 
-    int32   layer;
+    int32 layer;
 
-    bool32  initialized;
+    bool32 initialized;
 } CBody;
 
 typedef struct CTexture {
     FanTexture texture;
 
-    FanVector2   index;
-    FanVector2   size;
+    FanRect rect;
 } CTexture;
 
 typedef struct CBehavior {
@@ -194,6 +192,35 @@ typedef struct CBehavior {
     float64 duration;
 } CBehavior;
 
+// state manager component
+typedef struct CAnimation {
+    const char8 *name;
+    int32 id;
+    float32 timer;
+    int32 current_frame;
+} CAnimation;
+
+typedef struct {
+    const char8 *name;
+    FanRect *frames;
+    float32 frame_time;
+    int32 frame_count;
+    bool32 loop;
+} AnimationData;
+
+FanRect player_idle_frames[3] = {
+    { 0 },
+};
+
+FanRect player_walk_frames[4] = {
+    { 0 },
+};
+
+AnimationData anim_table[] = {
+    { "player_idle", player_idle_frames, .frame_time = 1.0f, .frame_count = 3, true },
+    { "player_walk", player_walk_frames, .frame_time = 0.2f, .frame_count = 4, false },
+};
+
 ComponentStorageDeclare(CMovement, CMovement);
 ComponentStorageDeclare(CBody, CBody);
 
@@ -201,7 +228,7 @@ ComponentStorageDeclare(CColor, FanColor);
 ComponentStorageDeclare(CTexture, CTexture);
 
 ComponentStorageDeclare(CBehavior, CBehavior);
-
+ComponentStorageDeclare(CAnimation, CAnimation);
 /*
  * type: System
  * component(s): CMovement, CBody (optional)
@@ -217,8 +244,8 @@ void MovementUpdate(CMovement *m, CBody *b, FanVector2 direction, float dt) {
         init_if_null(m->direction.x, 1.0f);
         init_if_null(m->direction.y, 1.0f);
 
-        init_if_null(   m->speed,  500.0f);
-        init_if_null(m->friction,    1.0f);
+        init_if_null(m->speed,    500.0f);
+        init_if_null(m->friction, 1.0f);
 
         m->initialized = true;
     }
@@ -275,16 +302,16 @@ void MovementUpdate(CMovement *m, CBody *b, FanVector2 direction, float dt) {
 void BodyUpdate(CBody *b, FanVector2 scale, FanVector2 offset, int32 layer, float dt) {
     (void)dt;
     if (not b->initialized) {
-        init_if_null( b->scale.x, 100.0f);
-        init_if_null( b->scale.y, 100.0f);
+        init_if_null(b->scale.x, 100.0f);
+        init_if_null(b->scale.y, 100.0f);
 
-        init_if_null( b->layer,   2);
+        init_if_null(b->layer,   2);
 
         b->initialized = true;
     }
 
-    b->scale.x  = coalesce( scale.x, b->scale.x );
-    b->scale.y  = coalesce( scale.y, b->scale.y );
+    b->scale.x  = coalesce(scale.x,  b->scale.x);
+    b->scale.y  = coalesce(scale.y,  b->scale.y);
 
     b->offset.x = coalesce(offset.x, b->offset.x);
     b->offset.y = coalesce(offset.y, b->offset.y);
@@ -298,14 +325,46 @@ void BodyUpdate(CBody *b, FanVector2 scale, FanVector2 offset, int32 layer, floa
  * type: System
  * component(s): CTexture
  */
-void TextureUpdate(CTexture *t, FanVector2 index, FanVector2 size, float dt) {
+void TextureUpdate(CTexture *t, FanVector2 pos, FanVector2 size, float dt) {
     (void)dt;
 
-    t->index.x = coalesce(index.x, t->index.x);
-    t->index.y = coalesce(index.y, t->index.y);
+    t->rect = (FanRect){
+        .x      = pos.x,
+        .y      = pos.y,
+        .width  = coalesce(size.x, t->rect.width),
+        .height = coalesce(size.y, t->rect.height)
+    };
+}
 
-    t->size.x = coalesce(size.x, t->size.x);
-    t->size.y = coalesce(size.y, t->size.y);
+/*
+ * type: System
+ * components: CAnimation, CTexture
+ */
+void AnimationUpdate(CAnimation *a, CTexture *t, float dt) {
+    AnimationData *data = &anim_table[a->id];
+
+    a->timer += dt;
+    if (a->timer >= data->frame_time) {
+        a->timer -= data->frame_time;
+
+        a->current_frame++;
+        if (a->current_frame >= data->frame_count) {
+            a->current_frame = data->loop ? 0 : data->frame_count - 1;
+        }
+    }
+    FanRect current_data = data->frames[a->current_frame];
+    TextureUpdate(
+        t,
+        (FanVector2){
+            current_data.x,
+            current_data.y
+        },
+        (FanVector2){
+            current_data.width,
+            current_data.height
+        },
+        dt
+    );
 }
 
 enum RenderFlags {
@@ -325,17 +384,20 @@ void BodyRender(CBody *b, CMovement *m, FanColor color, CTexture *t, int32 flags
         FanDrawRectV(m->position, b->scale, color);
     }
     else {
-
-        FanVector2 texture_size = {
-            (t->size.x) ? t->size.x : t->texture.width,
-            (t->size.y) ? t->size.y : t->texture.height
-        };
+        float width  = (t->rect.width)  ? t->rect.width  : t->texture.width;
+        float height = (t->rect.height) ? t->rect.height : t->texture.height;
+        if (flags & RenderFlag_FlipX) {
+            width  *= m->direction.x;
+        }
+        if (flags & RenderFlag_FlipY) {
+            height *= m->direction.y;
+        }
 
         FanRect src = (FanRect) {
-            t->index.x * texture_size.x,
-            t->index.y * texture_size.y,
-            (flags & RenderFlag_FlipX) ? m->direction.x * texture_size.x : texture_size.x,
-            (flags & RenderFlag_FlipY) ? m->direction.y * texture_size.y : texture_size.y
+            t->rect.x,
+            t->rect.y,
+            width,
+            height
         };
         FanRect dst = (FanRect) {
             m->position.x,
@@ -358,7 +420,8 @@ void BodyRender(CBody *b, CMovement *m, FanColor color, CTexture *t, int32 flags
                 dst_shadow,
                 (FanVector2) { 0.0f, 0.0f },
                 0.0f,
-                FanColor_GRAY);
+                FanColor_GRAY
+            );
         }
 
         FanDrawTexture(
@@ -423,6 +486,7 @@ typedef struct World {
     CColorStorage     c_color;
     CTextureStorage   c_texture;
     CBehaviorStorage  c_behavior;
+    CAnimationStorage c_animation;
 
     float64           current_time;
 } World;
@@ -435,75 +499,77 @@ int main(void) {
     bool32 running = true;
     bool32 called_object_dump = false;
     FanVector2 player_offset = FanVector2Zero();
+    FanVector2 player_index  = FanVector2Zero();
 
     FanRandomSeed(12398);
 
     ssize component_size  = kilobytes(1);
 
-    ComponentStorageCreate(&world.c_body,     &heap_allocator, component_size);
-    ComponentStorageCreate(&world.c_movement, &heap_allocator, component_size);
-    ComponentStorageCreate(&world.c_color,    &heap_allocator, component_size);
-    ComponentStorageCreate(&world.c_texture,  &heap_allocator, component_size);
-    ComponentStorageCreate(&world.c_behavior, &heap_allocator, component_size);
-
-    int32 local_texture_index;
+    ComponentStorageCreate(&world.c_body,      &heap_allocator, component_size);
+    ComponentStorageCreate(&world.c_movement,  &heap_allocator, component_size);
+    ComponentStorageCreate(&world.c_color,     &heap_allocator, component_size);
+    ComponentStorageCreate(&world.c_texture,   &heap_allocator, component_size);
+    ComponentStorageCreate(&world.c_behavior,  &heap_allocator, component_size);
+    ComponentStorageCreate(&world.c_animation, &heap_allocator, component_size);
 
     // world.c_body.sparse[world.entity_count]
     // ComponentStorageAdd(    &world.c_body, world.entity_count);
-    ComponentStorageAdd(    &world.c_body, world.entity_count);
-    ComponentStorageAdd(&world.c_movement, world.entity_count);
-    ComponentStorageAdd(&world.c_texture, world.entity_count);
+    ComponentStorageAdd(&world.c_body,        world.entity_count);
+    ComponentStorageAdd(&world.c_movement,    world.entity_count);
 
-    ComponentStorageArgs(&world.c_texture, world.entity_count,
-        .texture = FanTextureLoad("./resources/mewee.png")
+    FanTexture tex_link = FanTextureLoad("./resources/link.png");
+    FanVector2 sprite_link_size = (FanVector2){ tex_link.width / 10.0f, tex_link.height / 8.0f };
+    player_idle_frames[0] = (FanRect){ 0,                         0, 0, 0 };
+    player_idle_frames[1] = (FanRect){ sprite_link_size.x,        0, 0, 0 };
+    player_idle_frames[2] = (FanRect){ 2.0f * sprite_link_size.x, 0, 0, 0 };
+
+    player_walk_frames[0] = (FanRect){ 0, 0,                         0, 0 };
+    player_walk_frames[1] = (FanRect){ 0, sprite_link_size.y,        0, 0 };
+    player_walk_frames[2] = (FanRect){ 0, 2.0f * sprite_link_size.y, 0, 0 };
+    player_walk_frames[3] = (FanRect){ 0, 3.0f * sprite_link_size.y, 0, 0 };
+    ComponentStorageAddArgs(&world.c_texture, world.entity_count,
+        .texture = tex_link,
+        .rect = (FanRect){ 0, 0, tex_link.width / 10.0f, tex_link.height / 8.0f }
     );
-
-    local_texture_index = world.c_texture.sparse[world.entity_count];
-    // world.c_texture.data[local_texture_index].texture = LoadTexture("./resources/mewee.png");
-    world.c_texture.data[local_texture_index + 1].texture = world.c_texture.data[local_texture_index].texture;
-    world.c_texture.data[local_texture_index + 2].texture = world.c_texture.data[local_texture_index].texture;
+    ComponentStorageAddArgs(&world.c_animation, world.entity_count);
     world.entity_count++;
 
-    ComponentStorageAdd(    &world.c_body, world.entity_count);
-    ComponentStorageAdd( &world.c_texture, world.entity_count);
+    FanTexture tex_mewee = FanTextureLoad("./resources/mewee.png");
+    ComponentStorageAdd(&world.c_body,         world.entity_count);
+    ComponentStorageAddArgs(&world.c_texture,  world.entity_count,
+        .texture = tex_mewee);
     ComponentStorageAddArgs(&world.c_movement, world.entity_count, .speed = 400.0f);
-    ComponentStorageAddArgs(&world.c_color, world.entity_count, 50, 255, 255, 255);
+    ComponentStorageAddArgs(&world.c_color,    world.entity_count, 50, 255, 255, 255);
     ComponentStorageAddArgs(&world.c_behavior, world.entity_count,
         .type = BehaviorType_Random,
         .duration = 0.2f
     );
-
     world.entity_count++;
 
-    ComponentStorageAdd(    &world.c_body, world.entity_count);
-    ComponentStorageAdd(   &world.c_color, world.entity_count);
-    ComponentStorageAdd( &world.c_texture, world.entity_count);
-    ComponentStorageAdd(&world.c_behavior, world.entity_count);
-
+    ComponentStorageAdd(&world.c_body,         world.entity_count);
     ComponentStorageAddArgs(&world.c_movement, world.entity_count, .speed = 300.0f);
-    ComponentStorageAddArgs(&world.c_color, world.entity_count, 255, 50, 255, 255);
+    ComponentStorageAddArgs(&world.c_color,    world.entity_count, 255, 50, 255, 255);
+    ComponentStorageAddArgs(&world.c_texture,  world.entity_count,
+        .texture = tex_mewee);
     ComponentStorageAddArgs(&world.c_behavior, world.entity_count,
         .type = BehaviorType_Random,
         .duration = 0.5f
     );
-
     world.entity_count++;
 
-    ComponentStorageAdd(&world.c_body, world.entity_count);
+    ComponentStorageAdd(&world.c_body,         world.entity_count);
     ComponentStorageAddArgs(&world.c_movement, world.entity_count,
         .position = (FanVector2){ 200.0f, 300.0f }
     );
-    ComponentStorageAddArgs(&world.c_color, world.entity_count, 50, 255, 50, 255);
-
+    ComponentStorageAddArgs(&world.c_color,    world.entity_count, 50, 255, 50, 255);
     world.entity_count++;
 
-    ComponentStorageAddArgs(    &world.c_body, world.entity_count,
+    ComponentStorageAddArgs(&world.c_body,  world.entity_count,
         .layer = 1,
         .scale = (FanVector2){ FanWindowWidth(), FanWindowHeight() }
     );
-    ComponentStorageAdd(&world.c_movement, world.entity_count);
+    ComponentStorageAdd(&world.c_movement,  world.entity_count);
     ComponentStorageAddArgs(&world.c_color, world.entity_count, 175, 165, 175, 255);
-
     int32 background_id = world.entity_count;
     world.entity_count++;
 
@@ -516,15 +582,19 @@ int main(void) {
         FanVector2 player_direction = FanVector2Zero();
         if (FanKeyDown(FanKey_W)) {
             player_direction.y -= 1;
+            player_index.y = 2;
         }
         if (FanKeyDown(FanKey_S)) {
             player_direction.y += 1;
+            player_index.y = 0;
         }
         if (FanKeyDown(FanKey_A)) {
             player_direction.x -= 1;
+            player_index.y = 1;
         }
         if (FanKeyDown(FanKey_D)) {
             player_direction.x += 1;
+            player_index.y = 3;
         }
 
         if (FanKeyDown(FanKey_K)) {
@@ -552,6 +622,19 @@ int main(void) {
             }
         }
 
+        if (FanKeyPressed(FanKey_V)) {
+            player_index.x -= 1;
+        }
+        if (FanKeyPressed(FanKey_B)) {
+            player_index.x += 1;
+        }
+        if (FanKeyPressed(FanKey_N)) {
+            player_index.y -= 1;
+        }
+        if (FanKeyPressed(FanKey_M)) {
+            player_index.y += 1;
+        }
+
         if (FanKeyPressed(FanKey_P)) {
             called_object_dump = true;
             printf("[[DEBUG INFO]]\n");
@@ -567,6 +650,7 @@ int main(void) {
             printf("Total Component 'Color' size/capacity:\t%zu/%zu\n", world.c_color.size, world.c_color.capacity);
             printf("Total Component 'Texture' size/capacity:\t%zu/%zu\n", world.c_texture.size, world.c_texture.capacity);
             printf("Total Component 'Behavior' size/capacity:\t%zu/%zu\n", world.c_behavior.size, world.c_behavior.capacity);
+            printf("Total Component 'Animation' size/capacity:\t%zu/%zu\n", world.c_animation.size, world.c_animation.capacity);
         }
 
         FanDrawBegin();
@@ -614,9 +698,7 @@ int main(void) {
                                 }
                             } break;
                             case BehaviorType_None:
-                            default: {
-                                printf("Failing\n");
-                            } break;
+                            default: break;
                         }
                     }
                     MovementUpdate(local_movement, local_body, local_direction, dt);
@@ -699,13 +781,22 @@ int main(void) {
                 }
                 CMovement *local_movement = &world.c_movement.data[local_movement_index];
 
+                int32 local_animation_index = world.c_animation.sparse[local_id];
                 int32 local_texture_index = world.c_texture.sparse[local_id];
                 CTexture *local_texture = null;
+                CAnimation *local_animation = null;
                 if (local_texture_index != -1) {
                     local_texture = &world.c_texture.data[local_texture_index];
+                    if (local_animation_index != -1) {
+                        local_animation = &world.c_animation.data[local_animation_index];
 
-                    TextureUpdate(local_texture, FanVector2Zero(), FanVector2Zero(), dt);
+                        AnimationUpdate(local_animation, local_texture, dt);
+                    }
+                    else {
+                        TextureUpdate(local_texture, FanVector2Zero(), FanVector2Zero(), dt);
+                    }
                 }
+
 
                 int32 local_color_index = world.c_color.sparse[local_id];
                 FanColor local_color = (FanColor){ 255, 255, 255, 255 };
@@ -713,7 +804,12 @@ int main(void) {
                     local_color = world.c_color.data[local_color_index];
                 }
 
-                BodyRender(local_body, local_movement, local_color, local_texture, RenderFlag_FlipX);
+                if (local_id == Entity_Player_One) {
+                    BodyRender(local_body, local_movement, local_color, local_texture, null);
+                }
+                else {
+                    BodyRender(local_body, local_movement, local_color, local_texture, RenderFlag_FlipX);
+                }
 
                 if (called_object_dump) {
                     printf("\tlocal_id: %d\n", local_id);
