@@ -29,6 +29,10 @@ int FanWindowShouldClose(void) {
     return result;
 }
 
+void FanSetLogLevel(int level) {
+    SetTraceLogLevel(level);
+}
+
 int FanWindowWidth(void) {
     int result = GetScreenWidth();
     return result;

@@ -1,7 +1,6 @@
 
 #include <string.h>
 #include "platform.h"
-#include <raymath.h>
 
 #include <inttypes.h>
 #include <stddef.h>

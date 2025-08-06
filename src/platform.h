@@ -5,29 +5,6 @@
 #  define FAN_API extern
 # endif
 
-
-enum CtxErrorType {
-    CtxErr_None = 0,
-    CtxErr_Crash = 1,
-    CtxErr_Memory,
-
-    CtxErr_Lib_Init = 10,
-    CtxErr_Lib_Window,
-};
-
-typedef struct FanWindow {
-    void *handle;
-    int id;
-
-    int width;
-    int height;
-
-    int error;
-    unsigned char *memory;
-
-    // int keys[1024];
-} FanWindow;
-
 typedef struct FanVector2 {
     float x;
     float y;
@@ -167,12 +144,33 @@ typedef enum {
     FanKey_KP_EQUAL        = 336,      // Key: Keypad =
 } FanKey;
 
-#define FAN_GRAY    (FanColor){  50,  50,  50, 255 }
-#define FAN_WHITE   (FanColor){ 210, 210, 210, 255 }
+enum {
+    FanLog_ALL = 0,
+    FanLog_TRACE = 1,
+    FanLog_DEBUG = 2,
+    FanLog_INFO = 3,
+    FanLog_WARNING = 4,
+    FanLog_ERROR = 5,
+    FanLog_FATAL = 6,
+    FanLog_NONE = 7
+} FanLogLevel;
+
+#define FanColor_WHITE   (FanColor){ 210, 210, 210, 255 }
+#define FanColor_GRAY    (FanColor){  80,  80,  80, 255 }
+#define FanColor_BLACK   (FanColor){   0,   0,   0, 255 }
+#define FanColor_RED     (FanColor){ 255,   0,   0, 255 }
+#define FanColor_ORANGE  (FanColor){ 255, 165,   0, 255 }
+#define FanColor_YELLOW  (FanColor){ 255, 255,   0, 255 }
+#define FanColor_GREEN   (FanColor){   0, 255,   0, 255 }
+#define FanColor_CYAN    (FanColor){   0, 255, 255, 255 }
+#define FanColor_BLUE    (FanColor){   0,   0, 255, 255 }
+#define FanColor_MAGENTA (FanColor){ 255,   0, 255, 255 }
 
 FAN_API void FanWindowCreate(int width, int height, const char *title);
 FAN_API void FanWindowClose(void);
 FAN_API int FanWindowShouldClose(void);
+
+FAN_API void FanSetLogLevel(int);
 
 FAN_API int FanWindowWidth(void);
 FAN_API int FanWindowHeight(void);
