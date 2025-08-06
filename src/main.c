@@ -358,7 +358,7 @@ void BodyRender(CBody *b, CMovement *m, FanColor color, CTexture *t, int32 flags
                 dst_shadow,
                 (FanVector2) { 0.0f, 0.0f },
                 0.0f,
-                FAN_GRAY);
+                FanColor_GRAY);
         }
 
         FanDrawTexture(
@@ -570,7 +570,7 @@ int main(void) {
         }
 
         FanDrawBegin();
-            FanDrawClear(FAN_WHITE);
+            FanDrawClear(FanColor_WHITE);
 
             if (called_object_dump) {
                 printf("[CMovement]\n");

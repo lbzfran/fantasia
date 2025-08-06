@@ -144,7 +144,7 @@ typedef enum {
     FanKey_KP_EQUAL        = 336,      // Key: Keypad =
 } FanKey;
 
-enum {
+typedef enum {
     FanLog_ALL = 0,
     FanLog_TRACE = 1,
     FanLog_DEBUG = 2,
