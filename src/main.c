@@ -283,6 +283,8 @@ typedef struct {
     float32 frame_time;
     int32 frame_count;
     bool32 loop;
+
+    int32 next_id;
 } AnimationData;
 
 FanRect player_idle_up_frames[1]    = { 0 };
@@ -291,10 +293,10 @@ FanRect player_idle_left_frames[3]  = { 0 };
 FanRect player_idle_right_frames[3] = { 0 };
 
 AnimationData anim_table[] = {
-    { "player_idle_down",  player_idle_down_frames,  .frame_time = 0.5f, .frame_count = 3, true  },
-    { "player_idle_up",    player_idle_up_frames,    .frame_time = 0.0f, .frame_count = 1, false },
-    { "player_idle_left",  player_idle_left_frames,  .frame_time = 0.5f, .frame_count = 3, true  },
-    { "player_idle_right", player_idle_right_frames, .frame_time = 0.5f, .frame_count = 3, true  },
+    { "player_idle_down",  player_idle_down_frames,  .frame_time = 0.5f, .frame_count = 3, false,  1 },
+    { "player_idle_up",    player_idle_up_frames,    .frame_time = 0.1f, .frame_count = 1, false,  2 },
+    { "player_idle_left",  player_idle_left_frames,  .frame_time = 0.5f, .frame_count = 3, false,  3 },
+    { "player_idle_right", player_idle_right_frames, .frame_time = 0.5f, .frame_count = 3, false,  0 },
 };
 
 ComponentStorageDeclare(CMovement, CMovement);
@@ -417,21 +419,26 @@ void TextureUpdate(CTexture *t, FanVector2 pos, FanVector2 size, float dt) {
  * type: System
  * components: CAnimation, CTexture
  */
-void AnimationUpdate(CAnimation *a, CTexture *t, int32 id, float dt) {
+void AnimationUpdate(CAnimation *a, CTexture *t, int32 id, bool32 force, float dt) {
     AnimationData *data = &anim_table[a->id];
-    if (a->id != id or a->name is null) {
-        a->id = id;
-        a->timer = 0.0f;
-        a->current_frame = 0;
-        a->finished = false;
-
-        data = &anim_table[a->id];
-        a->name = data->name;
-    }
 
     if (not data->loop and a->finished) {
-        return;
+        if (data->next_id == -1) {
+            return;
+        }
+
+        if (a->id != id or a->name is null) {
+            printf("next_id: %d\n", data->next_id);
+            a->id = data->next_id;
+            a->timer = 0.0f;
+            a->current_frame = 0;
+            a->finished = false;
+
+            data = &anim_table[a->id];
+            a->name = data->name;
+        }
     }
+
 
     a->timer += dt;
     if (a->timer >= data->frame_time) {
@@ -913,7 +920,7 @@ int main(void) {
                         if (local_id == Entity_Player_One) {
                             local_animation_id = player_animation_id;
                         }
-                        AnimationUpdate(local_animation, local_texture, local_animation_id, dt);
+                        AnimationUpdate(local_animation, local_texture, local_animation_id, false, dt);
                     }
                     else {
                         TextureUpdate(local_texture, FanVector2Zero(), FanVector2Zero(), dt);
