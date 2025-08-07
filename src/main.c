@@ -144,7 +144,7 @@ void arena_free(void *ctx, void *ptr, ssize size) {
 
     ssize offset = ptr_val - base_val;
 
-    uintptr expected_size = offset - size;
+    ssize expected_size = offset + size;
     if (a->size == expected_size) {
         a->size -= size;
     }
@@ -155,7 +155,6 @@ void arena_clear(Arena *a) {
 }
 
 void *arena_resize(void *ctx, void *ptr, ssize old, ssize new) {
-    // TODO(liam): make this
     Arena *a = (Arena *)ctx;
 
     if (new == old) {
@@ -176,7 +175,7 @@ void *arena_resize(void *ctx, void *ptr, ssize old, ssize new) {
             result = arena_make(ctx, new);
             memcpy(result, ptr, old);
         }
-        else if (a->size == offset - old) {
+        else if (a->size == offset + old) {
             a->size -= (offset + old - new);
             result = ptr;
         }
