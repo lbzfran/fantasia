@@ -154,6 +154,8 @@ void arena_allocator_free(void *ctx, void *ptr, ssize size) {
 }
 
 void *arena_allocator_resize(void *ctx, void *ptr, ssize old, ssize new) {
+    // TODO(liam): make this
+    assert(false && "Not Implemented!");
     return null;
 }
 
@@ -553,6 +555,9 @@ enum SpecialEntity {
 
 typedef struct World {
     uint8             entity_count;
+
+    Arena             arena;
+
     CBodyStorage      c_body;
     CMovementStorage  c_movement;
     CColorStorage     c_color;
@@ -568,16 +573,16 @@ World world = {};
 int main(void) {
     FanWindowCreate(800, 600, "Fantasia");
 
-    Arena arena = (Arena){
+    world.arena = (Arena){
         .data     = heap_allocator.make(null, megabytes(1)),
         .size     = 0,
-        .capacity = kilobytes(1)
+        .capacity = megabytes(1)
     };
     Allocator arena_allocator = {
         .make   = arena_allocator_make,
         .free   = arena_allocator_free,
         .resize = arena_allocator_resize,
-        .ctx    = &arena
+        .ctx    = &world.arena
     };
 
     bool32 running            = true;
@@ -731,14 +736,15 @@ int main(void) {
         world.current_time = FanGetTime();
 
         if (called_object_dump) {
-            printf("\tcurrent_time: %.3f\n", world.current_time);
+            printf("Total Allocations: %.2f / %.2f KB\n", (double)world.arena.size / 1000.0f, (double)world.arena.capacity / 1000.0f);
+            printf("current_time: %.3f\n", world.current_time);
 
-            printf("Total Component 'Body' size/capacity:\t%zu/%zu\n", world.c_body.size, world.c_body.capacity);
-            printf("Total Component 'Movement' size/capacity:\t%zu/%zu\n", world.c_movement.size, world.c_movement.capacity);
-            printf("Total Component 'Color' size/capacity:\t%zu/%zu\n", world.c_color.size, world.c_color.capacity);
-            printf("Total Component 'Texture' size/capacity:\t%zu/%zu\n", world.c_texture.size, world.c_texture.capacity);
-            printf("Total Component 'Behavior' size/capacity:\t%zu/%zu\n", world.c_behavior.size, world.c_behavior.capacity);
-            printf("Total Component 'Animation' size/capacity:\t%zu/%zu\n", world.c_animation.size, world.c_animation.capacity);
+            printf("Total Component 'Body' size/capacity:      \t%zu/%zu\n", world.c_body.size, world.c_body.capacity);
+            printf("Total Component 'Movement' size/capacity:  \t%zu/%zu\n", world.c_movement.size, world.c_movement.capacity);
+            printf("Total Component 'Color' size/capacity:     \t%zu/%zu\n", world.c_color.size, world.c_color.capacity);
+            printf("Total Component 'Texture' size/capacity:   \t%zu/%zu\n", world.c_texture.size, world.c_texture.capacity);
+            printf("Total Component 'Behavior' size/capacity:  \t%zu/%zu\n", world.c_behavior.size, world.c_behavior.capacity);
+            printf("Total Component 'Animation' size/capacity: \t%zu/%zu\n", world.c_animation.size, world.c_animation.capacity);
         }
 
         FanDrawBegin();
@@ -933,6 +939,6 @@ int main(void) {
     }
 
     FanWindowClose();
-    heap_allocator.free(null, arena.data, arena.capacity);
+    heap_allocator.free(null, world.arena.data, world.arena.capacity);
     return 0;
 }
