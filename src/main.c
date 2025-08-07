@@ -69,7 +69,7 @@ typedef struct allocator {
     void *ctx;
 } Allocator;
 
-global void *heap_allocator_make(void *ctx, ssize size) {
+global void *heap_make(void *ctx, ssize size) {
     (void)ctx;
     void *result = malloc(size);
     assert(result && "ERROR: Reached Out-Of-Memory state.");
@@ -77,7 +77,7 @@ global void *heap_allocator_make(void *ctx, ssize size) {
     return result;
 }
 
-global void heap_allocator_free(void *ctx, void *ptr, ssize size) {
+global void heap_free(void *ctx, void *ptr, ssize size) {
     (void)ctx;
     (void)size;
 
@@ -85,9 +85,9 @@ global void heap_allocator_free(void *ctx, void *ptr, ssize size) {
     ptr = null;
 }
 
-global void *heap_allocator_resize(void *ctx, void *ptr, ssize old, ssize new) {
+global void *heap_resize(void *ctx, void *ptr, ssize old, ssize new) {
     (void)ctx;
-    void *result = heap_allocator_make(ctx, new);
+    void *result = heap_make(ctx, new);
 
     if (ptr isnt null) {
         if (new > old) {
@@ -96,16 +96,16 @@ global void *heap_allocator_resize(void *ctx, void *ptr, ssize old, ssize new) {
         else {
             memmove(result, ptr, old);
         }
-        heap_allocator_free(ctx, ptr, old);
+        heap_free(ctx, ptr, old);
     }
 
     return result;
 }
 
 Allocator heap_allocator = {
-    .make   = heap_allocator_make,
-    .free   = heap_allocator_free,
-    .resize = heap_allocator_resize,
+    .make   = heap_make,
+    .free   = heap_free,
+    .resize = heap_resize,
     .ctx    = null
 };
 
@@ -115,48 +115,74 @@ typedef struct Arena {
     ssize  capacity;
 } Arena;
 
-inline ssize arena_offset(Arena *a, ssize alignment) {
-
-    uintptr ptr = (uintptr)(a->data + a->size);
-    ssize alignment_mask = alignment - 1;
-
-    ssize offset = (alignment - (ptr & alignment_mask)) & alignment_mask;
-
-    return offset;
+inline uintptr align_forward(uintptr ptr, ssize alignment) {
+    return (ptr + (alignment - 1)) & ~(alignment - 1);
 }
 
-void *arena_allocator_make(void *ctx, ssize size) {
+#define ARENA_ALIGNMENT 16
+
+void *arena_make(void *ctx, ssize size) {
     Arena *a = (Arena *)ctx;
 
-    uintptr current_ptr = (uintptr)(a->data + a->size);
-    ssize alignment = arena_offset(a, 16);
+    uintptr base = (uintptr)(a->data + a->size);
+    uintptr alignment = align_forward(base, ARENA_ALIGNMENT);
+    ssize offset = alignment - (uintptr)a->data;
 
-    assert(a->size + size + alignment <= a->capacity && "ERROR: Reached Out-Of-Memory state.");
+    assert(size + offset <= a->capacity && "ERROR: Reached Out-Of-Memory state.");
 
-    void *result = a->data + a->size + alignment;
-    a->size += alignment + size;
+    void *result = a->data + offset;
+    a->size = offset + size;
 
     return result;
 }
 
-void arena_allocator_free(void *ctx, void *ptr, ssize size) {
+void arena_free(void *ctx, void *ptr, ssize size) {
     Arena *a = (Arena *)ctx;
 
-    uintptr_t ptr_value = (uintptr_t)ptr;
-    uintptr_t base = (uintptr_t)a->data;
+    uintptr ptr_val = (uintptr)ptr;
+    uintptr base_val = (uintptr)a->data;
 
-    ssize alloc_offset = ptr_value - base;
-    ssize unaligned = alloc_offset - size;
-    ssize offset = arena_offset(&(Arena){ .data = a->data, .size = unaligned }, 16);
-    if (alloc_offset + offset == a->size) {
-        a->size -= (offset + size);
+    ssize offset = ptr_val - base_val;
+
+    uintptr expected_size = offset - size;
+    if (a->size == expected_size) {
+        a->size -= size;
     }
 }
 
-void *arena_allocator_resize(void *ctx, void *ptr, ssize old, ssize new) {
+void arena_clear(Arena *a) {
+    a->size = 0;
+}
+
+void *arena_resize(void *ctx, void *ptr, ssize old, ssize new) {
     // TODO(liam): make this
-    assert(false && "Not Implemented!");
-    return null;
+    Arena *a = (Arena *)ctx;
+
+    if (new == old) {
+        return ptr;
+    }
+
+    void *result = null;
+    if (ptr is null) {
+        result = arena_make(ctx, new);
+    }
+    else {
+        uintptr ptr_val  = (uintptr)ptr;
+        uintptr base_val = (uintptr)a->data;
+
+        ssize offset = ptr_val - base_val;
+
+        if (new > old) {
+            result = arena_make(ctx, new);
+            memcpy(result, ptr, old);
+        }
+        else if (a->size == offset - old) {
+            a->size -= (offset + old - new);
+            result = ptr;
+        }
+    }
+
+    return result;
 }
 
 
@@ -579,9 +605,9 @@ int main(void) {
         .capacity = megabytes(1)
     };
     Allocator arena_allocator = {
-        .make   = arena_allocator_make,
-        .free   = arena_allocator_free,
-        .resize = arena_allocator_resize,
+        .make   = arena_make,
+        .free   = arena_free,
+        .resize = arena_resize,
         .ctx    = &world.arena
     };
 
