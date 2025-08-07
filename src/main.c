@@ -9,34 +9,34 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-typedef char        byte;
-typedef char        char8;
-typedef char16_t    char16;
+typedef char       byte;
+typedef char       char8;
+typedef char16_t   char16;
 
-typedef uint8_t     uint8;
-typedef uint32_t    uint32;
-typedef uint64_t    uint64;
+typedef uint8_t    uint8;
+typedef uint32_t   uint32;
+typedef uint64_t   uint64;
 
-typedef int32_t     bool32;
-typedef int32_t     int32;
+typedef int32_t    bool32;
+typedef int32_t    int32;
 
-typedef float       float32;
-typedef double      float64;
+typedef float      float32;
+typedef double     float64;
 
-typedef size_t      usize;
-typedef ptrdiff_t   ssize;
-typedef uintptr_t   uintptr;
+typedef size_t     usize;
+typedef ptrdiff_t  ssize;
+typedef uintptr_t  uintptr;
 
-#define assert(c)               while (!(c)) __builtin_unreachable()
+#define assert(c)           while (!(c)) __builtin_unreachable()
 
-#define sizeof(x)               (ssize)sizeof(x)
-#define alignof(x)              (_Alignof(x))
-#define countof(a)              (sizeof(a) / sizeof(*(a)))
-#define lengthof(s)             (countof(s) - 1)
-#define signof(x)               ((x) > 0) ? 1 : (((x) < 0) ? -1 : 0)
+#define sizeof(x)           (ssize)sizeof(x)
+#define alignof(x)          (_Alignof(x))
+#define countof(a)          (sizeof(a) / sizeof(*(a)))
+#define lengthof(s)         (countof(s) - 1)
+#define signof(x)           ((x) > 0) ? 1 : (((x) < 0) ? -1 : 0)
 
-#define coalesce(a, b)          ((a) ? (a) : (b))
-#define init_if_null(a, x)      ((a) = coalesce((a), (x)))
+#define coalesce(a, b)      ((a) ? (a) : (b))
+#define init_if_null(a, x)  ((a) = coalesce((a), (x)))
 
 #define true    1
 #define false   0
@@ -108,6 +108,55 @@ Allocator heap_allocator = {
     .resize = heap_allocator_resize,
     .ctx    = null
 };
+
+typedef struct Arena {
+    uint8 *data;
+    ssize  size;
+    ssize  capacity;
+} Arena;
+
+inline ssize arena_offset(Arena *a, ssize alignment) {
+
+    uintptr ptr = (uintptr)(a->data + a->size);
+    ssize alignment_mask = alignment - 1;
+
+    ssize offset = (alignment - (ptr & alignment_mask)) & alignment_mask;
+
+    return offset;
+}
+
+void *arena_allocator_make(void *ctx, ssize size) {
+    Arena *a = (Arena *)ctx;
+
+    uintptr current_ptr = (uintptr)(a->data + a->size);
+    ssize alignment = arena_offset(a, 16);
+
+    assert(a->size + size + alignment <= a->capacity && "ERROR: Reached Out-Of-Memory state.");
+
+    void *result = a->data + a->size + alignment;
+    a->size += alignment + size;
+
+    return result;
+}
+
+void arena_allocator_free(void *ctx, void *ptr, ssize size) {
+    Arena *a = (Arena *)ctx;
+
+    uintptr_t ptr_value = (uintptr_t)ptr;
+    uintptr_t base = (uintptr_t)a->data;
+
+    ssize alloc_offset = ptr_value - base;
+    ssize unaligned = alloc_offset - size;
+    ssize offset = arena_offset(&(Arena){ .data = a->data, .size = unaligned }, 16);
+    if (alloc_offset + offset == a->size) {
+        a->size -= (offset + size);
+    }
+}
+
+void *arena_allocator_resize(void *ctx, void *ptr, ssize old, ssize new) {
+    return null;
+}
+
 
 #define ComponentStorageDeclare(name, T) \
     typedef struct name##Storage {       \
@@ -198,6 +247,7 @@ typedef struct CAnimation {
     int32 id;
     float32 timer;
     int32 current_frame;
+    bool32 finished;
 } CAnimation;
 
 typedef struct {
@@ -208,17 +258,16 @@ typedef struct {
     bool32 loop;
 } AnimationData;
 
-FanRect player_idle_frames[3] = {
-    { 0 },
-};
-
-FanRect player_walk_frames[4] = {
-    { 0 },
-};
+FanRect player_idle_up_frames[1]    = { 0 };
+FanRect player_idle_down_frames[3]  = { 0 };
+FanRect player_idle_left_frames[3]  = { 0 };
+FanRect player_idle_right_frames[3] = { 0 };
 
 AnimationData anim_table[] = {
-    { "player_idle", player_idle_frames, .frame_time = 1.0f, .frame_count = 3, true },
-    { "player_walk", player_walk_frames, .frame_time = 0.2f, .frame_count = 4, false },
+    { "player_idle_down",  player_idle_down_frames,  .frame_time = 0.5f, .frame_count = 3, true  },
+    { "player_idle_up",    player_idle_up_frames,    .frame_time = 0.0f, .frame_count = 1, false },
+    { "player_idle_left",  player_idle_left_frames,  .frame_time = 0.5f, .frame_count = 3, true  },
+    { "player_idle_right", player_idle_right_frames, .frame_time = 0.5f, .frame_count = 3, true  },
 };
 
 ComponentStorageDeclare(CMovement, CMovement);
@@ -229,6 +278,7 @@ ComponentStorageDeclare(CTexture, CTexture);
 
 ComponentStorageDeclare(CBehavior, CBehavior);
 ComponentStorageDeclare(CAnimation, CAnimation);
+
 /*
  * type: System
  * component(s): CMovement, CBody (optional)
@@ -340,8 +390,21 @@ void TextureUpdate(CTexture *t, FanVector2 pos, FanVector2 size, float dt) {
  * type: System
  * components: CAnimation, CTexture
  */
-void AnimationUpdate(CAnimation *a, CTexture *t, float dt) {
+void AnimationUpdate(CAnimation *a, CTexture *t, int32 id, float dt) {
     AnimationData *data = &anim_table[a->id];
+    if (a->id != id or a->name is null) {
+        a->id = id;
+        a->timer = 0.0f;
+        a->current_frame = 0;
+        a->finished = false;
+
+        data = &anim_table[a->id];
+        a->name = data->name;
+    }
+
+    if (not data->loop and a->finished) {
+        return;
+    }
 
     a->timer += dt;
     if (a->timer >= data->frame_time) {
@@ -349,9 +412,17 @@ void AnimationUpdate(CAnimation *a, CTexture *t, float dt) {
 
         a->current_frame++;
         if (a->current_frame >= data->frame_count) {
-            a->current_frame = data->loop ? 0 : data->frame_count - 1;
+            if (data->loop) {
+                a->current_frame = 0;
+            }
+            else {
+                a->current_frame = data->frame_count - 1;
+                a->finished = true;
+            }
         }
     }
+    // NOTE(liam): is it acceptable to keep this snippet here
+    //             rather than outside?
     FanRect current_data = data->frames[a->current_frame];
     TextureUpdate(
         t,
@@ -477,6 +548,7 @@ void SortRender(RenderEntry *entries, int32 low, int32 high) {
 
 enum SpecialEntity {
     Entity_Player_One = 0,
+    Entity_Background = 4,
 };
 
 typedef struct World {
@@ -496,38 +568,54 @@ World world = {};
 int main(void) {
     FanWindowCreate(800, 600, "Fantasia");
 
-    bool32 running = true;
+    Arena arena = (Arena){
+        .data     = heap_allocator.make(null, megabytes(1)),
+        .size     = 0,
+        .capacity = kilobytes(1)
+    };
+    Allocator arena_allocator = {
+        .make   = arena_allocator_make,
+        .free   = arena_allocator_free,
+        .resize = arena_allocator_resize,
+        .ctx    = &arena
+    };
+
+    bool32 running            = true;
     bool32 called_object_dump = false;
-    FanVector2 player_offset = FanVector2Zero();
-    FanVector2 player_index  = FanVector2Zero();
+    FanVector2 player_offset  = FanVector2Zero();
+    FanVector2 player_index   = FanVector2Zero();
+    int32 player_animation_id = 0;
 
     FanRandomSeed(12398);
 
     ssize component_size  = kilobytes(1);
 
-    ComponentStorageCreate(&world.c_body,      &heap_allocator, component_size);
-    ComponentStorageCreate(&world.c_movement,  &heap_allocator, component_size);
-    ComponentStorageCreate(&world.c_color,     &heap_allocator, component_size);
-    ComponentStorageCreate(&world.c_texture,   &heap_allocator, component_size);
-    ComponentStorageCreate(&world.c_behavior,  &heap_allocator, component_size);
-    ComponentStorageCreate(&world.c_animation, &heap_allocator, component_size);
+    ComponentStorageCreate(&world.c_body,      &arena_allocator, component_size);
+    ComponentStorageCreate(&world.c_movement,  &arena_allocator, component_size);
+    ComponentStorageCreate(&world.c_color,     &arena_allocator, component_size);
+    ComponentStorageCreate(&world.c_texture,   &arena_allocator, component_size);
+    ComponentStorageCreate(&world.c_behavior,  &arena_allocator, component_size);
+    ComponentStorageCreate(&world.c_animation, &arena_allocator, component_size);
 
-    // world.c_body.sparse[world.entity_count]
-    // ComponentStorageAdd(    &world.c_body, world.entity_count);
-    ComponentStorageAdd(&world.c_body,        world.entity_count);
-    ComponentStorageAdd(&world.c_movement,    world.entity_count);
 
     FanTexture tex_link = FanTextureLoad("./resources/link.png");
     FanVector2 sprite_link_size = (FanVector2){ tex_link.width / 10.0f, tex_link.height / 8.0f };
-    player_idle_frames[0] = (FanRect){ 0,                         0, 0, 0 };
-    player_idle_frames[1] = (FanRect){ sprite_link_size.x,        0, 0, 0 };
-    player_idle_frames[2] = (FanRect){ 2.0f * sprite_link_size.x, 0, 0, 0 };
+    player_idle_down_frames[0]  = (FanRect){ 0,                         0,                         0, 0 };
+    player_idle_down_frames[1]  = (FanRect){ sprite_link_size.x,        0,                         0, 0 };
+    player_idle_down_frames[2]  = (FanRect){ 2.0f * sprite_link_size.x, 0,                         0, 0 };
 
-    player_walk_frames[0] = (FanRect){ 0, 0,                         0, 0 };
-    player_walk_frames[1] = (FanRect){ 0, sprite_link_size.y,        0, 0 };
-    player_walk_frames[2] = (FanRect){ 0, 2.0f * sprite_link_size.y, 0, 0 };
-    player_walk_frames[3] = (FanRect){ 0, 3.0f * sprite_link_size.y, 0, 0 };
-    ComponentStorageAddArgs(&world.c_texture, world.entity_count,
+    player_idle_up_frames[0]    = (FanRect){ 0,                         2.0f * sprite_link_size.y, 0, 0 };
+
+    player_idle_left_frames[0]  = (FanRect){ 0,                         sprite_link_size.y,        0, 0 };
+    player_idle_left_frames[1]  = (FanRect){ sprite_link_size.x,        sprite_link_size.y,        0, 0 };
+    player_idle_left_frames[2]  = (FanRect){ 2.0f * sprite_link_size.x, sprite_link_size.y,        0, 0 };
+
+    player_idle_right_frames[0] = (FanRect){ 0,                         3.0f * sprite_link_size.y, 0, 0 };
+    player_idle_right_frames[1] = (FanRect){ sprite_link_size.x,        3.0f * sprite_link_size.y, 0, 0 };
+    player_idle_right_frames[2] = (FanRect){ 2.0f * sprite_link_size.x, 3.0f * sprite_link_size.y, 0, 0 };
+    ComponentStorageAdd(&world.c_body,          world.entity_count);
+    ComponentStorageAdd(&world.c_movement,      world.entity_count);
+    ComponentStorageAddArgs(&world.c_texture,   world.entity_count,
         .texture = tex_link,
         .rect = (FanRect){ 0, 0, tex_link.width / 10.0f, tex_link.height / 8.0f }
     );
@@ -582,19 +670,19 @@ int main(void) {
         FanVector2 player_direction = FanVector2Zero();
         if (FanKeyDown(FanKey_W)) {
             player_direction.y -= 1;
-            player_index.y = 2;
+            player_animation_id = 1;
         }
         if (FanKeyDown(FanKey_S)) {
             player_direction.y += 1;
-            player_index.y = 0;
+            player_animation_id = 0;
         }
         if (FanKeyDown(FanKey_A)) {
             player_direction.x -= 1;
-            player_index.y = 1;
+            player_animation_id = 2;
         }
         if (FanKeyDown(FanKey_D)) {
             player_direction.x += 1;
-            player_index.y = 3;
+            player_animation_id = 3;
         }
 
         if (FanKeyDown(FanKey_K)) {
@@ -763,14 +851,14 @@ int main(void) {
                 int32 local_body_index = world.c_body.sparse[local_id];
                 CBody *local_body = &world.c_body.data[local_body_index];
 
-                FanVector2 new_scale = FanVector2Zero();
+                FanVector2 new_scale  = FanVector2Zero();
                 FanVector2 new_offset = FanVector2Zero();
                 int32 new_layer = -1;
                 if (local_id == Entity_Player_One) {
                     new_offset = player_offset;
                 }
                 else if (local_id == background_id) {
-                    new_scale = (FanVector2){ FanWindowWidth(), FanWindowHeight() };
+                    new_scale  = (FanVector2){ FanWindowWidth(), FanWindowHeight() };
                 }
                 BodyUpdate(local_body, new_scale, new_offset, new_layer, dt);
 
@@ -790,7 +878,11 @@ int main(void) {
                     if (local_animation_index != -1) {
                         local_animation = &world.c_animation.data[local_animation_index];
 
-                        AnimationUpdate(local_animation, local_texture, dt);
+                        int32 local_animation_id = 0;
+                        if (local_id == Entity_Player_One) {
+                            local_animation_id = player_animation_id;
+                        }
+                        AnimationUpdate(local_animation, local_texture, local_animation_id, dt);
                     }
                     else {
                         TextureUpdate(local_texture, FanVector2Zero(), FanVector2Zero(), dt);
@@ -820,6 +912,11 @@ int main(void) {
                     FanVector2Print(local_body->scale);
                     printf("\t");
                     FanVector2Print(local_body->offset);
+
+                    if (local_animation isnt null) {
+                        printf("\tlocal_animation_index: %d\n", local_animation_index);
+                        printf("\tlocal_animation->id: %d\n", local_animation->id);
+                    }
                 }
             }
 
@@ -836,5 +933,6 @@ int main(void) {
     }
 
     FanWindowClose();
+    heap_allocator.free(null, arena.data, arena.capacity);
     return 0;
 }
