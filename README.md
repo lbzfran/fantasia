@@ -5,9 +5,9 @@
 - [x] Textures
     - [x] Render Ordering
 - [x] Animations
-    - [ ] animation trigger
-    - [ ] refine animation control (loops, moving forward/backward)
-    - [ ] chaining animations (command pattern)
+    - [x] animation trigger
+    - [-] refine animation control (moving forward/backward) [scrapped idea]
+    - [x] chaining animations
 - [ ] Collisions (AABB)
 - [ ] Behaviors
     - [ ] dynamic behaviors (based on conditions, decision tree maybe..?)

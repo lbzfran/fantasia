@@ -9,3 +9,13 @@
 #elif defined(OS_LINUX)
 # include "os_linux.c"
 #endif
+
+
+
+int FanRectIsEmpty(FanRect rect) {
+    int result = 1;
+    if (rect.x && rect.y && rect.width && rect.height) {
+        result = 0;
+    }
+    return result;
+}

@@ -275,6 +275,7 @@ typedef struct CAnimation {
     float32 timer;
     int32 current_frame;
     bool32 finished;
+    int32 animation_flags;
 } CAnimation;
 
 typedef struct {
@@ -287,15 +288,17 @@ typedef struct {
     int32 next_id;
 } AnimationData;
 
-FanRect player_idle_up_frames[1]    = { 0 };
-FanRect player_idle_down_frames[3]  = { 0 };
-FanRect player_idle_left_frames[3]  = { 0 };
-FanRect player_idle_right_frames[3] = { 0 };
+#define FanRect_EMPTY (FanRect){ 0 }
+
+FanRect player_idle_up_frames[1]    = { FanRect_EMPTY };
+FanRect player_idle_down_frames[3]  = { FanRect_EMPTY };
+FanRect player_idle_left_frames[3]  = { FanRect_EMPTY };
+FanRect player_idle_right_frames[3] = { FanRect_EMPTY };
 
 AnimationData anim_table[] = {
-    { "player_idle_down",  player_idle_down_frames,  .frame_time = 0.5f, .frame_count = 3, false,  1 },
-    { "player_idle_up",    player_idle_up_frames,    .frame_time = 0.1f, .frame_count = 1, false,  2 },
-    { "player_idle_left",  player_idle_left_frames,  .frame_time = 0.5f, .frame_count = 3, false,  3 },
+    { "player_idle_down",  player_idle_down_frames,  .frame_time = 0.5f, .frame_count = 3, true,  -1 },
+    { "player_idle_up",    player_idle_up_frames,    .frame_time = 1.5f, .frame_count = 1, false,  0 },
+    { "player_idle_left",  player_idle_left_frames,  .frame_time = 0.5f, .frame_count = 3, false,  0 },
     { "player_idle_right", player_idle_right_frames, .frame_time = 0.5f, .frame_count = 3, false,  0 },
 };
 
@@ -415,73 +418,74 @@ void TextureUpdate(CTexture *t, FanVector2 pos, FanVector2 size, float dt) {
     };
 }
 
+inline CAnimation AnimationApply(int32 new_id, int32 flags) {
+    assert(new_id != -1 && "Out of Bounds Access!");
+    CAnimation new_state = (CAnimation) {
+        .id = new_id,
+        .name = anim_table[new_id].name,
+        .animation_flags = flags
+    };
+    return new_state;
+}
+
+typedef enum {
+    AnimationFlag_NotInterruptible = (1 << 0),
+    AnimationFlag_DisableLoop      = (1 << 1),
+} AnimationFlags;
 /*
  * type: System
  * components: CAnimation, CTexture
  */
-void AnimationUpdate(CAnimation *a, CTexture *t, int32 id, bool32 force, float dt) {
-    AnimationData *data = &anim_table[a->id];
-
-    if (not data->loop and a->finished) {
-        if (data->next_id == -1) {
-            return;
-        }
-
-        if (a->id != id or a->name is null) {
-            printf("next_id: %d\n", data->next_id);
-            a->id = data->next_id;
-            a->timer = 0.0f;
-            a->current_frame = 0;
-            a->finished = false;
-
-            data = &anim_table[a->id];
-            a->name = data->name;
-        }
+void AnimationUpdate(CAnimation *a, CTexture *t, int32 request_id, int32 flags, float dt) {
+    if (request_id != -1 and (a->animation_flags & AnimationFlag_NotInterruptible) == 0) {
+        *a = AnimationApply(request_id, flags);
     }
 
+    AnimationData *data = &anim_table[a->id];
 
     a->timer += dt;
     if (a->timer >= data->frame_time) {
         a->timer -= data->frame_time;
-
         a->current_frame++;
+
         if (a->current_frame >= data->frame_count) {
-            if (data->loop) {
+            if (data->loop and (a->animation_flags & AnimationFlag_DisableLoop) == 0) {
                 a->current_frame = 0;
             }
             else {
-                a->current_frame = data->frame_count - 1;
-                a->finished = true;
+                if (data->next_id != -1) {
+                    *a = AnimationApply(data->next_id, flags);
+                }
+                else {
+                    a->finished = true;
+                    a->current_frame = data->frame_count - 1;
+                }
             }
         }
     }
-    // NOTE(liam): is it acceptable to keep this snippet here
-    //             rather than outside?
+
+    if (a->current_frame >= data->frame_count) {
+        a->current_frame = data->frame_count > 0 ? data->frame_count - 1 : 0;
+    }
+
     FanRect current_data = data->frames[a->current_frame];
     TextureUpdate(
         t,
-        (FanVector2){
-            current_data.x,
-            current_data.y
-        },
-        (FanVector2){
-            current_data.width,
-            current_data.height
-        },
+        (FanVector2){ current_data.x, current_data.y },
+        (FanVector2){ current_data.width, current_data.height },
         dt
     );
 }
 
-enum RenderFlags {
+typedef enum {
     RenderFlag_FlipX = (1 << 0),
     RenderFlag_FlipY = (1 << 1)
-};
+} RenderFlags;
 /*
  * type: System
  * component(s): CBody, CMovement
  */
 void BodyRender(CBody *b, CMovement *m, FanColor color, CTexture *t, int32 flags) {
-
     if (t is null) {
         if (FanVector2Length(b->offset) > 0.0f) {
             FanDrawRectV(FanVector2Add(m->position, b->offset), b->scale, (FanColor){ 50, 50, 50, 255 });
@@ -580,10 +584,10 @@ void SortRender(RenderEntry *entries, int32 low, int32 high) {
 }
 
 
-enum SpecialEntity {
+typedef enum {
     Entity_Player_One = 0,
     Entity_Background = 4,
-};
+} SpecialEntity;
 
 typedef struct World {
     uint8             entity_count;
@@ -621,7 +625,6 @@ int main(void) {
     bool32 called_object_dump = false;
     FanVector2 player_offset  = FanVector2Zero();
     FanVector2 player_index   = FanVector2Zero();
-    int32 player_animation_id = 0;
 
     FanRandomSeed(12398);
 
@@ -705,6 +708,7 @@ int main(void) {
         }
 
         FanVector2 player_direction = FanVector2Zero();
+        int32 player_animation_id = -1;
         if (FanKeyDown(FanKey_W)) {
             player_direction.y -= 1;
             player_animation_id = 1;
@@ -920,7 +924,7 @@ int main(void) {
                         if (local_id == Entity_Player_One) {
                             local_animation_id = player_animation_id;
                         }
-                        AnimationUpdate(local_animation, local_texture, local_animation_id, false, dt);
+                        AnimationUpdate(local_animation, local_texture, local_animation_id, 0, dt);
                     }
                     else {
                         TextureUpdate(local_texture, FanVector2Zero(), FanVector2Zero(), dt);
@@ -936,26 +940,31 @@ int main(void) {
 
                 if (local_id == Entity_Player_One) {
                     BodyRender(local_body, local_movement, local_color, local_texture, null);
+
+                    if (called_object_dump) {
+                        printf("\tlocal_id: %d\n", local_id);
+                        printf("\tlocal_body_index: %zu\n", i);
+                        printf("\tlocal_body->initialized: %s\n", local_body->initialized ? "true" : "false");
+                        printf("\tlocal_body->layer: %d\n", local_body->layer);
+                        printf("\t");
+                        FanVector2Print(local_body->scale);
+                        printf("\t");
+                        FanVector2Print(local_body->offset);
+
+                        if (local_animation isnt null) {
+                            printf("\tlocal_animation_index: %d\n", local_animation_index);
+                            printf("\tlocal_animation: %s\n", local_animation->name);
+                            printf("\tlocal_animation->id: %d\n", local_animation->id);
+                            printf("\tlocal_animation->timer: %f\n", local_animation->timer);
+                            printf("\tlocal_animation->current_frame: %d\n", local_animation->current_frame);
+                            printf("\tlocal_animation->finished: %d\n", local_animation->finished);
+                        }
+                    }
                 }
                 else {
                     BodyRender(local_body, local_movement, local_color, local_texture, RenderFlag_FlipX);
                 }
 
-                if (called_object_dump) {
-                    printf("\tlocal_id: %d\n", local_id);
-                    printf("\tlocal_body_index: %zu\n", i);
-                    printf("\tlocal_body->initialized: %s\n", local_body->initialized ? "true" : "false");
-                    printf("\tlocal_body->layer: %d\n", local_body->layer);
-                    printf("\t");
-                    FanVector2Print(local_body->scale);
-                    printf("\t");
-                    FanVector2Print(local_body->offset);
-
-                    if (local_animation isnt null) {
-                        printf("\tlocal_animation_index: %d\n", local_animation_index);
-                        printf("\tlocal_animation->id: %d\n", local_animation->id);
-                    }
-                }
             }
 
             FanDrawFPS(2, 2);

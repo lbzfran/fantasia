@@ -220,4 +220,8 @@ FAN_API float FanVector2LengthSqr(FanVector2 v);
 FAN_API FanVector2 FanVector2Scale(FanVector2 v, float scale);
 FAN_API FanVector2 FanVector2Negate(FanVector2 v);
 
+// custom api
+
+FAN_API int FanRectIsEmpty(FanRect rect);
+
 #endif
