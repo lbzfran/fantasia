@@ -54,8 +54,8 @@ typedef uintptr_t  uintptr;
 #define megabytes(x)    (kilobytes(x)*1024LL)
 #define gigabytes(x)    (megabytes(x)*1024LL)
 
-// #define min(x,y)        ((x) < (y) ? (x) : (y))
-// #define max(x,y)        ((x) > (y) ? (x) : (y))
+#define min(x,y)        ((x) < (y) ? (x) : (y))
+#define max(x,y)        ((x) > (y) ? (x) : (y))
 
 void FanVector2Print_(FanVector2 v, const char *name) {
     printf("%s: (%f, %f)\n", name, v.x, v.y);
@@ -233,6 +233,11 @@ void *arena_resize(void *ctx, void *ptr, ssize old, ssize new) {
             (storage)->size--;                                                  \
     }while(0);
 
+typedef enum {
+    MovementFlag_Immovable   = (1 << 0),
+    MovementFlag_NoCollision = (1 << 1)
+} MovementFlags;
+
 typedef struct CMovement {
     FanVector2 position;
     FanVector2 last_position;
@@ -241,6 +246,7 @@ typedef struct CMovement {
     float32 speed;
     float32 friction;
 
+    int32 movement_flags;
     bool32 initialized;
 } CMovement;
 
@@ -375,6 +381,58 @@ void MovementUpdate(CMovement *m, CBody *b, FanVector2 direction, float dt) {
     m->last_position = m->position;
     // NOTE: c->position += (velocity + acceleration * dt) * dt;
     m->position = FanVector2Add(m->position, FanVector2Scale(FanVector2Add(velocity, acceleration), dt));
+}
+
+void CollisionResolve(FanVector2 *aPos, FanVector2 aSize, int32 aFlags, FanVector2 *bPos, FanVector2 bSize, int32 bFlags) {
+    FanVector2 aMax = (FanVector2){
+        aPos->x + aSize.x,
+        aPos->y + aSize.y
+    };
+    FanVector2 bMax = (FanVector2){
+        bPos->x + bSize.x,
+        bPos->y + bSize.y
+    };
+
+    FanVector2 overlap = (FanVector2){
+        min(aMax.x, bMax.x) - max(aPos->x, bPos->x),
+        min(aMax.y, bMax.y) - max(aPos->y, bPos->y)
+    };
+
+    if (overlap.x <= 0.0f || overlap.y <= 0.0f)
+        return;
+
+    float32 correction;
+    int32 aMovable = (aFlags & MovementFlag_Immovable) ? 0 : 1;
+    int32 bMovable = (bFlags & MovementFlag_Immovable) ? 0 : 1;
+    if (overlap.x < overlap.y) {
+        correction = overlap.x * 0.5f;
+        if (aPos->x < bPos->x) {
+            aPos->x -= correction * aMovable;
+            bPos->x += correction * bMovable;
+        } else {
+            aPos->x += correction * aMovable;
+            bPos->x -= correction * bMovable;
+        }
+    } else {
+        correction = overlap.y * 0.5f;
+        if (aPos->y < bPos->y) {
+            aPos->y -= correction * aMovable;
+            bPos->y += correction * bMovable;
+        } else {
+            aPos->y += correction * aMovable;
+            bPos->y -= correction * bMovable;
+        }
+    }
+}
+
+bool32 CollisionCheck(FanVector2 aPos, FanVector2 aSize, FanVector2 bPos, FanVector2 bSize) {
+    bool32 result = false;
+
+    // AABB
+    result = not (aPos.x + aSize.x < bPos.x or bPos.x + bSize.x < aPos.x or
+                  aPos.y + aSize.y < bPos.y or bPos.y + bSize.y < aPos.y);
+
+    return result;
 }
 
 /*
@@ -604,7 +662,250 @@ typedef struct World {
     float64           current_time;
 } World;
 World world = {};
+bool32 called_object_dump = false;
 
+int32 dynamic_entities[128] = { -1 };
+int32 static_entities[128]  = { -1 };
+ssize dynamic_entity_count = 0;
+ssize static_entity_count  = 0;
+
+// NOTE(liam): must call whenever entities are added/removed
+global void UpdateEntitySplit(void) {
+    dynamic_entity_count = 0;
+    static_entity_count  = 0;
+    for (ssize local_movement_index = 0; local_movement_index < world.c_movement.size; local_movement_index++) {
+        int32 local_id = world.c_movement.dense[local_movement_index];
+        if (local_id == -1) continue;
+
+        CMovement *local_movement = &world.c_movement.data[local_movement_index];
+        if (local_movement->movement_flags & MovementFlag_NoCollision) continue;
+
+        if (local_movement->movement_flags & MovementFlag_Immovable) {
+            static_entities[static_entity_count++] = local_movement_index;
+        }
+        else {
+            dynamic_entities[dynamic_entity_count++] = local_movement_index;
+        }
+    }
+}
+
+void UpdateAndRender(FanVector2 player_direction, FanVector2 player_offset, int32 player_animation_id, float32 dt) {
+    if (called_object_dump) {
+        printf("[CMovement]\n");
+    }
+
+    for (ssize i = 0; i < dynamic_entity_count; i++) {
+        int32 local_id = dynamic_entities[i];
+        if (local_id == -1) {
+            continue;
+        }
+
+        CMovement *local_movement = &world.c_movement.data[i];
+        CBehavior *local_behavior = null;
+
+        int32 local_body_index = world.c_body.sparse[local_id];
+        CBody *local_body = null;
+        if (local_body_index != -1) {
+            local_body = &world.c_body.data[local_body_index];
+        }
+
+        // COLLISION CHECK HERE
+        for (ssize j = i + 1; j < dynamic_entity_count; j++) {
+            int32 other_index = dynamic_entities[j];
+            int32 other_id = world.c_movement.dense[other_index];
+            CMovement *other_movement = &world.c_movement.data[other_index];
+
+            int32 other_body_index = world.c_body.sparse[other_id];
+            CBody *other_body = &world.c_body.data[other_body_index];
+
+            if (CollisionCheck(local_movement->position, local_body->scale,
+                               other_movement->position, other_body->scale)) {
+                // printf("Collision: %d to %d\n", local_id, other_id);
+                CollisionResolve(&local_movement->position, local_body->scale, local_movement->movement_flags,
+                                 &other_movement->position, other_body->scale, other_movement->movement_flags);
+            }
+        }
+        for (ssize s = 0; s < static_entity_count; s++) {
+            int32 other_index = static_entities[s];
+            int32 other_id    = world.c_movement.dense[other_index];
+            CMovement *other_movement = &world.c_movement.data[other_index];
+
+            int32 other_body_index = world.c_body.sparse[other_id];
+            CBody *other_body = &world.c_body.data[other_body_index];
+
+            if (CollisionCheck(local_movement->position, local_body->scale,
+                               other_movement->position, other_body->scale)) {
+                CollisionResolve(&local_movement->position, local_body->scale, local_movement->movement_flags,
+                                 &other_movement->position, other_body->scale, other_movement->movement_flags);
+            }
+    }
+
+        if (local_id == Entity_Player_One) {
+            MovementUpdate(local_movement, local_body, player_direction, dt);
+        }
+        else {
+            int32 local_behavior_index = world.c_behavior.sparse[local_id];
+            FanVector2 local_direction = FanVector2Zero();
+            if (local_behavior_index != -1) {
+                local_behavior = &world.c_behavior.data[local_behavior_index];
+
+                switch (local_behavior->type) {
+                    case BehaviorType_Random: {
+                        if (world.current_time - local_behavior->start_time > local_behavior->duration) {
+                            local_direction = (FanVector2) {
+                                FanRandomInt(-1, 1),
+                                    FanRandomInt(-1, 1)
+                            };
+                            local_behavior->start_time = world.current_time;
+                        }
+                        else {
+                            // keeps entity moving rather than staying still
+                            local_direction = local_movement->direction;
+                        }
+                    } break;
+                    case BehaviorType_None:
+                    default: break;
+                }
+            }
+
+            MovementUpdate(local_movement, local_body, local_direction, dt);
+        }
+
+        if (called_object_dump) {
+            printf("\tlocal_id: %d\n", local_id);
+            printf("\tlocal_movement_index: %zu\n", i);
+            printf("\tlocal_movement->initialized: %s\n", local_movement->initialized ? "true" : "false");
+            printf("\tlocal_movement->speed: %f\n", local_movement->speed);
+            printf("\tlocal_movement->friction: %f\n", local_movement->friction);
+            printf("\t");
+            FanVector2Print(local_movement->position);
+            printf("\t");
+            FanVector2Print(local_movement->last_position);
+            printf("\t");
+            FanVector2Print(local_movement->direction);
+
+            if (local_behavior isnt null) {
+                printf("\tlocal_behavior->type: %d\n", local_behavior->type);
+                printf("\tlocal_behavior->start_time: %f\n", local_behavior->start_time);
+                printf("\tlocal_behavior->duration: %f\n", local_behavior->duration);
+            }
+        }
+    }
+
+    if (called_object_dump) {
+        printf("[CBody : Y-axis ordered]\n");
+    }
+
+    RenderEntry render_array[128] = { { -1, 0.0f, 0 } };
+    for (ssize local_body_index = 0; local_body_index < world.c_body.size; local_body_index++) {
+        int32 local_id = world.c_body.dense[local_body_index];
+        if (local_id == -1) {
+            continue;
+        }
+        CBody *local_body = &world.c_body.data[local_body_index];
+
+        int32 local_movement_index = world.c_movement.sparse[local_id];
+        if (local_movement_index == -1) {
+            // won't render anyways
+            continue;
+        }
+        CMovement *local_movement = &world.c_movement.data[local_movement_index];
+
+        render_array[local_body_index] = (RenderEntry) {
+            local_id,
+                local_movement->position.y + local_body->scale.y,
+                local_body->layer
+        };
+    }
+
+    SortRender(render_array, 0, world.c_body.size - 1);
+
+    for (ssize i = 0; i < world.c_body.size; i++) {
+        // int32 local_id = world.c_body.dense[i];
+        int32 local_id = render_array[i].id;
+        if (local_id == -1) {
+            continue;
+        }
+
+        int32 local_body_index = world.c_body.sparse[local_id];
+        assert(local_body_index != -1);
+
+        CBody *local_body = &world.c_body.data[local_body_index];
+
+        FanVector2 new_scale  = FanVector2Zero();
+        FanVector2 new_offset = FanVector2Zero();
+        int32 new_layer = -1;
+        if (local_id == Entity_Player_One) {
+            new_offset = player_offset;
+        }
+        else if (local_id == Entity_Background) {
+            new_scale = (FanVector2){ FanWindowWidth(), FanWindowHeight() };
+        }
+        BodyUpdate(local_body, new_scale, new_offset, new_layer, dt);
+
+        int32 local_movement_index = world.c_movement.sparse[local_id];
+        if (local_movement_index == -1) {
+            // NOTE(liam): skip render if not found
+            continue;
+        }
+        CMovement *local_movement = &world.c_movement.data[local_movement_index];
+
+        int32 local_animation_index = world.c_animation.sparse[local_id];
+        int32 local_texture_index = world.c_texture.sparse[local_id];
+        CTexture *local_texture = null;
+        CAnimation *local_animation = null;
+        if (local_texture_index != -1) {
+            local_texture = &world.c_texture.data[local_texture_index];
+            if (local_animation_index != -1) {
+                local_animation = &world.c_animation.data[local_animation_index];
+
+                int32 local_animation_id = 0;
+                if (local_id == Entity_Player_One) {
+                    local_animation_id = player_animation_id;
+                }
+                AnimationUpdate(local_animation, local_texture, local_animation_id, 0, dt);
+            }
+            else {
+                TextureUpdate(local_texture, FanVector2Zero(), FanVector2Zero(), dt);
+            }
+        }
+
+        int32 local_color_index = world.c_color.sparse[local_id];
+        FanColor local_color = (FanColor){ 255, 255, 255, 255 };
+        if (local_color_index != -1) {
+            local_color = world.c_color.data[local_color_index];
+        }
+
+        if (local_id == Entity_Player_One) {
+            BodyRender(local_body, local_movement, local_color, local_texture, null);
+        }
+        else {
+            BodyRender(local_body, local_movement, local_color, local_texture, RenderFlag_FlipX);
+        }
+
+
+        if (called_object_dump) {
+            printf("\tlocal_id: %d\n", local_id);
+            printf("\tlocal_body_index: %d\n", local_body_index);
+            printf("\tlocal_body->initialized: %s\n", local_body->initialized ? "true" : "false");
+            printf("\tlocal_body->layer: %d\n", local_body->layer);
+            printf("\t");
+            FanVector2Print(local_body->scale);
+            printf("\t");
+            FanVector2Print(local_body->offset);
+
+            if (local_animation isnt null) {
+                printf("\tlocal_animation_index: %d\n", local_animation_index);
+                printf("\tlocal_animation: %s\n", local_animation->name);
+                printf("\tlocal_animation->id: %d\n", local_animation->id);
+                printf("\tlocal_animation->timer: %f\n", local_animation->timer);
+                printf("\tlocal_animation->current_frame: %d\n", local_animation->current_frame);
+                printf("\tlocal_animation->finished: %d\n", local_animation->finished);
+            }
+        }
+    }
+
+}
 
 int main(void) {
     FanWindowCreate(800, 600, "Fantasia");
@@ -622,7 +923,6 @@ int main(void) {
     };
 
     bool32 running            = true;
-    bool32 called_object_dump = false;
     FanVector2 player_offset  = FanVector2Zero();
     FanVector2 player_index   = FanVector2Zero();
 
@@ -687,7 +987,8 @@ int main(void) {
 
     ComponentStorageAdd(&world.c_body,         world.entity_count);
     ComponentStorageAddArgs(&world.c_movement, world.entity_count,
-        .position = (FanVector2){ 200.0f, 300.0f }
+        .position = (FanVector2){ 200.0f, 300.0f },
+        .movement_flags = MovementFlag_Immovable
     );
     ComponentStorageAddArgs(&world.c_color,    world.entity_count, 50, 255, 50, 255);
     world.entity_count++;
@@ -696,11 +997,19 @@ int main(void) {
         .layer = 1,
         .scale = (FanVector2){ FanWindowWidth(), FanWindowHeight() }
     );
-    ComponentStorageAdd(&world.c_movement,  world.entity_count);
+    ComponentStorageAddArgs(&world.c_movement,  world.entity_count,
+        .movement_flags = MovementFlag_NoCollision);
     ComponentStorageAddArgs(&world.c_color, world.entity_count, 175, 165, 175, 255);
-    int32 background_id = world.entity_count;
     world.entity_count++;
 
+    ComponentStorageAdd(&world.c_body,         world.entity_count);
+    ComponentStorageAddArgs(&world.c_movement, world.entity_count,
+        .position = (FanVector2){ 400.0f, 400.0f }
+    );
+    ComponentStorageAddArgs(&world.c_color,    world.entity_count, 50, 255, 255, 255);
+    world.entity_count++;
+
+    UpdateEntitySplit();
     while (running) {
         float dt = FanGetFrameTime();
         if (FanWindowShouldClose() || FanKeyPressed(FanKey_ESCAPE)) {
@@ -785,188 +1094,7 @@ int main(void) {
 
         FanDrawBegin();
             FanDrawClear(FanColor_WHITE);
-
-            if (called_object_dump) {
-                printf("[CMovement]\n");
-            }
-            for (ssize i = 0; i < world.c_movement.size; i++) {
-                int32 local_id = world.c_movement.dense[i];
-                if (local_id == -1) {
-                    continue;
-                }
-
-                CMovement *local_movement = &world.c_movement.data[i];
-                CBehavior *local_behavior = null;
-
-                int32 local_body_index = world.c_body.sparse[local_id];
-                CBody *local_body = null;
-                if (local_body_index != -1) {
-                    local_body = &world.c_body.data[local_body_index];
-                }
-
-                if (local_id == Entity_Player_One) {
-                    MovementUpdate(local_movement, local_body, player_direction, dt);
-                }
-                else {
-                    int32 local_behavior_index = world.c_behavior.sparse[local_id];
-                    FanVector2 local_direction = FanVector2Zero();
-                    if (local_behavior_index != -1) {
-                        local_behavior = &world.c_behavior.data[local_behavior_index];
-
-                        switch (local_behavior->type) {
-                            case BehaviorType_Random: {
-                                if (world.current_time - local_behavior->start_time > local_behavior->duration) {
-                                    local_direction = (FanVector2) {
-                                        FanRandomInt(-1, 1),
-                                        FanRandomInt(-1, 1)
-                                    };
-                                    local_behavior->start_time = world.current_time;
-                                }
-                                else {
-                                    // keeps entity moving rather than staying still
-                                    local_direction = local_movement->direction;
-                                }
-                            } break;
-                            case BehaviorType_None:
-                            default: break;
-                        }
-                    }
-                    MovementUpdate(local_movement, local_body, local_direction, dt);
-                }
-
-                if (called_object_dump) {
-                    printf("\tlocal_id: %d\n", local_id);
-                    printf("\tlocal_movement_index: %zu\n", i);
-                    printf("\tlocal_movement->initialized: %s\n", local_movement->initialized ? "true" : "false");
-                    printf("\tlocal_movement->speed: %f\n", local_movement->speed);
-                    printf("\tlocal_movement->friction: %f\n", local_movement->friction);
-                    printf("\t");
-                    FanVector2Print(local_movement->position);
-                    printf("\t");
-                    FanVector2Print(local_movement->last_position);
-                    printf("\t");
-                    FanVector2Print(local_movement->direction);
-
-                    if (local_behavior isnt null) {
-                        printf("\tlocal_behavior->type: %d\n", local_behavior->type);
-                        printf("\tlocal_behavior->start_time: %f\n", local_behavior->start_time);
-                        printf("\tlocal_behavior->duration: %f\n", local_behavior->duration);
-                    }
-                }
-            }
-
-            if (called_object_dump) {
-                printf("[CBody : Y-axis ordered]\n");
-            }
-
-            RenderEntry temp_array[128] = { { -1, 0.0f, 0 } };
-            for (ssize i = 0; i < world.c_body.size; i++) {
-                int32 local_id = world.c_body.dense[i];
-                if (local_id == -1) {
-                    continue;
-                }
-                CBody *local_body = &world.c_body.data[i];
-
-                int32 local_movement_index = world.c_movement.sparse[local_id];
-                if (local_movement_index == -1) {
-                    // won't render anyways
-                    continue;
-                }
-                CMovement *local_movement = &world.c_movement.data[local_movement_index];
-
-                temp_array[i] = (RenderEntry) {
-                    local_id,
-                    local_movement->position.y + local_body->scale.y,
-                    local_body->layer
-                };
-            }
-
-            SortRender(temp_array, 0, world.c_body.size - 1);
-
-            for (ssize i = 0; i < world.c_body.size; i++) {
-                // int32 local_id = world.c_body.dense[i];
-                int32 local_id = temp_array[i].id;
-                if (local_id == -1) {
-                    continue;
-                }
-
-                int32 local_body_index = world.c_body.sparse[local_id];
-                CBody *local_body = &world.c_body.data[local_body_index];
-
-                FanVector2 new_scale  = FanVector2Zero();
-                FanVector2 new_offset = FanVector2Zero();
-                int32 new_layer = -1;
-                if (local_id == Entity_Player_One) {
-                    new_offset = player_offset;
-                }
-                else if (local_id == background_id) {
-                    new_scale  = (FanVector2){ FanWindowWidth(), FanWindowHeight() };
-                }
-                BodyUpdate(local_body, new_scale, new_offset, new_layer, dt);
-
-                int32 local_movement_index = world.c_movement.sparse[local_id];
-                if (local_movement_index == -1) {
-                    // NOTE(liam): skip render if not found
-                    continue;
-                }
-                CMovement *local_movement = &world.c_movement.data[local_movement_index];
-
-                int32 local_animation_index = world.c_animation.sparse[local_id];
-                int32 local_texture_index = world.c_texture.sparse[local_id];
-                CTexture *local_texture = null;
-                CAnimation *local_animation = null;
-                if (local_texture_index != -1) {
-                    local_texture = &world.c_texture.data[local_texture_index];
-                    if (local_animation_index != -1) {
-                        local_animation = &world.c_animation.data[local_animation_index];
-
-                        int32 local_animation_id = 0;
-                        if (local_id == Entity_Player_One) {
-                            local_animation_id = player_animation_id;
-                        }
-                        AnimationUpdate(local_animation, local_texture, local_animation_id, 0, dt);
-                    }
-                    else {
-                        TextureUpdate(local_texture, FanVector2Zero(), FanVector2Zero(), dt);
-                    }
-                }
-
-
-                int32 local_color_index = world.c_color.sparse[local_id];
-                FanColor local_color = (FanColor){ 255, 255, 255, 255 };
-                if (local_color_index != -1) {
-                    local_color = world.c_color.data[local_color_index];
-                }
-
-                if (local_id == Entity_Player_One) {
-                    BodyRender(local_body, local_movement, local_color, local_texture, null);
-
-                    if (called_object_dump) {
-                        printf("\tlocal_id: %d\n", local_id);
-                        printf("\tlocal_body_index: %zu\n", i);
-                        printf("\tlocal_body->initialized: %s\n", local_body->initialized ? "true" : "false");
-                        printf("\tlocal_body->layer: %d\n", local_body->layer);
-                        printf("\t");
-                        FanVector2Print(local_body->scale);
-                        printf("\t");
-                        FanVector2Print(local_body->offset);
-
-                        if (local_animation isnt null) {
-                            printf("\tlocal_animation_index: %d\n", local_animation_index);
-                            printf("\tlocal_animation: %s\n", local_animation->name);
-                            printf("\tlocal_animation->id: %d\n", local_animation->id);
-                            printf("\tlocal_animation->timer: %f\n", local_animation->timer);
-                            printf("\tlocal_animation->current_frame: %d\n", local_animation->current_frame);
-                            printf("\tlocal_animation->finished: %d\n", local_animation->finished);
-                        }
-                    }
-                }
-                else {
-                    BodyRender(local_body, local_movement, local_color, local_texture, RenderFlag_FlipX);
-                }
-
-            }
-
+            UpdateAndRender(player_direction, player_offset, player_animation_id, dt);
             FanDrawFPS(2, 2);
         FanDrawEnd();
         called_object_dump = false;
