@@ -387,54 +387,6 @@ void MovementUpdate(CMovement *m, CBody *b, FanVector2 direction, float dt) {
     m->position = FanVector2Add(m->position, FanVector2Scale(FanVector2Add(velocity, acceleration), dt));
 }
 
-void CollisionResolve(FanVector2 *aPos, FanVector2 aSize, int32 aFlags, FanVector2 *bPos, FanVector2 bSize, int32 bFlags) {
-    FanVector2 aMax = (FanVector2){
-        aPos->x + aSize.x,
-        aPos->y + aSize.y
-    };
-    FanVector2 bMax = (FanVector2){
-        bPos->x + bSize.x,
-        bPos->y + bSize.y
-    };
-
-    FanVector2 overlap = (FanVector2){
-        min(aMax.x, bMax.x) - max(aPos->x, bPos->x),
-        min(aMax.y, bMax.y) - max(aPos->y, bPos->y)
-    };
-
-    if (overlap.x <= 0.0f || overlap.y <= 0.0f)
-        return;
-
-    float32 correction;
-    int32 aMovable = (aFlags & MovementFlag_Immovable) ? 0 : 1;
-    int32 bMovable = (bFlags & MovementFlag_Immovable) ? 0 : 1;
-    if (overlap.x < overlap.y) {
-        correction = overlap.x;
-        if (aMovable and bMovable) {
-             correction *= 0.5f;
-        }
-        if (aPos->x < bPos->x) {
-            aPos->x -= correction * aMovable;
-            bPos->x += correction * bMovable;
-        } else {
-            aPos->x += correction * aMovable;
-            bPos->x -= correction * bMovable;
-        }
-    } else {
-        correction = overlap.y;
-        if (aMovable and bMovable) {
-            correction *= 0.5f;
-        }
-        if (aPos->y < bPos->y) {
-            aPos->y -= correction * aMovable;
-            bPos->y += correction * bMovable;
-        } else {
-            aPos->y += correction * aMovable;
-            bPos->y -= correction * bMovable;
-        }
-    }
-}
-
 bool32 CollisionCheck(FanVector2 aPos, FanVector2 aSize, FanVector2 bPos, FanVector2 bSize) {
     bool32 result = false;
 
@@ -443,6 +395,58 @@ bool32 CollisionCheck(FanVector2 aPos, FanVector2 aSize, FanVector2 bPos, FanVec
                   aPos.y + aSize.y < bPos.y or bPos.y + bSize.y < aPos.y);
 
     return result;
+}
+
+void CollisionResolve(CMovement *aMove, CBody aBody, CMovement *bMove, CBody bBody, float32 dt) {
+    if (CollisionCheck(aMove->position, aBody.scale, bMove->position, bBody.scale)) {
+        FanVector2 aMax = (FanVector2){
+            aMove->position.x + aBody.scale.x,
+                aMove->position.y + aBody.scale.y
+        };
+        FanVector2 bMax = (FanVector2){
+            aMove->position.x + aBody.scale.x,
+                aMove->position.y + aBody.scale.y
+        };
+
+        FanVector2 overlap = (FanVector2){
+            min(aMax.x, bMax.x) - max(aMove->position.x, bMove->position.x),
+                min(aMax.y, bMax.y) - max(aMove->position.y, bMove->position.y)
+        };
+
+        if (overlap.x <= 0.0f || overlap.y <= 0.0f)
+            return;
+
+        float32 correction;
+        int32 aMovable = (aMove->movement_flags & MovementFlag_Immovable) ? 0 : 1;
+        int32 bMovable = (bMove->movement_flags & MovementFlag_Immovable) ? 0 : 1;
+        if (overlap.x < overlap.y) {
+            correction = overlap.x;
+            if (aMovable and bMovable) {
+                correction *= 0.5f;
+            }
+            if (aMove->position.x < bMove->position.x) {
+                aMove->position.x -= correction * aMovable;
+                bMove->position.x += correction * bMovable;
+            } else {
+                aMove->position.x += correction * aMovable;
+                bMove->position.x -= correction * bMovable;
+            }
+        } else {
+            correction = overlap.y;
+            if (aMovable and bMovable) {
+                correction *= 0.5f;
+            }
+            if (aMove->position.y < bMove->position.y) {
+                aMove->position.y -= correction * aMovable;
+                bMove->position.y += correction * bMovable;
+            } else {
+                aMove->position.y += correction * aMovable;
+                bMove->position.y -= correction * bMovable;
+            }
+        }
+    }
+    // NOTE(liam): potentially handle 'tunneling' if needed
+    // likely solution: https://blog.hamaluik.ca/posts/swept-aabb-collision-using-minkowski-difference/
 }
 
 /*
@@ -725,12 +729,7 @@ void UpdateAndRender(FanVector2 player_direction, FanVector2 player_offset, int3
             assert(other_body_index != -1);
             CBody *other_body = &world.c_body.data[other_body_index];
 
-            if (CollisionCheck(local_movement->position, local_body->scale,
-                               other_movement->position, other_body->scale)) {
-                // printf("Collision: %d to %d\n", local_id, other_id);
-                CollisionResolve(&local_movement->position, local_body->scale, local_movement->movement_flags,
-                                 &other_movement->position, other_body->scale, other_movement->movement_flags);
-            }
+            CollisionResolve(local_movement, *local_body, other_movement, *other_body, dt);
         }
         for (ssize s = 0; s < static_entity_count; s++) {
             int32 other_id = static_entities[s];
@@ -741,11 +740,7 @@ void UpdateAndRender(FanVector2 player_direction, FanVector2 player_offset, int3
             assert(other_body_index != -1);
             CBody *other_body = &world.c_body.data[other_body_index];
 
-            if (CollisionCheck(local_movement->position, local_body->scale,
-                               other_movement->position, other_body->scale)) {
-                CollisionResolve(&local_movement->position, local_body->scale, local_movement->movement_flags,
-                                 &other_movement->position, other_body->scale, other_movement->movement_flags);
-            }
+            CollisionResolve(local_movement, *local_body, other_movement, *other_body, dt);
         }
 
         CBehavior *local_behavior = null;

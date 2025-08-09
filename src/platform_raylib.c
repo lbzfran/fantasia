@@ -207,3 +207,21 @@ FanVector2 FanVector2Scale(FanVector2 v, float scale) {
 FanVector2 FanVector2Negate(FanVector2 v) {
     return (FanVector2){ -v.x, -v.y };
 }
+
+float FanVector2Cross(FanVector2 v1, FanVector2 v2) {
+    return v1.x * v2.y - v1.y * v2.x;
+}
+
+float FanVector2Dot(FanVector2 v1, FanVector2 v2) {
+    return v1.x * v2.x + v1.y * v2.y;
+}
+
+float Float32Inf(void) {
+    union { unsigned int i; float f; } u = { 0x7F800000 };
+    return u.f;
+}
+
+float Float32NegativeInf(void) {
+    union { unsigned int i; float f; } u = { 0xFF800000 };
+    return u.f;
+}
