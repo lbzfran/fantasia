@@ -38,8 +38,10 @@ typedef uintptr_t  uintptr;
 #define coalesce(a, b)      ((a) ? (a) : (b))
 #define init_if_null(a, x)  ((a) = coalesce((a), (x)))
 
-#define true    1
-#define false   0
+#if !defined(true) && !defined(false)
+# define true    1
+# define false   0
+#endif
 #define not     !
 #define is      ==
 #define isnt    !=
@@ -54,8 +56,10 @@ typedef uintptr_t  uintptr;
 #define megabytes(x)    (kilobytes(x)*1024LL)
 #define gigabytes(x)    (megabytes(x)*1024LL)
 
-#define min(x,y)        ((x) < (y) ? (x) : (y))
-#define max(x,y)        ((x) > (y) ? (x) : (y))
+#if !defined(min) && !defined(max)
+# define min(x,y)        ((x) < (y) ? (x) : (y))
+# define max(x,y)        ((x) > (y) ? (x) : (y))
+#endif
 
 void FanVector2Print_(FanVector2 v, const char *name) {
     printf("%s: (%f, %f)\n", name, v.x, v.y);
@@ -323,17 +327,17 @@ ComponentStorageDeclare(CAnimation, CAnimation);
  */
 void MovementUpdate(CMovement *m, CBody *b, FanVector2 direction, float dt) {
     if (not m->initialized) {
-        init_if_null(m->position.x, 0.0f);
-        init_if_null(m->position.y, 0.0f);
+        init_if_null(m->position.x,      0.0f);
+        init_if_null(m->position.y,      0.0f);
 
         init_if_null(m->last_position.x, m->position.x);
         init_if_null(m->last_position.y, m->position.y);
 
-        init_if_null(m->direction.x, 1.0f);
-        init_if_null(m->direction.y, 1.0f);
+        init_if_null(m->direction.x,     1.0f);
+        init_if_null(m->direction.y,     1.0f);
 
-        init_if_null(m->speed,    500.0f);
-        init_if_null(m->friction, 1.0f);
+        init_if_null(m->speed,           500.0f);
+        init_if_null(m->friction,        1.0f);
 
         m->initialized = true;
     }
@@ -405,7 +409,10 @@ void CollisionResolve(FanVector2 *aPos, FanVector2 aSize, int32 aFlags, FanVecto
     int32 aMovable = (aFlags & MovementFlag_Immovable) ? 0 : 1;
     int32 bMovable = (bFlags & MovementFlag_Immovable) ? 0 : 1;
     if (overlap.x < overlap.y) {
-        correction = overlap.x * 0.5f;
+        correction = overlap.x;
+        if (aMovable and bMovable) {
+             correction *= 0.5f;
+        }
         if (aPos->x < bPos->x) {
             aPos->x -= correction * aMovable;
             bPos->x += correction * bMovable;
@@ -414,7 +421,10 @@ void CollisionResolve(FanVector2 *aPos, FanVector2 aSize, int32 aFlags, FanVecto
             bPos->x -= correction * bMovable;
         }
     } else {
-        correction = overlap.y * 0.5f;
+        correction = overlap.y;
+        if (aMovable and bMovable) {
+            correction *= 0.5f;
+        }
         if (aPos->y < bPos->y) {
             aPos->y -= correction * aMovable;
             bPos->y += correction * bMovable;
@@ -495,7 +505,7 @@ typedef enum {
  * components: CAnimation, CTexture
  */
 void AnimationUpdate(CAnimation *a, CTexture *t, int32 request_id, int32 flags, float dt) {
-    if (request_id != -1 and (a->animation_flags & AnimationFlag_NotInterruptible) == 0) {
+    if (request_id != -1 and (a->animation_flags & AnimationFlag_NotInterruptible) == false) {
         *a = AnimationApply(request_id, flags);
     }
 
@@ -507,7 +517,7 @@ void AnimationUpdate(CAnimation *a, CTexture *t, int32 request_id, int32 flags, 
         a->current_frame++;
 
         if (a->current_frame >= data->frame_count) {
-            if (data->loop and (a->animation_flags & AnimationFlag_DisableLoop) == 0) {
+            if (data->loop and (a->animation_flags & AnimationFlag_DisableLoop) == false) {
                 a->current_frame = 0;
             }
             else {
@@ -681,10 +691,10 @@ global void UpdateEntitySplit(void) {
         if (local_movement->movement_flags & MovementFlag_NoCollision) continue;
 
         if (local_movement->movement_flags & MovementFlag_Immovable) {
-            static_entities[static_entity_count++] = local_movement_index;
+            static_entities[static_entity_count++] = local_id;
         }
         else {
-            dynamic_entities[dynamic_entity_count++] = local_movement_index;
+            dynamic_entities[dynamic_entity_count++] = local_id;
         }
     }
 }
@@ -696,26 +706,23 @@ void UpdateAndRender(FanVector2 player_direction, FanVector2 player_offset, int3
 
     for (ssize i = 0; i < dynamic_entity_count; i++) {
         int32 local_id = dynamic_entities[i];
-        if (local_id == -1) {
-            continue;
-        }
 
-        CMovement *local_movement = &world.c_movement.data[i];
-        CBehavior *local_behavior = null;
+        int32 local_movement_index = world.c_movement.sparse[local_id];
+        CMovement *local_movement = &world.c_movement.data[local_movement_index];
 
-        int32 local_body_index = world.c_body.sparse[local_id];
         CBody *local_body = null;
-        if (local_body_index != -1) {
-            local_body = &world.c_body.data[local_body_index];
-        }
+        int32 local_body_index = world.c_body.sparse[local_id];
+        assert(local_body_index != -1);
+        local_body = &world.c_body.data[local_body_index];
 
         // COLLISION CHECK HERE
         for (ssize j = i + 1; j < dynamic_entity_count; j++) {
-            int32 other_index = dynamic_entities[j];
-            int32 other_id = world.c_movement.dense[other_index];
-            CMovement *other_movement = &world.c_movement.data[other_index];
+            int32 other_id = dynamic_entities[j];
+            int32 other_movement_index = world.c_movement.sparse[other_id];
+            CMovement *other_movement = &world.c_movement.data[other_movement_index];
 
             int32 other_body_index = world.c_body.sparse[other_id];
+            assert(other_body_index != -1);
             CBody *other_body = &world.c_body.data[other_body_index];
 
             if (CollisionCheck(local_movement->position, local_body->scale,
@@ -726,11 +733,12 @@ void UpdateAndRender(FanVector2 player_direction, FanVector2 player_offset, int3
             }
         }
         for (ssize s = 0; s < static_entity_count; s++) {
-            int32 other_index = static_entities[s];
-            int32 other_id    = world.c_movement.dense[other_index];
-            CMovement *other_movement = &world.c_movement.data[other_index];
+            int32 other_id = static_entities[s];
+            int32 other_movement_index = world.c_movement.sparse[other_id];
+            CMovement *other_movement = &world.c_movement.data[other_movement_index];
 
             int32 other_body_index = world.c_body.sparse[other_id];
+            assert(other_body_index != -1);
             CBody *other_body = &world.c_body.data[other_body_index];
 
             if (CollisionCheck(local_movement->position, local_body->scale,
@@ -738,14 +746,15 @@ void UpdateAndRender(FanVector2 player_direction, FanVector2 player_offset, int3
                 CollisionResolve(&local_movement->position, local_body->scale, local_movement->movement_flags,
                                  &other_movement->position, other_body->scale, other_movement->movement_flags);
             }
-    }
+        }
 
+        CBehavior *local_behavior = null;
+        FanVector2 local_direction = FanVector2Zero();
         if (local_id == Entity_Player_One) {
-            MovementUpdate(local_movement, local_body, player_direction, dt);
+            local_direction = player_direction;
         }
         else {
             int32 local_behavior_index = world.c_behavior.sparse[local_id];
-            FanVector2 local_direction = FanVector2Zero();
             if (local_behavior_index != -1) {
                 local_behavior = &world.c_behavior.data[local_behavior_index];
 
@@ -754,7 +763,7 @@ void UpdateAndRender(FanVector2 player_direction, FanVector2 player_offset, int3
                         if (world.current_time - local_behavior->start_time > local_behavior->duration) {
                             local_direction = (FanVector2) {
                                 FanRandomInt(-1, 1),
-                                    FanRandomInt(-1, 1)
+                                FanRandomInt(-1, 1)
                             };
                             local_behavior->start_time = world.current_time;
                         }
@@ -767,9 +776,8 @@ void UpdateAndRender(FanVector2 player_direction, FanVector2 player_offset, int3
                     default: break;
                 }
             }
-
-            MovementUpdate(local_movement, local_body, local_direction, dt);
         }
+        MovementUpdate(local_movement, local_body, local_direction, dt);
 
         if (called_object_dump) {
             printf("\tlocal_id: %d\n", local_id);
@@ -904,7 +912,6 @@ void UpdateAndRender(FanVector2 player_direction, FanVector2 player_offset, int3
             }
         }
     }
-
 }
 
 int main(void) {
@@ -988,7 +995,7 @@ int main(void) {
     ComponentStorageAdd(&world.c_body,         world.entity_count);
     ComponentStorageAddArgs(&world.c_movement, world.entity_count,
         .position = (FanVector2){ 200.0f, 300.0f },
-        .movement_flags = MovementFlag_Immovable
+        // .movement_flags = MovementFlag_NoCollision
     );
     ComponentStorageAddArgs(&world.c_color,    world.entity_count, 50, 255, 50, 255);
     world.entity_count++;
@@ -1007,6 +1014,10 @@ int main(void) {
         .position = (FanVector2){ 400.0f, 400.0f }
     );
     ComponentStorageAddArgs(&world.c_color,    world.entity_count, 50, 255, 255, 255);
+    // ComponentStorageAddArgs(&world.c_behavior, world.entity_count,
+    //     .type = BehaviorType_Random,
+    //     .duration = 0.5f
+    // );
     world.entity_count++;
 
     UpdateEntitySplit();
