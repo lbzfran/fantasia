@@ -201,7 +201,9 @@ FAN_API void FanDrawTexture(FanTexture texture, FanRect src, FanRect dst, FanVec
 
 FAN_API float FanClamp(float value, float min, float max);
 FAN_API float FanLerp(float a, float x, float b);
-FAN_API int FanFloatEquals(float x, float y);
+FAN_API int   FanFloat32Equals(float x, float y);
+FAN_API float FanFloat32Inf(void);
+FAN_API float FanFloat32NegativeInf(void);
 
 FAN_API FanVector2 FanVector2Zero(void);
 FAN_API FanVector2 FanVector2One(void);
@@ -222,9 +224,6 @@ FAN_API FanVector2 FanVector2Negate(FanVector2 v);
 
 FAN_API float FanVector2Dot(FanVector2 v1, FanVector2 v2);
 FAN_API float FanVector2Cross(FanVector2 v1, FanVector2 v2);
-
-FAN_API float Float32Inf(void);
-FAN_API float Float32NegativeInf(void);
 
 // custom api
 

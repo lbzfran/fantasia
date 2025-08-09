@@ -156,7 +156,7 @@ float FanLerp(float a, float t, float b) {
     return  a + (b - a) * t;
 }
 
-int FanFloatEquals(float x, float y) {
+int FanFloat32Equals(float x, float y) {
     float epsilon = 0.000001f;
     int result = (fabsf(x - y)) <= (epsilon*fmaxf(1.0f, fmaxf(fabsf(x), fabsf(y))));
     return result;
@@ -188,7 +188,7 @@ FanVector2 FanVector2Normalize(FanVector2 v) {
     float magnitude = FanVector2Length(v);
 
     FanVector2 result = FanVector2Zero();
-    if (!FanFloatEquals(magnitude, 0.0f)) {
+    if (!FanFloat32Equals(magnitude, 0.0f)) {
         result = (FanVector2){ v.x / magnitude, v.y / magnitude };
     }
     return result;
@@ -216,12 +216,12 @@ float FanVector2Dot(FanVector2 v1, FanVector2 v2) {
     return v1.x * v2.x + v1.y * v2.y;
 }
 
-float Float32Inf(void) {
+float FanFloat32Inf(void) {
     union { unsigned int i; float f; } u = { 0x7F800000 };
     return u.f;
 }
 
-float Float32NegativeInf(void) {
+float FanFloat32NegativeInf(void) {
     union { unsigned int i; float f; } u = { 0xFF800000 };
     return u.f;
 }
