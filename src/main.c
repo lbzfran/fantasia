@@ -253,39 +253,21 @@ typedef enum {
     MovementFlag_CollideSoftly = (1 << 2),
 } MovementFlags;
 
-// typedef struct CMovement {
-//     FanVector2 position;
-//     FanVector2 last_position;
-//     FanVector2 direction;
-//
-//     float32 speed;
-//     float32 friction;
-//
-//     int32 movement_flags;
-//     bool32 initialized;
-// } CMovement;
-//
-// typedef struct CBody {
-//     FanVector2 scale;
-//     FanVector2 offset;
-//
-//     int32 layer;
-//
-//     bool32 initialized;
-// } CBody;
-
-typedef struct CTexture {
-    FanTexture texture;
-    FanRect rect;
-} CTexture;
-
 typedef struct CTransform {
     FanVector2 position;
     FanVector2 scale;
-    float32 rotation;
+    float32    rotation;
 
-    bool32 initialized;
+    bool32     initialized;
 } CTransform;
+
+typedef struct CShape {
+    FanColor   color;
+    FanVector2 offset;
+    int32      layer;
+
+    bool32     initialized;
+} CShape;
 
 typedef struct CPhysics {
     FanVector2 direction;
@@ -295,17 +277,14 @@ typedef struct CPhysics {
     float32 friction;
     float32 mass;
 
-    int32 flags;
+    int32  flags;
     bool32 initialized;
 } CPhysics;
 
-typedef struct CShape {
-    FanColor color;
-    FanVector2 offset;
-    int32 layer;
-
-    bool32 initialized;
-} CShape;
+typedef struct CTexture {
+    FanTexture texture;
+    FanRect    rect;
+} CTexture;
 
 typedef struct CBehavior {
     enum BehaviorType {
@@ -319,21 +298,21 @@ typedef struct CBehavior {
 // state manager component
 typedef struct CAnimation {
     const char8 *name;
-    int32 id;
-    float32 timer;
-    int32 current_frame;
-    bool32 finished;
-    int32 animation_flags;
+    int32        id;
+    float32      timer;
+    int32        current_frame;
+    bool32       finished;
+    int32        animation_flags;
 } CAnimation;
 
 typedef struct {
     const char8 *name;
-    FanRect *frames;
-    float32 frame_time;
-    int32 frame_count;
-    bool32 loop;
+    FanRect     *frames;
+    float32      frame_time;
+    int32        frame_count;
+    bool32       loop;
 
-    int32 next_id;
+    int32        next_id;
 } AnimationData;
 
 #define FanRect_EMPTY (FanRect){ 0 }
@@ -382,12 +361,12 @@ void PhysicsUpdate(CPhysics *p, CTransform *t, FanVector2 direction, float32 dt)
         init_if_null(p->last_position.x, t->position.x);
         init_if_null(p->last_position.y, t->position.y);
 
-        init_if_null(p->direction.x,     1.0f);
-        init_if_null(p->direction.y,     1.0f);
+        init_if_null(p->direction.x, 1.0f);
+        init_if_null(p->direction.y, 1.0f);
 
-        init_if_null(p->speed,           500.0f);
-        init_if_null(p->friction,        1.0f);
-        init_if_null(p->mass,            1.0f);
+        init_if_null(p->speed,       500.0f);
+        init_if_null(p->friction,    1.0f);
+        init_if_null(p->mass,        1.0f);
 
         p->initialized = true;
     }
@@ -474,12 +453,12 @@ void CollisionResolve(CTransform *a, CPhysics *a_p, CTransform *b, CPhysics *b_p
         float32 correction;
         float32 aMove = (a_p->flags & MovementFlag_Immovable) ? 0.0f : (1.0f / max(a_p->mass, 0.0f));
         float32 bMove = (b_p->flags & MovementFlag_Immovable) ? 0.0f : (1.0f / max(b_p->mass, 0.0f));
-        // if (a_p->flags & MovementFlag_CollideSoftly) {
-        //     aMove *= dt;
-        // }
-        // if (b_p->flags & MovementFlag_CollideSoftly) {
-        //     bMove *= dt;
-        // }
+        if (a_p->flags & MovementFlag_CollideSoftly) {
+            aMove *= dt;
+        }
+        if (b_p->flags & MovementFlag_CollideSoftly) {
+            bMove *= dt;
+        }
 
         float32 totalMove = aMove + bMove;
         float32 aFactor = (totalMove > 0.0f) ? (aMove / totalMove) : 0.0f;
@@ -738,9 +717,6 @@ typedef struct World {
 
     Arena             arena;
 
-    // CBodyStorage      c_body;
-    // CMovementStorage  c_movement;
-    // CColorStorage     c_color;
     CTransformStorage c_transform;
     CShapeStorage     c_shape;
     CPhysicsStorage   c_physics;
@@ -794,26 +770,15 @@ void UpdateAndRender(
         bool32 update_entity_split,
         float32 dt
     ) {
-    if (called_object_dump) {
+    if (called_object_dump)
         printf("[CTransform]\n");
-    }
 
-    if (update_entity_split) {
+    if (update_entity_split)
         UpdateEntitySplit();
-        for (ssize s = 0; s < static_entity_count; s++) {
-            int32 self_id = static_entities[s];
 
-            int32 self_transform_idx = world.c_transform.sparse[self_id];
-            CTransform *self_transform = &world.c_transform.data[self_transform_idx];
-
-            FanVector2 self_position = FanVector2Zero();
-            FanVector2 self_scale    = FanVector2Zero();
-            TransformUpdate(self_transform, self_position, self_scale, dt);
-        }
-    }
-
-    for (ssize i = 0; i < dynamic_entity_count; i++) {
-        int32 self_id = dynamic_entities[i];
+    for (ssize i = 0; i < world.c_transform.size; i++) {
+        // int32 self_id = dynamic_entities[i];
+        int32 self_id = world.c_transform.dense[i];
 
         int32 self_transform_idx = world.c_transform.sparse[self_id];
         int32 self_physics_idx   = world.c_physics.sparse[self_id];
@@ -832,7 +797,7 @@ void UpdateAndRender(
 
             for (ssize j = i + 1; j < dynamic_entity_count; j++) {
                 int32 other_id = dynamic_entities[j];
-                int32 other_transform_idx = world.c_transform.sparse[other_id];
+                int32 other_transform_idx   = world.c_transform.sparse[other_id];
                 CTransform *other_transform = &world.c_transform.data[other_transform_idx];
 
                 int32 other_physics_idx = world.c_physics.sparse[other_id];
@@ -1096,7 +1061,7 @@ global void SceneMain(void) {
         .color = (FanColor){ 200, 165, 175, 255 },
     );
     ComponentStorageAddArgs(&world.c_physics,   world.entity_count,
-        // .flags = MovementFlag_NoCollision,
+        .flags = MovementFlag_NoCollision,
     );
     world.entity_count++;
 
