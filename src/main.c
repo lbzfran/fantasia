@@ -425,7 +425,8 @@ void PhysicsUpdate(CPhysics *p, CTransform *t, FanVector2 direction, float32 dt)
     p->direction.y = coalesce(direction.y, p->direction.y);
     direction = FanVector2Normalize(direction);
 
-    float32 force_factor = (p->mass >= 0.0f) ? (1.0f / p->mass) : 0.0f;
+    float32 safe_mass = max(p->mass, 0.0f);
+    float32 force_factor = 1.0f / safe_mass;
     if (FanVector2Length(direction) > 0) {
         FanVector2 force = FanVector2Scale(direction, p->speed);
         acceleration = FanVector2Add(acceleration, FanVector2Scale(force, force_factor));
@@ -471,8 +472,8 @@ void CollisionResolve(CTransform *a, CPhysics *a_p, CTransform *b, CPhysics *b_p
             return;
 
         float32 correction;
-        float32 aMove = (a_p->flags & MovementFlag_Immovable) ? 0.0f : a_p->mass >= 0.0f ? 1.0f / a_p->mass : 0.0f;
-        float32 bMove = (b_p->flags & MovementFlag_Immovable) ? 0.0f : b_p->mass >= 0.0f ? 1.0f / b_p->mass : 0.0f;
+        float32 aMove = (a_p->flags & MovementFlag_Immovable) ? 0.0f : (1.0f / max(a_p->mass, 0.0f));
+        float32 bMove = (b_p->flags & MovementFlag_Immovable) ? 0.0f : (1.0f / max(b_p->mass, 0.0f));
         // if (a_p->flags & MovementFlag_CollideSoftly) {
         //     aMove *= dt;
         // }
@@ -1095,7 +1096,7 @@ global void SceneMain(void) {
         .color = (FanColor){ 200, 165, 175, 255 },
     );
     ComponentStorageAddArgs(&world.c_physics,   world.entity_count,
-        .mass = 4.0f,
+        // .flags = MovementFlag_NoCollision,
     );
     world.entity_count++;
 
