@@ -8,12 +8,12 @@
     - [x] animation trigger
     - [-] refine animation control (moving forward/backward) [scrapped idea]
     - [x] chaining animations
-- [ ] Collisions (AABB)
-- [ ] Behaviors
-    - [ ] dynamic behaviors (based on conditions, decision tree maybe..?)
+- [x] Collisions (AABB)
 - [ ] Interactions
 - [ ] Maps
 - [ ] Loading/Saving Game Data (with versioning)
+- [ ] Behaviors
+    - [ ] dynamic behaviors (based on conditions, decision tree maybe..?)
 
 # Build
 

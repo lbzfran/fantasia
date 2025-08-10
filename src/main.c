@@ -266,6 +266,7 @@ typedef struct CShape {
     FanVector2 offset;
     int32      layer;
 
+    bool32     visible;
     bool32     initialized;
 } CShape;
 
@@ -273,12 +274,13 @@ typedef struct CPhysics {
     FanVector2 direction;
     FanVector2 last_position;
 
-    float32 speed;
-    float32 friction;
-    float32 mass;
+    float32    speed;
+    float32    friction;
+    float32    mass;
 
-    int32  flags;
-    bool32 initialized;
+    int32      flags;
+    bool32     active;
+    bool32     initialized;
 } CPhysics;
 
 typedef struct CTexture {
@@ -289,7 +291,8 @@ typedef struct CTexture {
 typedef struct CBehavior {
     enum BehaviorType {
         BehaviorType_None   = 0,
-        BehaviorType_Random = 1
+        BehaviorType_Random = 1,
+        BehaviorType_Follow = 2,
     } type;
     float64 start_time;
     float64 duration;
@@ -368,6 +371,7 @@ void PhysicsUpdate(CPhysics *p, CTransform *t, FanVector2 direction, float32 dt)
         init_if_null(p->friction,    1.0f);
         init_if_null(p->mass,        1.0f);
 
+        p->active = true;
         p->initialized = true;
     }
 
@@ -500,6 +504,7 @@ void ShapeUpdate(CShape *s, FanColor color, FanVector2 offset, int32 layer, floa
         }
         init_if_null(s->layer,   2);
 
+        s->visible = true;
         s->initialized = true;
     }
 
@@ -795,58 +800,66 @@ void UpdateAndRender(
         if (self_physics_idx != -1) {
             self_physics = &world.c_physics.data[self_physics_idx];
 
-            for (ssize j = i + 1; j < dynamic_entity_count; j++) {
-                int32 other_id = dynamic_entities[j];
-                int32 other_transform_idx   = world.c_transform.sparse[other_id];
-                CTransform *other_transform = &world.c_transform.data[other_transform_idx];
+            if (not self_physics->initialized or self_physics->active) {
+                for (ssize j = i + 1; j < dynamic_entity_count; j++) {
+                    int32 other_id = dynamic_entities[j];
+                    int32 other_transform_idx   = world.c_transform.sparse[other_id];
+                    CTransform *other_transform = &world.c_transform.data[other_transform_idx];
 
-                int32 other_physics_idx = world.c_physics.sparse[other_id];
-                assert(other_physics_idx != -1);
-                CPhysics *other_physics = &world.c_physics.data[other_physics_idx];
+                    int32 other_physics_idx = world.c_physics.sparse[other_id];
+                    assert(other_physics_idx != -1);
+                    CPhysics *other_physics = &world.c_physics.data[other_physics_idx];
 
-                CollisionResolve(self_transform, self_physics, other_transform, other_physics, dt);
-            }
-            for (ssize s = 0; s < static_entity_count; s++) {
-                int32 other_id = static_entities[s];
-                int32 other_transform_idx = world.c_transform.sparse[other_id];
-                CTransform *other_transform = &world.c_transform.data[other_transform_idx];
+                    CollisionResolve(self_transform, self_physics, other_transform, other_physics, dt);
+                }
+                for (ssize s = 0; s < static_entity_count; s++) {
+                    int32 other_id = static_entities[s];
+                    int32 other_transform_idx = world.c_transform.sparse[other_id];
+                    CTransform *other_transform = &world.c_transform.data[other_transform_idx];
 
-                int32 other_physics_idx = world.c_physics.sparse[other_id];
-                assert(other_physics_idx != -1);
-                CPhysics *other_physics = &world.c_physics.data[other_physics_idx];
+                    int32 other_physics_idx = world.c_physics.sparse[other_id];
+                    assert(other_physics_idx != -1);
+                    CPhysics *other_physics = &world.c_physics.data[other_physics_idx];
 
-                CollisionResolve(self_transform, self_physics, other_transform, other_physics, dt);
-            }
+                    CollisionResolve(self_transform, self_physics, other_transform, other_physics, dt);
+                }
 
-            FanVector2 self_direction = FanVector2Zero();
-            if (self_id == Entity_Player_One) {
-                self_direction = player_direction;
-            }
-            else {
-                if (self_behavior_idx != -1) {
-                    self_behavior = &world.c_behavior.data[self_behavior_idx];
+                FanVector2 self_direction = FanVector2Zero();
+                if (self_id == Entity_Player_One) {
+                    self_direction = player_direction;
+                }
+                else {
+                    if (self_behavior_idx != -1) {
+                        self_behavior = &world.c_behavior.data[self_behavior_idx];
 
-                    switch (self_behavior->type) {
-                        case BehaviorType_Random: {
-                            if (world.current_time - self_behavior->start_time > self_behavior->duration) {
-                                self_direction = (FanVector2) {
-                                    FanRandomInt(-1, 1),
-                                    FanRandomInt(-1, 1)
-                                };
-                                self_behavior->start_time = world.current_time;
-                            }
-                            else {
-                                // keeps entity moving rather than staying still
-                                self_direction = self_physics->direction;
-                            }
-                        } break;
-                        case BehaviorType_None:
-                        default: break;
+                        switch (self_behavior->type) {
+                            case BehaviorType_Random: {
+                                if (world.current_time - self_behavior->start_time > self_behavior->duration) {
+                                    self_direction = (FanVector2) {
+                                        FanRandomInt(-1, 1),
+                                        FanRandomInt(-1, 1)
+                                    };
+                                    self_behavior->start_time = world.current_time;
+                                }
+                                else {
+                                    // keeps entity moving rather than staying still
+                                    self_direction = self_physics->direction;
+                                }
+                            } break;
+                            case BehaviorType_Follow: {
+                                CTransform *player_transform = &world.c_transform.data[Entity_Player_One];
+                                FanVector2 face = FanVector2Normalize(FanVector2Sub(player_transform->position, self_transform->position));
+                                self_direction = (FanVector2){ signof(face.x), signof(face.y) };
+
+                            } break;
+                            case BehaviorType_None:
+                            default: break;
+                        }
                     }
                 }
-            }
 
-            PhysicsUpdate(self_physics, self_transform, self_direction, dt);
+                PhysicsUpdate(self_physics, self_transform, self_direction, dt);
+            }
         }
 
         if (called_object_dump) {
@@ -930,9 +943,8 @@ void UpdateAndRender(
         if (id == Entity_Player_One) {
             offset = player_offset;
         }
-        else if (id == Entity_Background) {
-            // scale = (FanVector2){ FanWindowWidth(), FanWindowHeight() };
-        }
+        // else if (id == Entity_Background) {
+        // }
         ShapeUpdate(shape, color, offset, layer, dt);
 
         if (texture_idx != -1) {
@@ -955,11 +967,12 @@ void UpdateAndRender(
             physics = &world.c_physics.data[physics_idx];
         }
 
-        if (id == Entity_Player_One) {
-            ShapeRender(shape, transform, texture, physics, null);
-        }
-        else {
-            ShapeRender(shape, transform, texture, physics, RenderFlag_FlipX);
+        if (shape->visible) {
+            int32 render_flags = 0;
+            if (id != Entity_Player_One) {
+                render_flags |= RenderFlag_FlipX;
+            }
+            ShapeRender(shape, transform, texture, physics, render_flags);
         }
 
 
@@ -1033,12 +1046,14 @@ global void SceneMain(void) {
     ComponentStorageAddArgs(&world.c_shape,    world.entity_count,
         .color = (FanColor){ 255, 50, 255, 255 }
     );
-    ComponentStorageAddArgs(&world.c_physics,  world.entity_count, .speed = 300.0f);
+    ComponentStorageAddArgs(&world.c_physics,  world.entity_count,
+        .speed = 150.0f
+    );
     ComponentStorageAddArgs(&world.c_texture,  world.entity_count,
-        .texture = tex_mewee);
+        .texture = tex_mewee
+    );
     ComponentStorageAddArgs(&world.c_behavior, world.entity_count,
-        .type = BehaviorType_Random,
-        .duration = 0.5f,
+        .type = BehaviorType_Follow,
     );
     world.entity_count++;
 
@@ -1055,10 +1070,12 @@ global void SceneMain(void) {
     world.entity_count++;
 
     ComponentStorageAddArgs(&world.c_transform, world.entity_count,
-        .position = (FanVector2){ 200.0f, 300.0f },
+        .position = (FanVector2){ 200.0f, 150.0f },
+        .scale = (FanVector2){ 400.0f, 150.0f }
     );
     ComponentStorageAddArgs(&world.c_shape,     world.entity_count,
         .color = (FanColor){ 200, 165, 175, 255 },
+        .layer = 3
     );
     ComponentStorageAddArgs(&world.c_physics,   world.entity_count,
         .flags = MovementFlag_NoCollision,
@@ -1188,12 +1205,12 @@ int main(void) {
             printf("Total Allocations: %.2f / %.2f KB\n", (double)world.arena.size / 1000.0f, (double)world.arena.capacity / 1000.0f);
             printf("current_time: %.3f\n", world.current_time);
 
-            printf("Total Component 'Transform' size/capacity:   \t%zu/%zu\n", world.c_transform.size, world.c_transform.capacity);
-            printf("Total Component 'Shape' size/capacity:  \t%zu/%zu\n",      world.c_shape.size,     world.c_shape.capacity);
-            printf("Total Component 'Physics' size/capacity: \t%zu/%zu\n",     world.c_physics.size,   world.c_physics.capacity);
-            printf("Total Component 'Texture' size/capacity:   \t%zu/%zu\n",   world.c_texture.size,   world.c_texture.capacity);
-            printf("Total Component 'Behavior' size/capacity:  \t%zu/%zu\n",   world.c_behavior.size,  world.c_behavior.capacity);
-            printf("Total Component 'Animation' size/capacity: \t%zu/%zu\n",   world.c_animation.size, world.c_animation.capacity);
+            printf("Total Component 'Transform' size/capacity: \t%zu/%zu\n", world.c_transform.size, world.c_transform.capacity);
+            printf("Total Component 'Shape' size/capacity:     \t%zu/%zu\n", world.c_shape.size,     world.c_shape.capacity);
+            printf("Total Component 'Physics' size/capacity:   \t%zu/%zu\n", world.c_physics.size,   world.c_physics.capacity);
+            printf("Total Component 'Texture' size/capacity:   \t%zu/%zu\n", world.c_texture.size,   world.c_texture.capacity);
+            printf("Total Component 'Behavior' size/capacity:  \t%zu/%zu\n", world.c_behavior.size,  world.c_behavior.capacity);
+            printf("Total Component 'Animation' size/capacity: \t%zu/%zu\n", world.c_animation.size, world.c_animation.capacity);
         }
 
         FanDrawBegin();
