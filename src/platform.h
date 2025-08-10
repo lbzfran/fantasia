@@ -32,6 +32,13 @@ typedef struct FanTexture {
     int format;
 } FanTexture;
 
+typedef struct FanCamera2D {
+    FanVector2 target;
+    FanVector2 offset;
+    float rotation;
+    float zoom;
+} FanCamera2D;
+
 typedef enum {
     FanKey_NULL            = 0,        // Key: NULL, used for no key pressed
     // Alphanumeric keys
@@ -145,15 +152,34 @@ typedef enum {
 } FanKey;
 
 typedef enum {
-    FanLog_ALL = 0,
-    FanLog_TRACE = 1,
-    FanLog_DEBUG = 2,
-    FanLog_INFO = 3,
+    FanLog_ALL     = 0,
+    FanLog_TRACE   = 1,
+    FanLog_DEBUG   = 2,
+    FanLog_INFO    = 3,
     FanLog_WARNING = 4,
-    FanLog_ERROR = 5,
-    FanLog_FATAL = 6,
-    FanLog_NONE = 7
+    FanLog_ERROR   = 5,
+    FanLog_FATAL   = 6,
+    FanLog_NONE    = 7
 } FanLogLevel;
+
+typedef enum {
+    FanWindow_VSYNC_HINT         = 0x00000040,   // Set to try enabling V-Sync on GPU
+    FanWindow_FULLSCREEN_MODE    = 0x00000002,   // Set to run program in fullscreen
+    FanWindow_WINDOW_RESIZABLE   = 0x00000004,   // Set to allow resizable window
+    FanWindow_WINDOW_UNDECORATED = 0x00000008,   // Set to disable window decoration (frame and buttons)
+    FanWindow_WINDOW_HIDDEN      = 0x00000080,   // Set to hide window
+    FanWindow_WINDOW_MINIMIZED   = 0x00000200,   // Set to minimize window (iconify)
+    FanWindow_WINDOW_MAXIMIZED   = 0x00000400,   // Set to maximize window (expanded to monitor)
+    FanWindow_WINDOW_UNFOCUSED   = 0x00000800,   // Set to window non focused
+    FanWindow_WINDOW_TOPMOST     = 0x00001000,   // Set to window always on top
+    FanWindow_WINDOW_ALWAYS_RUN  = 0x00000100,   // Set to allow windows running while minimized
+    FanWindow_WINDOW_TRANSPARENT = 0x00000010,   // Set to allow transparent framebuffer
+    FanWindow_WINDOW_HIGHDPI     = 0x00002000,   // Set to support HighDPI
+    FanWindow_WINDOW_MOUSE_PASSTHROUGH = 0x00004000, // Set to support mouse passthrough, only supported when FLAG_WINDOW_UNDECORATED
+    FanWindow_BORDERLESS_WINDOWED_MODE = 0x00008000, // Set to run program in borderless windowed mode
+    FanWindow_MSAA_4X_HINT       = 0x00000020,   // Set to try enabling MSAA 4X
+    FanWindow_INTERLACED_HINT    = 0x00010000    // Set to try enabling interlaced video format (for V3D)
+} FanWindowFlag;
 
 #define FanColor_WHITE   (FanColor){ 210, 210, 210, 255 }
 #define FanColor_GRAY    (FanColor){  80,  80,  80, 255 }
@@ -170,6 +196,7 @@ FAN_API void FanWindowCreate(int width, int height, const char *title);
 FAN_API void FanWindowClose(void);
 FAN_API int FanWindowShouldClose(void);
 
+FAN_API void FanWindowConfig(int);
 FAN_API void FanSetLogLevel(int);
 
 FAN_API int FanWindowWidth(void);
@@ -196,6 +223,9 @@ FAN_API void FanDrawRect(int x, int y, int w, int h, FanColor color);
 FAN_API void FanDrawRectV(FanVector2 pos, FanVector2 scale, FanColor color);
 FAN_API void FanDrawRectR(FanRect rect, FanColor color);
 FAN_API void FanDrawTexture(FanTexture texture, FanRect src, FanRect dst, FanVector2 origin, float angle, FanColor);
+
+FAN_API void FanCameraBegin(FanCamera2D);
+FAN_API void FanCameraEnd(void);
 
 // quick maths
 
