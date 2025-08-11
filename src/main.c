@@ -407,16 +407,17 @@ void MovementUpdate(CMovement *m, CTransform *t, FanVector2 direction, float32 d
     m->direction.y = coalesce(direction.y, m->direction.y);
 
     FanVector2 acceleration = FanVector2Zero();
-    if (FanVector2Length(direction) > 0) {
+    if (FanVector2Length(direction) > 0.0f) {
         direction = FanVector2Normalize(direction);
         acceleration = FanVector2Scale(direction, m->speed);
-        acceleration = FanVector2Add(acceleration, FanVector2Scale(m->velocity, -1.0f));
+        // acceleration = FanVector2Add(acceleration, FanVector2Scale(m->velocity, -1.0f));
     }
-    else if (FanVector2Length(m->velocity) > 0.0f) {
-        acceleration = FanVector2Scale(m->velocity, -20.0f);
-    }
+    // else if (FanVector2Length(m->velocity) > 0.0f) {
+    //     acceleration = FanVector2Scale(m->velocity, -20.0f);
+    // }
 
-    m->velocity = FanVector2Add(m->velocity, FanVector2Scale(acceleration, dt));
+    // m->velocity = FanVector2Add(m->velocity, FanVector2Scale(acceleration, dt));
+    m->velocity   = acceleration;
     m->velocity.x = clamp(m->velocity.x, -m->max_speed, m->max_speed);
     m->velocity.y = clamp(m->velocity.y, -m->max_speed, m->max_speed);
 
