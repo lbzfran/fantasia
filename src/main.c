@@ -385,13 +385,13 @@ void TransformUpdate(CTransform *t, FanVector2 position, FanVector2 scale, float
 
 void MovementUpdate(CMovement *m, CTransform *t, FanVector2 direction, float32 dt) {
     if (not m->initialized) {
-        init_if_null(m->speed,     500.0f);
-        init_if_null(m->max_speed, 500.0f);
+        init_if_null(m->speed,       400.0f);
+        init_if_null(m->max_speed,   500.0f);
 
         init_if_null(m->direction.x, 1.0f);
         init_if_null(m->direction.y, 1.0f);
 
-        m->active = true;
+        m->active      = true;
         m->initialized = true;
     }
     FanVector2 screen_size = {
@@ -402,26 +402,17 @@ void MovementUpdate(CMovement *m, CTransform *t, FanVector2 direction, float32 d
         screen_size.x -= t->scale.x;
         screen_size.y -= t->scale.y;
     }
-
     m->direction.x = coalesce(direction.x, m->direction.x);
     m->direction.y = coalesce(direction.y, m->direction.y);
 
-    FanVector2 acceleration = FanVector2Zero();
+    FanVector2 velocity = FanVector2Zero();
     if (FanVector2Length(direction) > 0.0f) {
-        direction = FanVector2Normalize(direction);
-        acceleration = FanVector2Scale(direction, m->speed);
-        // acceleration = FanVector2Add(acceleration, FanVector2Scale(m->velocity, -1.0f));
+        direction    = FanVector2Normalize(direction);
+        velocity = FanVector2Scale(direction, m->speed);
     }
-    // else if (FanVector2Length(m->velocity) > 0.0f) {
-    //     acceleration = FanVector2Scale(m->velocity, -20.0f);
-    // }
+    m->velocity   = velocity;
 
-    // m->velocity = FanVector2Add(m->velocity, FanVector2Scale(acceleration, dt));
-    m->velocity   = acceleration;
-    m->velocity.x = clamp(m->velocity.x, -m->max_speed, m->max_speed);
-    m->velocity.y = clamp(m->velocity.y, -m->max_speed, m->max_speed);
-
-    t->position = FanVector2Add(t->position, FanVector2Scale(m->velocity, dt));
+    t->position   = FanVector2Add(t->position, FanVector2Scale(m->velocity, dt));
     t->position.x = clamp(t->position.x, 0.0f, screen_size.x);
     t->position.y = clamp(t->position.y, 0.0f, screen_size.y);
 }
@@ -431,12 +422,12 @@ void PhysicsUpdate(CPhysics *p, CTransform *t, FanVector2 force, float32 dt) {
         init_if_null(p->last_position.x, t->position.x);
         init_if_null(p->last_position.y, t->position.y);
 
-        init_if_null(p->direction.x, 1.0f);
-        init_if_null(p->direction.y, 1.0f);
+        init_if_null(p->direction.x,     1.0f);
+        init_if_null(p->direction.y,     1.0f);
 
-        init_if_null(p->speed,       500.0f);
-        init_if_null(p->friction,    0.2f);
-        init_if_null(p->mass,        1.0f);
+        init_if_null(p->speed,           500.0f);
+        init_if_null(p->friction,        0.2f);
+        init_if_null(p->mass,            1.0f);
 
         p->active = true;
         p->initialized = true;
