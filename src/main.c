@@ -368,19 +368,36 @@ ComponentStorageDeclare(CPhysics,   CPhysics);
 ComponentStorageDeclare(CEnemyTag,      uint8);
 ComponentStorageDeclare(CBackgroundTag, uint8);
 
+typedef enum {
+    TransformUpdate_SetPosition,
+    TransformUpdate_SetScale,
+    TransformUpdate_SetRotation,
+} TransformUpdateFlags;
 /*
  * type: System
  * component(s): CTransform
  */
-void TransformUpdate(CTransform *t, FanVector2 position, FanVector2 scale, float dt) {
+void TransformUpdate(CTransform *t, FanVector2 position, FanVector2 scale, float32 angle, int32 flags, float dt) {
     if (not t->initialized) {
         init_if_null(t->scale.x, 96.0f);
         init_if_null(t->scale.y, 96.0f);
 
         t->initialized = true;
     }
-    t->position = FanVector2Add(t->position, position);
-    t->scale    = FanVector2Add(t->scale, scale);
+    if (flags & TransformUpdate_SetPosition)
+        t->position = position;
+    else
+        t->position = FanVector2Add(t->position, position);
+
+    if (flags & TransformUpdate_SetScale)
+        t->scale    = scale;
+    else
+        t->scale    = FanVector2Add(t->scale, scale);
+
+    if (flags & TransformUpdate_SetRotation)
+        t->rotation = angle;
+    else
+        t->rotation = t->rotation + angle;
 }
 
 void MovementUpdate(CMovement *m, CTransform *t, FanVector2 direction, float32 dt) {
@@ -394,14 +411,6 @@ void MovementUpdate(CMovement *m, CTransform *t, FanVector2 direction, float32 d
         m->active      = true;
         m->initialized = true;
     }
-    FanVector2 screen_size = {
-        FanWindowWidth(),
-        FanWindowHeight()
-    };
-    if (FanVector2Length(t->scale) > 0) {
-        screen_size.x -= t->scale.x;
-        screen_size.y -= t->scale.y;
-    }
     m->direction.x = coalesce(direction.x, m->direction.x);
     m->direction.y = coalesce(direction.y, m->direction.y);
 
@@ -413,8 +422,19 @@ void MovementUpdate(CMovement *m, CTransform *t, FanVector2 direction, float32 d
     m->velocity   = velocity;
 
     t->position   = FanVector2Add(t->position, FanVector2Scale(m->velocity, dt));
-    t->position.x = clamp(t->position.x, 0.0f, screen_size.x);
-    t->position.y = clamp(t->position.y, 0.0f, screen_size.y);
+
+    if (not (m->flags & MovementFlag_NoCollision)) {
+        FanVector2 screen_size = {
+            FanWindowWidth(),
+            FanWindowHeight()
+        };
+        if (FanVector2Length(t->scale) > 0) {
+            screen_size.x -= t->scale.x;
+            screen_size.y -= t->scale.y;
+        }
+        t->position.x = clamp(t->position.x, 0.0f, screen_size.x);
+        t->position.y = clamp(t->position.y, 0.0f, screen_size.y);
+    }
 }
 
 void PhysicsUpdate(CPhysics *p, CTransform *t, FanVector2 force, float32 dt) {
@@ -474,6 +494,10 @@ bool32 CollisionCheck(FanVector2 aPos, FanVector2 aSize, FanVector2 bPos, FanVec
 }
 
 void CollisionResolve(CTransform *a, CMovement *a_m, CTransform *b, CMovement *b_m, float32 dt) {
+    // NOTE(liam): this check is prob unnecessary
+    if (a_m->flags & MovementFlag_NoCollision or b_m->flags & MovementFlag_NoCollision)
+        return;
+
     if (CollisionCheck(a->position, a->scale, b->position, b->scale)) {
         FanVector2 aMax = (FanVector2){
             a->position.x + a->scale.x,
@@ -530,32 +554,35 @@ void CollisionResolve(CTransform *a, CMovement *a_m, CTransform *b, CMovement *b
     // likely solution: https://blog.hamaluik.ca/posts/swept-aabb-collision-using-minkowski-difference/
 }
 
+typedef enum {
+    ShapeUpdate_SetColor,
+    ShapeUpdate_SetOffset,
+    ShapeUpdate_SetLayer,
+} ShapeUpdateFlags;
 /*
  * type: System
  * component(s): Shape
  */
-void ShapeUpdate(CShape *s, FanColor color, FanVector2 offset, int32 layer, float dt) {
+void ShapeUpdate(CShape *s, FanColor color, FanVector2 offset, int32 layer, int32 flags, float dt) {
     (void)dt;
     if (not s->initialized) {
         if (s->color.a == 0) {
             s->color = FanColor_WHITE;
         }
-        init_if_null(s->layer,   2);
+        init_if_null(s->layer, 2);
 
         s->visible = true;
         s->initialized = true;
     }
 
-    if (color.a > 0) {
+    if (flags & ShapeUpdate_SetColor)
         s->color = color;
-    }
 
-    s->offset.x = coalesce(offset.x, s->offset.x);
-    s->offset.y = coalesce(offset.y, s->offset.y);
+    if (flags & ShapeUpdate_SetOffset)
+        s->offset = offset;
 
-    if (layer != -1) {
+    if (flags & ShapeUpdate_SetLayer)
         s->layer = layer;
-    }
 }
 
 /*
@@ -835,12 +862,17 @@ void UpdateAndRender(
 
         FanVector2 self_position = FanVector2Zero();
         FanVector2 self_scale    = FanVector2Zero();
-        TransformUpdate(self_transform, self_position, self_scale, dt);
+        float32 rotation = 0.0f;
+        int32 transform_flags = 0;
+        TransformUpdate(self_transform, self_position, self_scale, rotation, transform_flags, dt);
+        // if (self_id == world.spec_id.camera) {
+        //     self_transform->scale = (FanVector2){ FanWindowWidth() / 2.0f, FanWindowHeight() / 2.0f };
+        // }
 
         if (self_move_idx != -1) {
             self_move = &world.c_movement.data[self_move_idx];
 
-            if (not self_move->initialized or self_move->active) {
+            if (self_move->active and not (self_move->flags & MovementFlag_NoCollision)) {
                 for (ssize j = i + 1; j < dynamic_entity_count; j++) {
                     int32 other_id = dynamic_entities[j];
 
@@ -865,43 +897,48 @@ void UpdateAndRender(
 
                     CollisionResolve(self_transform, self_move, other_transform, other_move, dt);
                 }
+            }
 
-                FanVector2 self_direction = FanVector2Zero();
-                if (self_id == world.spec_id.player) {
-                    self_direction = player_direction;
-                }
-                else {
-                    if (self_behavior_idx != -1) {
-                        self_behavior = &world.c_behavior.data[self_behavior_idx];
+            FanVector2 self_direction = FanVector2Zero();
+            if (self_id == world.spec_id.player) {
+                self_direction = player_direction;
+            }
+            else {
+                if (self_behavior_idx != -1) {
+                    self_behavior = &world.c_behavior.data[self_behavior_idx];
 
-                        switch (self_behavior->type) {
-                            case BehaviorType_Random: {
-                                if (world.current_time - self_behavior->start_time > self_behavior->duration) {
-                                    self_direction = (FanVector2) {
-                                        FanRandomInt(-1, 1),
+                    switch (self_behavior->type) {
+                        case BehaviorType_Random: {
+                            if (world.current_time - self_behavior->start_time > self_behavior->duration) {
+                                self_direction = (FanVector2) {
+                                    FanRandomInt(-1, 1),
                                         FanRandomInt(-1, 1)
-                                    };
-                                    self_behavior->start_time = world.current_time;
-                                }
-                                else {
-                                    // keeps entity moving rather than staying still
-                                    self_direction = self_move->direction;
-                                }
-                            } break;
-                            case BehaviorType_Follow: {
-                                CTransform *target_transform = &world.c_transform.data[0];
-                                FanVector2 face = FanVector2Normalize(FanVector2Sub(target_transform->position, self_transform->position));
-                                self_direction = (FanVector2){ signof(face.x), signof(face.y) };
+                                };
+                                self_behavior->start_time = world.current_time;
+                            }
+                            else {
+                                // keeps entity moving rather than staying still
+                                self_direction = self_move->direction;
+                            }
+                        } break;
+                        case BehaviorType_Follow: {
+                            CTransform *target_transform = &world.c_transform.data[0];
+                            FanVector2 target_face = target_transform->position;
+                            if (self_id == world.spec_id.camera) {
+                                CShape *target_shape = &world.c_shape.data[0];
+                                target_face = FanVector2Add(target_face, target_shape->offset);
+                            }
+                            FanVector2 face = FanVector2Normalize(FanVector2Sub(target_face, self_transform->position));
+                            self_direction = (FanVector2){ signof(face.x), signof(face.y) };
 
-                            } break;
-                            case BehaviorType_None:
-                            default: break;
-                        }
+                        } break;
+                        case BehaviorType_None:
+                        default: break;
                     }
                 }
-
-                MovementUpdate(self_move, self_transform, self_direction, dt);
             }
+
+            MovementUpdate(self_move, self_transform, self_direction, dt);
         }
 
         if (called_object_dump) {
@@ -989,14 +1026,16 @@ void UpdateAndRender(
 
         FanColor   color  = (FanColor){ 0, 0, 0, 0 };
         FanVector2 offset = FanVector2Zero();
-        int32 layer = -1;
+        int32 layer = 0;
+        int32 shape_flags = 0;
         if (id == world.spec_id.player) {
             offset = player_offset;
+            shape_flags = ShapeUpdate_SetOffset;
         }
         else if (istagged(tag_bg)) {
             transform->scale = (FanVector2){ FanWindowWidth(), FanWindowHeight() };
         }
-        ShapeUpdate(shape, color, offset, layer, dt);
+        ShapeUpdate(shape, color, offset, layer, shape_flags, dt);
 
         if (texture_idx != -1) {
             texture = &world.c_texture.data[texture_idx];
@@ -1193,12 +1232,19 @@ global void SceneMain(void) {
     world.entity_count++;
 
     ComponentStorageAdd(&world.c_transform,    world.entity_count);
+    ComponentStorageAddArgs(&world.c_movement, world.entity_count,
+        .speed = 380.0f,
+        .flags = MovementFlag_NoCollision,
+    );
     ComponentStorageAddArgs(&world.c_behavior, world.entity_count,
         .type = BehaviorType_Follow,
     );
     world.spec_id.camera = world.entity_count;
     world.entity_count++;
 }
+
+
+
 
 int main(void) {
     FanWindowCreate(800, 600, "Fantasia");
@@ -1273,8 +1319,8 @@ int main(void) {
         }
         if (FanKeyDown(FanKey_I)) {
             player_offset.y -= 500.0f * dt;
-            if (player_offset.y <= 0.0f) {
-                player_offset.y = 0.0f;
+            if (player_offset.y <= -200.0f) {
+                player_offset.y = -200.0f;
             }
         }
         if (FanKeyDown(FanKey_L)) {
@@ -1285,9 +1331,13 @@ int main(void) {
         }
         if (FanKeyDown(FanKey_J)) {
             player_offset.x -= 500.0f * dt;
-            if (player_offset.x <= 0.0f) {
-                player_offset.x = 0.0f;
+            if (player_offset.x <= -200.0f) {
+                player_offset.x = -200.0f;
             }
+        }
+
+        if (FanKeyDown(FanKey_O)) {
+            player_offset = FanVector2Zero();
         }
 
         if (FanKeyPressed(FanKey_V)) {
@@ -1309,8 +1359,9 @@ int main(void) {
         }
 
         world.current_time = FanGetTime();
-        camera.target = FanVector2Add(world.c_transform.data[0].position,
-                FanVector2Scale(world.c_transform.data[0].scale, 0.5));
+        int32 cam_move_idx = world.c_transform.sparse[world.spec_id.camera];
+        CTransform *cam_transform = &world.c_transform.data[cam_move_idx];
+        camera.target = FanVector2Add(cam_transform->position, FanVector2Scale(cam_transform->scale, 0.5f));
         camera.offset = (FanVector2){ FanWindowWidth() / 2.0f, FanWindowHeight() / 2.0f };
 
         if (called_object_dump) {
