@@ -38,6 +38,7 @@ typedef uintptr_t  uintptr;
 #define coalesce(a, b)      ((a) ? (a) : (b))
 #define init_if_null(a, x)  ((a) = coalesce((a), (x)))
 
+
 #if !defined(true) && !defined(false)
 # define true    1
 # define false   0
@@ -60,6 +61,8 @@ typedef uintptr_t  uintptr;
 # define min(x,y)        ((x) < (y) ? (x) : (y))
 # define max(x,y)        ((x) > (y) ? (x) : (y))
 #endif
+
+#define clamp(x, a, b)   min(max(x, a), b)
 
 void FanVector2Print_(FanVector2 v, const char *name) {
     printf("%s: (%f, %f)\n", name, v.x, v.y);
@@ -270,6 +273,19 @@ typedef struct CShape {
     bool32     initialized;
 } CShape;
 
+typedef struct CMovement {
+    FanVector2 velocity;
+
+    FanVector2 direction;
+
+    float32 speed;
+    float32 max_speed;
+
+    int32 flags;
+    bool32 active;
+    bool32 initialized;
+} CMovement;
+
 typedef struct CPhysics {
     FanVector2 direction;
     FanVector2 last_position;
@@ -341,11 +357,12 @@ AnimationData anim_table[] = {
 
 ComponentStorageDeclare(CTransform, CTransform);
 ComponentStorageDeclare(CShape,     CShape);
-ComponentStorageDeclare(CPhysics,   CPhysics);
+ComponentStorageDeclare(CMovement,  CMovement);
 ComponentStorageDeclare(CTexture,   CTexture);
 
 ComponentStorageDeclare(CBehavior,  CBehavior);
 ComponentStorageDeclare(CAnimation, CAnimation);
+ComponentStorageDeclare(CPhysics,   CPhysics);
 
 // empty, query-only tags
 ComponentStorageDeclare(CEnemyTag,      uint8);
@@ -366,7 +383,49 @@ void TransformUpdate(CTransform *t, FanVector2 position, FanVector2 scale, float
     t->scale    = FanVector2Add(t->scale, scale);
 }
 
-void PhysicsUpdate(CPhysics *p, CTransform *t, FanVector2 direction, float32 dt) {
+void MovementUpdate(CMovement *m, CTransform *t, FanVector2 direction, float32 dt) {
+    if (not m->initialized) {
+        init_if_null(m->speed,     500.0f);
+        init_if_null(m->max_speed, 500.0f);
+
+        init_if_null(m->direction.x, 1.0f);
+        init_if_null(m->direction.y, 1.0f);
+
+        m->active = true;
+        m->initialized = true;
+    }
+    FanVector2 screen_size = {
+        FanWindowWidth(),
+        FanWindowHeight()
+    };
+    if (FanVector2Length(t->scale) > 0) {
+        screen_size.x -= t->scale.x;
+        screen_size.y -= t->scale.y;
+    }
+
+    m->direction.x = coalesce(direction.x, m->direction.x);
+    m->direction.y = coalesce(direction.y, m->direction.y);
+
+    FanVector2 acceleration = FanVector2Zero();
+    if (FanVector2Length(direction) > 0) {
+        direction = FanVector2Normalize(direction);
+        acceleration = FanVector2Scale(direction, m->speed);
+        acceleration = FanVector2Add(acceleration, FanVector2Scale(m->velocity, -1.0f));
+    }
+    else if (FanVector2Length(m->velocity) > 0.0f) {
+        acceleration = FanVector2Scale(m->velocity, -20.0f);
+    }
+
+    m->velocity = FanVector2Add(m->velocity, FanVector2Scale(acceleration, dt));
+    m->velocity.x = clamp(m->velocity.x, -m->max_speed, m->max_speed);
+    m->velocity.y = clamp(m->velocity.y, -m->max_speed, m->max_speed);
+
+    t->position = FanVector2Add(t->position, FanVector2Scale(m->velocity, dt));
+    t->position.x = clamp(t->position.x, 0.0f, screen_size.x);
+    t->position.y = clamp(t->position.y, 0.0f, screen_size.y);
+}
+
+void PhysicsUpdate(CPhysics *p, CTransform *t, FanVector2 force, float32 dt) {
     if (not p->initialized) {
         init_if_null(p->last_position.x, t->position.x);
         init_if_null(p->last_position.y, t->position.y);
@@ -375,7 +434,7 @@ void PhysicsUpdate(CPhysics *p, CTransform *t, FanVector2 direction, float32 dt)
         init_if_null(p->direction.y, 1.0f);
 
         init_if_null(p->speed,       500.0f);
-        init_if_null(p->friction,    1.0f);
+        init_if_null(p->friction,    0.2f);
         init_if_null(p->mass,        1.0f);
 
         p->active = true;
@@ -390,45 +449,25 @@ void PhysicsUpdate(CPhysics *p, CTransform *t, FanVector2 direction, float32 dt)
         FanWindowHeight()
     };
     if (FanVector2Length(t->scale) > 0) {
-        screen_size.x = screen_size.x - t->scale.x;
-        screen_size.y = screen_size.y - t->scale.y;
+        screen_size.x -= t->scale.x;
+        screen_size.y -= t->scale.y;
     }
 
-    if (t->position.x < 0.0f) {
-        t->position.x      = 0.0f;
-        p->last_position.x = t->position.x + velocity.x;
-    }
-    else if (t->position.x > screen_size.x) {
-        t->position.x      = screen_size.x;
-        p->last_position.x = t->position.x + velocity.x;
-    }
-    if (t->position.y < 0.0f) {
-        t->position.y      = 0.0f;
-        p->last_position.y = t->position.y + velocity.y;
-    }
-    else if (t->position.y > screen_size.y) {
-        t->position.y      = screen_size.y;
-        p->last_position.y = t->position.y + velocity.y;
-    }
+    velocity = FanVector2Scale(velocity, 1.0f - p->friction * dt);
 
-    p->direction.x = coalesce(direction.x, p->direction.x);
-    p->direction.y = coalesce(direction.y, p->direction.y);
-    direction = FanVector2Normalize(direction);
+    float32 safe_mass = max(p->mass, 0.0001f);
+    acceleration = FanVector2Scale(force, p->speed / safe_mass);
 
-    float32 safe_mass = max(p->mass, 0.0f);
-    float32 force_factor = 1.0f / safe_mass;
-    if (FanVector2Length(direction) > 0) {
-        FanVector2 force = FanVector2Scale(direction, p->speed);
-        acceleration = FanVector2Add(acceleration, FanVector2Scale(force, force_factor));
-    }
-    else if (FanVector2Length(velocity) > 0) {
-        FanVector2 force = FanVector2Scale(velocity, p->friction);
-        acceleration = FanVector2Sub(acceleration, FanVector2Scale(force, force_factor));
-    }
+    FanVector2 new_position = FanVector2Add(
+        t->position,
+        FanVector2Add(velocity, FanVector2Scale(acceleration, dt * dt))
+    );
+
+    new_position.x = clamp(new_position.x, 0.0f, screen_size.x);
+    new_position.y = clamp(new_position.y, 0.0f, screen_size.y);
 
     p->last_position = t->position;
-    t->position = FanVector2Add(t->position,
-            FanVector2Scale(FanVector2Add(velocity, acceleration), dt));
+    t->position = new_position;
 }
 
 
@@ -442,7 +481,7 @@ bool32 CollisionCheck(FanVector2 aPos, FanVector2 aSize, FanVector2 bPos, FanVec
     return result;
 }
 
-void CollisionResolve(CTransform *a, CPhysics *a_p, CTransform *b, CPhysics *b_p, float32 dt) {
+void CollisionResolve(CTransform *a, CMovement *a_m, CTransform *b, CMovement *b_m, float32 dt) {
     if (CollisionCheck(a->position, a->scale, b->position, b->scale)) {
         FanVector2 aMax = (FanVector2){
             a->position.x + a->scale.x,
@@ -462,12 +501,12 @@ void CollisionResolve(CTransform *a, CPhysics *a_p, CTransform *b, CPhysics *b_p
             return;
 
         float32 correction;
-        float32 aMove = (a_p->flags & MovementFlag_Immovable) ? 0.0f : (1.0f / max(a_p->mass, 0.0f));
-        float32 bMove = (b_p->flags & MovementFlag_Immovable) ? 0.0f : (1.0f / max(b_p->mass, 0.0f));
-        if (a_p->flags & MovementFlag_CollideSoftly) {
+        float32 aMove = (a_m->flags & MovementFlag_Immovable) ? 0.0f : 1.0f;
+        float32 bMove = (b_m->flags & MovementFlag_Immovable) ? 0.0f : 1.0f;
+        if (a_m->flags & MovementFlag_CollideSoftly) {
             aMove *= dt;
         }
-        if (b_p->flags & MovementFlag_CollideSoftly) {
+        if (b_m->flags & MovementFlag_CollideSoftly) {
             bMove *= dt;
         }
 
@@ -726,10 +765,12 @@ typedef struct World {
 
     CTransformStorage      c_transform;
     CShapeStorage          c_shape;
-    CPhysicsStorage        c_physics;
+    CMovementStorage       c_movement;
     CTextureStorage        c_texture;
+
     CBehaviorStorage       c_behavior;
     CAnimationStorage      c_animation;
+    CPhysicsStorage        c_physics;
 
     CEnemyTagStorage       c_tag_enemy;
     CBackgroundTagStorage  c_tag_background;
@@ -753,15 +794,15 @@ global void UpdateEntitySplit(void) {
         int32 id = world.c_transform.dense[i];
         if (id == -1) continue;
 
-        int32 physics_index = world.c_physics.sparse[id];
-        int32 tag_bg = world.c_tag_background.sparse[id];
+        int32 move_index = world.c_movement.sparse[id];
+        int32 bg_tag = world.c_tag_background.sparse[id];
 
         bool32 is_static = true;
-        if (tag_bg < 0 or physics_index != -1) {
-            CPhysics *physics = &world.c_physics.data[physics_index];
-            if (physics->flags & MovementFlag_NoCollision) continue;
+        if (bg_tag < 0 or move_index != -1) {
+            CMovement *movement = &world.c_movement.data[move_index];
+            if (movement->flags & MovementFlag_NoCollision) continue;
 
-            if (not (physics->flags & MovementFlag_Immovable)) {
+            if (not (movement->flags & MovementFlag_Immovable)) {
                 is_static = false;
             }
         }
@@ -770,7 +811,6 @@ global void UpdateEntitySplit(void) {
             static_entities[static_entity_count++]   = id;
         else
             dynamic_entities[dynamic_entity_count++] = id;
-
     }
 }
 
@@ -792,42 +832,46 @@ void UpdateAndRender(
         int32 self_id = world.c_transform.dense[i];
 
         int32 self_transform_idx = world.c_transform.sparse[self_id];
-        int32 self_physics_idx   = world.c_physics.sparse[self_id];
+        // int32 self_physics_idx   = world.c_physics.sparse[self_id];
+        int32 self_move_idx      = world.c_movement.sparse[self_id];
         int32 self_behavior_idx  = world.c_behavior.sparse[self_id];
 
         CTransform *self_transform = &world.c_transform.data[self_transform_idx];
-        CPhysics   *self_physics   = null;
+        // CPhysics   *self_physics   = null;
+        CMovement  *self_move      = null;
         CBehavior  *self_behavior  = null;
 
         FanVector2 self_position = FanVector2Zero();
         FanVector2 self_scale    = FanVector2Zero();
         TransformUpdate(self_transform, self_position, self_scale, dt);
 
-        if (self_physics_idx != -1) {
-            self_physics = &world.c_physics.data[self_physics_idx];
+        if (self_move_idx != -1) {
+            self_move = &world.c_movement.data[self_move_idx];
 
-            if (not self_physics->initialized or self_physics->active) {
+            if (not self_move->initialized or self_move->active) {
                 for (ssize j = i + 1; j < dynamic_entity_count; j++) {
                     int32 other_id = dynamic_entities[j];
-                    int32 other_transform_idx   = world.c_transform.sparse[other_id];
+
+                    int32 other_transform_idx = world.c_transform.sparse[other_id];
+                    int32 other_move_idx      = world.c_movement.sparse[other_id];
+                    assert(other_move_idx != -1);
+
                     CTransform *other_transform = &world.c_transform.data[other_transform_idx];
+                    CMovement  *other_move      = &world.c_movement.data[other_move_idx];
 
-                    int32 other_physics_idx = world.c_physics.sparse[other_id];
-                    assert(other_physics_idx != -1);
-                    CPhysics *other_physics = &world.c_physics.data[other_physics_idx];
-
-                    CollisionResolve(self_transform, self_physics, other_transform, other_physics, dt);
+                    CollisionResolve(self_transform, self_move, other_transform, other_move, dt);
                 }
                 for (ssize s = 0; s < static_entity_count; s++) {
                     int32 other_id = static_entities[s];
+
                     int32 other_transform_idx = world.c_transform.sparse[other_id];
+                    int32 other_move_idx      = world.c_movement.sparse[other_id];
+                    assert(other_move_idx != -1);
+
                     CTransform *other_transform = &world.c_transform.data[other_transform_idx];
+                    CMovement  *other_move      = &world.c_movement.data[other_move_idx];
 
-                    int32 other_physics_idx = world.c_physics.sparse[other_id];
-                    assert(other_physics_idx != -1);
-                    CPhysics *other_physics = &world.c_physics.data[other_physics_idx];
-
-                    CollisionResolve(self_transform, self_physics, other_transform, other_physics, dt);
+                    CollisionResolve(self_transform, self_move, other_transform, other_move, dt);
                 }
 
                 FanVector2 self_direction = FanVector2Zero();
@@ -849,7 +893,7 @@ void UpdateAndRender(
                                 }
                                 else {
                                     // keeps entity moving rather than staying still
-                                    self_direction = self_physics->direction;
+                                    self_direction = self_move->direction;
                                 }
                             } break;
                             case BehaviorType_Follow: {
@@ -864,7 +908,7 @@ void UpdateAndRender(
                     }
                 }
 
-                PhysicsUpdate(self_physics, self_transform, self_direction, dt);
+                MovementUpdate(self_move, self_transform, self_direction, dt);
             }
         }
 
@@ -878,8 +922,14 @@ void UpdateAndRender(
             // FanVector2Print(self_transform->scale);
             // printf("\tself_transform->rotation: %f\n", self_transform->rotation);
 
-            if (self_physics) {
-                printf("\tself_physics: %d\n", self_physics_idx);
+            if (self_move) {
+                printf("\t");
+                FanVector2Print(self_move->velocity);
+                printf("\tself_move->speed: %f\n", self_move->speed);
+            }
+
+            // if (self_physics) {
+                // printf("\tself_physics: %d\n", self_physics_idx);
             //     printf("\tself_physics->initialized: %s\n", self_physics->initialized ? "true" : "false");
             //     printf("\tself_physics->speed: %f\n", self_physics->speed);
             //     printf("\tself_physics->friction: %f\n", self_physics->friction);
@@ -887,7 +937,7 @@ void UpdateAndRender(
             //     FanVector2Print(self_physics->last_position);
             //     printf("\t");
             //     FanVector2Print(self_physics->direction);
-            }
+            // }
             //
             // if (self_behavior) {
             //     printf("\tself_behavior: %d\n", self_behavior_idx);
@@ -1007,6 +1057,51 @@ void UpdateAndRender(
     }
 }
 
+
+global void SceneSolo(void) {
+    FanTexture tex_link = FanTextureLoad("./resources/link.png");
+    FanVector2 sprite_link_size = (FanVector2){ tex_link.width / 10.0f, tex_link.height / 8.0f };
+    player_idle_down_frames[0]  = (FanRect){ 0,                         0,                         0, 0 };
+    player_idle_down_frames[1]  = (FanRect){ sprite_link_size.x,        0,                         0, 0 };
+    player_idle_down_frames[2]  = (FanRect){ 2.0f * sprite_link_size.x, 0,                         0, 0 };
+
+    player_idle_up_frames[0]    = (FanRect){ 0,                         2.0f * sprite_link_size.y, 0, 0 };
+
+    player_idle_left_frames[0]  = (FanRect){ 0,                         sprite_link_size.y,        0, 0 };
+    player_idle_left_frames[1]  = (FanRect){ sprite_link_size.x,        sprite_link_size.y,        0, 0 };
+    player_idle_left_frames[2]  = (FanRect){ 2.0f * sprite_link_size.x, sprite_link_size.y,        0, 0 };
+
+    player_idle_right_frames[0] = (FanRect){ 0,                         3.0f * sprite_link_size.y, 0, 0 };
+    player_idle_right_frames[1] = (FanRect){ sprite_link_size.x,        3.0f * sprite_link_size.y, 0, 0 };
+    player_idle_right_frames[2] = (FanRect){ 2.0f * sprite_link_size.x, 3.0f * sprite_link_size.y, 0, 0 };
+
+    ComponentStorageAdd(&world.c_transform,     world.entity_count);
+    ComponentStorageAdd(&world.c_shape,         world.entity_count);
+    ComponentStorageAddArgs(&world.c_movement,  world.entity_count,
+        // .flags = MovementFlag_CollideSoftly
+    );
+    ComponentStorageAddArgs(&world.c_texture,   world.entity_count,
+        .texture = tex_link,
+        .rect = (FanRect){ 0, 0, tex_link.width / 10.0f, tex_link.height / 8.0f }
+    );
+    ComponentStorageAddArgs(&world.c_animation, world.entity_count);
+    world.spec_id.player = world.entity_count;
+    world.entity_count++;
+
+    ComponentStorageAddArgs(&world.c_transform,  world.entity_count,
+        .scale = (FanVector2){ FanWindowWidth(), FanWindowHeight() },
+    );
+    ComponentStorageAddArgs(&world.c_shape,      world.entity_count,
+        .layer = 1,
+        .color = (FanColor){ 155, 155, 155, 255 },
+    );
+    ComponentStorageAddArgs(&world.c_movement,   world.entity_count,
+        .flags = MovementFlag_NoCollision,
+    );
+    ComponentStorageAdd(&world.c_tag_background, world.entity_count);
+    world.entity_count++;
+}
+
 global void SceneMain(void) {
     FanTexture tex_link = FanTextureLoad("./resources/link.png");
     FanVector2 sprite_link_size = (FanVector2){ tex_link.width / 10.0f, tex_link.height / 8.0f };
@@ -1026,8 +1121,7 @@ global void SceneMain(void) {
 
     ComponentStorageAdd(&world.c_transform,     world.entity_count);
     ComponentStorageAdd(&world.c_shape,         world.entity_count);
-    ComponentStorageAddArgs(&world.c_physics,   world.entity_count,
-        .mass = 1.0f,
+    ComponentStorageAddArgs(&world.c_movement,  world.entity_count,
         // .flags = MovementFlag_CollideSoftly
     );
     ComponentStorageAddArgs(&world.c_texture,   world.entity_count,
@@ -1043,7 +1137,7 @@ global void SceneMain(void) {
     ComponentStorageAddArgs(&world.c_shape,    world.entity_count,
         .color = (FanColor){ 50, 255, 255, 255 }
     );
-    ComponentStorageAddArgs(&world.c_physics,  world.entity_count, .speed = 400.0f);
+    ComponentStorageAddArgs(&world.c_movement,  world.entity_count, .speed = 400.0f);
     ComponentStorageAddArgs(&world.c_texture,  world.entity_count,
         .texture = tex_mewee);
     ComponentStorageAddArgs(&world.c_behavior, world.entity_count,
@@ -1056,9 +1150,7 @@ global void SceneMain(void) {
     ComponentStorageAddArgs(&world.c_shape,    world.entity_count,
         .color = (FanColor){ 255, 50, 255, 255 }
     );
-    ComponentStorageAddArgs(&world.c_physics,  world.entity_count,
-        .speed = 150.0f
-    );
+    ComponentStorageAddArgs(&world.c_movement,  world.entity_count, .speed = 150.0f);
     ComponentStorageAddArgs(&world.c_texture,  world.entity_count,
         .texture = tex_mewee
     );
@@ -1074,7 +1166,7 @@ global void SceneMain(void) {
         .layer = 1,
         .color = (FanColor){ 155, 155, 155, 255 },
     );
-    ComponentStorageAddArgs(&world.c_physics,    world.entity_count,
+    ComponentStorageAddArgs(&world.c_movement,   world.entity_count,
         .flags = MovementFlag_NoCollision,
     );
     ComponentStorageAdd(&world.c_tag_background, world.entity_count);
@@ -1088,7 +1180,7 @@ global void SceneMain(void) {
         .color = (FanColor){ 200, 165, 175, 255 },
         .layer = 3
     );
-    ComponentStorageAddArgs(&world.c_physics,   world.entity_count,
+    ComponentStorageAddArgs(&world.c_movement,  world.entity_count,
         .flags = MovementFlag_NoCollision,
     );
     world.entity_count++;
@@ -1099,8 +1191,7 @@ global void SceneMain(void) {
     ComponentStorageAddArgs(&world.c_shape,     world.entity_count,
         .color = (FanColor){ 50, 255, 255, 255 },
     );
-    ComponentStorageAddArgs(&world.c_physics,   world.entity_count,
-        .mass = 8.0f,
+    ComponentStorageAddArgs(&world.c_movement,  world.entity_count,
         .flags = MovementFlag_Immovable
     );
     // ComponentStorageAddArgs(&world.c_behavior, world.entity_count,
@@ -1143,10 +1234,12 @@ int main(void) {
 
     ComponentStorageCreate(&world.c_transform,      &arena_allocator, component_size);
     ComponentStorageCreate(&world.c_shape,          &arena_allocator, component_size);
-    ComponentStorageCreate(&world.c_physics,        &arena_allocator, component_size);
+    ComponentStorageCreate(&world.c_movement,       &arena_allocator, component_size);
     ComponentStorageCreate(&world.c_texture,        &arena_allocator, component_size);
     ComponentStorageCreate(&world.c_behavior,       &arena_allocator, component_size);
     ComponentStorageCreate(&world.c_animation,      &arena_allocator, component_size);
+    ComponentStorageCreate(&world.c_physics,        &arena_allocator, component_size);
+
     ComponentStorageCreate(&world.c_tag_background, &arena_allocator, component_size);
     ComponentStorageCreate(&world.c_tag_enemy,      &arena_allocator, component_size);
 

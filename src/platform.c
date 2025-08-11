@@ -1,4 +1,5 @@
 
+#include "platform.h"
 #define FAN_PLATFORM_RAYLIB
 #ifdef  FAN_PLATFORM_RAYLIB
 # include "platform_raylib.c"
@@ -82,6 +83,10 @@ float FanVector2Dot(FanVector2 v1, FanVector2 v2) {
     return v1.x * v2.x + v1.y * v2.y;
 }
 
+FanVector2 FanVector2Round(FanVector2 v) {
+    return (FanVector2){ FanFloat32Round(v.x), FanFloat32Round(v.y) };
+};
+
 float FanFloat32Inf(void) {
     union { unsigned int i; float f; } u = { 0x7F800000 };
     return u.f;
@@ -89,5 +94,15 @@ float FanFloat32Inf(void) {
 
 float FanFloat32NegativeInf(void) {
     union { unsigned int i; float f; } u = { 0xFF800000 };
+    return u.f;
+}
+
+float FanFloat32Round(float x) {
+    return round(x);
+}
+
+float FanFloat32Exp(float x) {
+    union { float f; int i; } u;
+    u.i = (int)(12102203 * x) + 127 * (1 << 23);
     return u.f;
 }
