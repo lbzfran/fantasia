@@ -83,6 +83,10 @@ float FanVector2Dot(FanVector2 v1, FanVector2 v2) {
     return v1.x * v2.x + v1.y * v2.y;
 }
 
+FanVector2 FanVector2Hadamard(FanVector2 v1, FanVector2 v2) {
+    return (FanVector2){ v1.x * v2.x, v1.y * v2.y };
+}
+
 FanVector2 FanVector2Round(FanVector2 v) {
     return (FanVector2){ FanFloat32Round(v.x), FanFloat32Round(v.y) };
 };

@@ -257,6 +257,7 @@ FAN_API FanVector2 FanVector2Negate(FanVector2 v);
 
 FAN_API float FanVector2Dot(FanVector2 v1, FanVector2 v2);
 FAN_API float FanVector2Cross(FanVector2 v1, FanVector2 v2);
+FAN_API FanVector2 FanVector2Hadamard(FanVector2 v1, FanVector2 v2);
 
 FAN_API FanVector2 FanVector2Round(FanVector2 v);
 
