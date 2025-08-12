@@ -126,22 +126,22 @@ void FanDrawRectR(FanRect rect, FanColor color) {
 
 void FanDrawTexture(FanTexture texture, FanRect src, FanRect dst, FanVector2 origin, float angle, FanColor color) {
     Texture2D rl_texture = (Texture2D){
-        .id = texture.id,
-        .width = texture.width,
-        .height = texture.height,
+        .id      = texture.id,
+        .width   = texture.width,
+        .height  = texture.height,
         .mipmaps = texture.mipmaps,
-        .format = texture.format
+        .format  = texture.format
     };
     Rectangle rl_src = (Rectangle){
-        .x = src.x,
-        .y = src.y,
-        .width = src.width,
+        .x      = src.x,
+        .y      = src.y,
+        .width  = src.width,
         .height = src.height
     };
     Rectangle rl_dst = (Rectangle){
-        .x = dst.x,
-        .y = dst.y,
-        .width = dst.width,
+        .x      = dst.x,
+        .y      = dst.y,
+        .width  = dst.width,
         .height = dst.height
     };
     Vector2 rl_origin = (Vector2){

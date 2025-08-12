@@ -717,6 +717,7 @@ void ShapeRender(CShape *s, CTransform *t, CTexture *tx, CMovement *m, int32 fla
             width,
             height
         };
+
         FanRect dst = (FanRect) {
             t->position.x,
             t->position.y,
@@ -1074,9 +1075,6 @@ void UpdateAndRender(
                 }
                 AnimationUpdate(animation, texture, animation_id, 0, dt);
             }
-            else {
-                TextureUpdate(texture, FanVector2Zero(), FanVector2Zero(), dt);
-            }
         }
 
         if (move_idx != -1) {
@@ -1160,22 +1158,6 @@ global void SceneSolo(void) {
 }
 
 global void SceneMain(void) {
-    // FanTexture tex_link = FanTextureLoad("./resources/link.png");
-    // FanVector2 sprite_link_size = (FanVector2){ tex_link.width / 10.0f, tex_link.height / 8.0f };
-    // player_idle_down_frames[0]  = (FanRect){ 0,                         0,                         0, 0 };
-    // player_idle_down_frames[1]  = (FanRect){ sprite_link_size.x,        0,                         0, 0 };
-    // player_idle_down_frames[2]  = (FanRect){ 2.0f * sprite_link_size.x, 0,                         0, 0 };
-    //
-    // player_idle_up_frames[0]    = (FanRect){ 0,                         2.0f * sprite_link_size.y, 0, 0 };
-    //
-    // player_idle_left_frames[0]  = (FanRect){ 0,                         sprite_link_size.y,        0, 0 };
-    // player_idle_left_frames[1]  = (FanRect){ sprite_link_size.x,        sprite_link_size.y,        0, 0 };
-    // player_idle_left_frames[2]  = (FanRect){ 2.0f * sprite_link_size.x, sprite_link_size.y,        0, 0 };
-    //
-    // player_idle_right_frames[0] = (FanRect){ 0,                         3.0f * sprite_link_size.y, 0, 0 };
-    // player_idle_right_frames[1] = (FanRect){ sprite_link_size.x,        3.0f * sprite_link_size.y, 0, 0 };
-    // player_idle_right_frames[2] = (FanRect){ 2.0f * sprite_link_size.x, 3.0f * sprite_link_size.y, 0, 0 };
-
     FanTexture tex_sprite = FanTextureLoad("./resources/Sprite-0001.png");
 
     ComponentStorageAdd(&world.c_transform,     world.entity_count);
@@ -1185,7 +1167,7 @@ global void SceneMain(void) {
     );
     ComponentStorageAddArgs(&world.c_texture,   world.entity_count,
         .texture = tex_sprite,
-        .rect = { .width = 14, .height = 16 },
+        .rect = { .x = 64, .y = 0, .width = 14, .height = 16 },
         // .rect = (FanRect){ 0, 0, tex_link.width / 10.0f, tex_link.height / 8.0f }
     );
     // ComponentStorageAddArgs(&world.c_animation, world.entity_count);
@@ -1200,7 +1182,7 @@ global void SceneMain(void) {
     ComponentStorageAddArgs(&world.c_movement, world.entity_count, .speed = 400.0f);
     ComponentStorageAddArgs(&world.c_texture,  world.entity_count,
         .texture = tex_sprite,
-        .rect = { .width = 14, .height = 16 },
+        .rect = { .x = 64, .y = 0, .width = 14, .height = 16 },
     );
     ComponentStorageAddArgs(&world.c_behavior, world.entity_count,
         .type = BehaviorType_Random,
@@ -1215,7 +1197,7 @@ global void SceneMain(void) {
     ComponentStorageAddArgs(&world.c_movement, world.entity_count, .speed = 150.0f);
     ComponentStorageAddArgs(&world.c_texture,  world.entity_count,
         .texture = tex_sprite,
-        .rect = { .width = 14, .height = 16 },
+        .rect = { .x = 64, .y = 0, .width = 14, .height = 16 },
     );
     ComponentStorageAddArgs(&world.c_behavior, world.entity_count,
         .type = BehaviorType_Follow,
@@ -1241,7 +1223,7 @@ global void SceneMain(void) {
     );
     ComponentStorageAddArgs(&world.c_shape,     world.entity_count,
         .color = (FanColor){ 200, 165, 175, 255 },
-        .layer = 3
+        .layer = 3,
     );
     ComponentStorageAddArgs(&world.c_movement,  world.entity_count,
         .flags = MovementFlag_NoCollision,
@@ -1257,10 +1239,17 @@ global void SceneMain(void) {
     ComponentStorageAddArgs(&world.c_movement,  world.entity_count,
         .flags = MovementFlag_Immovable
     );
-    // ComponentStorageAddArgs(&world.c_behavior, world.entity_count,
-    //     .type = BehaviorType_Random,
-    //     .duration = 0.5f
-    // );
+    world.entity_count++;
+
+    ComponentStorageAddArgs(&world.c_transform, world.entity_count,
+        .position = (FanVector2){ 296, 100 }
+    );
+    ComponentStorageAddArgs(&world.c_shape,     world.entity_count,
+        .color = (FanColor){ 50, 255, 255, 255 },
+    );
+    ComponentStorageAddArgs(&world.c_movement,  world.entity_count,
+        .flags = MovementFlag_Immovable
+    );
     world.entity_count++;
 
     ComponentStorageAdd(&world.c_transform,    world.entity_count);
