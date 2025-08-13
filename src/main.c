@@ -374,7 +374,7 @@ ComponentDeclare(CZone,         FanRect);
 ComponentDeclare(CEnemyTag,      uint8);
 ComponentDeclare(CBackgroundTag, uint8);
 
-void MovementSystem(CMovement *m, CTransform *t, FanVector2 direction, float32 dt) {
+void MovementSystem(CMovement *m, CTransform *t, FanVector2 direction, FanRect bounding_zone, float32 dt) {
     if (not m->initialized) {
         init_if_null(m->speed,       400.0f);
         init_if_null(m->max_speed,   500.0f);
@@ -398,12 +398,6 @@ void MovementSystem(CMovement *m, CTransform *t, FanVector2 direction, float32 d
 
     float32 softness = 0.005f;
     if (not (m->flags & MovementFlag_NoCollision)) {
-        FanRect bounding_zone = {
-            .x = 0.0f,
-            .y = 0.0f,
-            .width = FanWindowWidth(),
-            .height = FanWindowHeight()
-        };
         if (FanVector2Length(t->scale) > 0) {
             bounding_zone.width  -= t->scale.x;
             bounding_zone.height -= t->scale.y;
@@ -751,6 +745,7 @@ typedef enum {
 
 typedef struct World {
     SystemMode             current_mode;
+    FanRect                bounding_zone;
 
     uint8                  entity_count;
     SpecialEntityID        spec_id;
@@ -875,17 +870,19 @@ void RenderEntities(PlayerInput p_input, float32 dt) {
         CAnimation   *animation   = null;
         bool32        interacting = false;
         bool32        interacted  = false;
+        FanRect zone              = { 0 };
 
         if (not shape->visible) {
             printf("skipping %d!\n", id);
             continue;
         }
 
-        FanRect zone       = { 0 };
         int32 render_flags = 0;
 
         if (zone_idx != -1) {
             zone = world.c_zone.data[zone_idx];
+            zone.x += transform->position.x;
+            zone.y += transform->position.y;
         }
         else {
             zone = (FanRect) {
@@ -964,12 +961,18 @@ void UpdateEntities(
         int32 behavior_idx    = world.c_behavior.sparse[id];
         int32 interact_idx    = world.c_interaction.sparse[id];
         int32 interacted_idx  = world.c_interactable.sparse[id];
+        int32 zone_idx        = world.c_zone.sparse[id];
 
         CMovement  *move      = &world.c_movement.data[i];
         CTransform *transform = &world.c_transform.data[transform_idx];
         CBehavior  *behavior  = null;
+        FanRect    *zone      = null;
 
         FanVector2 direction = FanVector2Zero();
+
+        if (zone_idx != -1) {
+            zone = &world.c_zone.data[zone_idx];
+        }
 
         if (interact_idx != -1) {
             world.c_interaction.data[interact_idx] = false;
@@ -1015,8 +1018,7 @@ void UpdateEntities(
             }
         }
 
-        MovementSystem(move, transform, direction, dt);
-
+        MovementSystem(move, transform, direction, world.bounding_zone, dt);
 
         if (called_object_dump) {
             printf("\tid: %d\n", id);
@@ -1070,6 +1072,8 @@ void UpdateEntities(
 
         if (zone_idx != -1) {
             zone = world.c_zone.data[zone_idx];
+            zone.x += transform->position.x;
+            zone.y += transform->position.y;
         }
         else {
             zone = (FanRect) {
@@ -1103,6 +1107,8 @@ void UpdateEntities(
 
                 if (other_zone_idx != -1) {
                     other_zone = world.c_zone.data[other_zone_idx];
+                    other_zone.x += other_transform->position.x;
+                    other_zone.y += other_transform->position.y;
                 }
                 else {
                     other_zone = (FanRect) {
@@ -1225,22 +1231,28 @@ global void SceneMain(void) {
     world.entity_count++;
 
     // FanTexture tex_mewee = FanTextureLoad("./resources/mewee.png");
-    ComponentAdd(&world.c_transform,    world.entity_count);
+    ComponentAddArgs(&world.c_transform,    world.entity_count,
+        .scale = (FanVector2){ 108, 108 },
+    );
     ComponentAddArgs(&world.c_shape,    world.entity_count,
-        .color = (FanColor){ 50, 255, 255, 255 }
+        .color = (FanColor){ 50, 255, 255, 255 },
+        .offset = (FanVector2){ 0, 6 },
     );
     ComponentAddArgs(&world.c_movement, world.entity_count, .speed = 400.0f);
     ComponentAddArgs(&world.c_texture,  world.entity_count,
         .texture = tex_sprite,
-        .rect = { .x = 0, .y = 0, .width = 36, .height = 36 },
+        .rect = { .width = 36, .height = 36 },
     );
     ComponentAddArgs(&world.c_behavior, world.entity_count,
         .type = BehaviorType_Random,
-        .duration = 0.2f
+        .duration = 0.2f,
     );
-    ComponentAdd(&world.c_interaction, world.entity_count);
+    ComponentAdd(&world.c_interaction,  world.entity_count);
     ComponentAdd(&world.c_interactable, world.entity_count);
-    ComponentAdd(&world.c_tag_enemy, world.entity_count);
+    ComponentAddArgs(&world.c_zone,     world.entity_count,
+        .x = 12, .y = 12, .width = 64, .height = 64,
+    );
+    ComponentAdd(&world.c_tag_enemy,    world.entity_count);
     world.entity_count++;
 
     ComponentAdd(&world.c_transform,    world.entity_count);
@@ -1255,9 +1267,9 @@ global void SceneMain(void) {
     ComponentAddArgs(&world.c_behavior, world.entity_count,
         .type = BehaviorType_Follow,
     );
-    ComponentAdd(&world.c_interaction, world.entity_count);
+    ComponentAdd(&world.c_interaction,  world.entity_count);
     ComponentAdd(&world.c_interactable, world.entity_count);
-    ComponentAdd(&world.c_tag_enemy, world.entity_count);
+    ComponentAdd(&world.c_tag_enemy,    world.entity_count);
     world.entity_count++;
 
     ComponentAddArgs(&world.c_transform,  world.entity_count,
@@ -1447,7 +1459,7 @@ int main(void) {
             printf("[[DEBUG INFO]]\n");
         }
 
-
+        world.bounding_zone = (FanRect){ .width = FanWindowWidth(), .height = FanWindowHeight() };
         world.current_time = FanGetTime();
         int32 cam_move_idx = world.c_transform.sparse[world.spec_id.camera];
         CTransform *cam_transform = &world.c_transform.data[cam_move_idx];
