@@ -1,6 +1,18 @@
 #ifndef FAN_PLATFORM_H
 #define FAN_PLATFORM_H
 
+#if defined(OS_WINDOWS)
+    #if defined(PLATFORM_BUILD_SHARED)
+        #define FAN_API __declspec(dllexport)
+    #elif defined(PLATFORM_USE_SHARED)
+        #define FAN_API __declspec(dllimport)
+    #endif
+#else
+    #if defined(PLATFORM_BUILD_SHARED)
+        #define FAN_API __attribute((visibility("default")))
+    #endif
+#endif
+
 # ifndef FAN_API
 #  define FAN_API extern
 # endif
@@ -289,6 +301,13 @@ FAN_API float FanFloat32Exp(float);
 
 FAN_API float FanFloat32Round(float);
 
+FAN_API void FanVector2Print_(FanVector2, const char *);
+FAN_API void FanColorPrint_(FanColor, const char *);
+FAN_API void FanRectPrint_(FanRect, const char *);
+#define FanVector2Print(v) FanVector2Print_(v, #v)
+#define FanColorPrint(c) FanColorPrint_(c, #c)
+#define FanRectPrint(r) FanRectPrint_(r, #r)
+
 FAN_API FanVector2 FanVector2Zero(void);
 FAN_API FanVector2 FanVector2One(void);
 
@@ -315,5 +334,7 @@ FAN_API FanVector2 FanVector2Round(FanVector2 v);
 // custom api
 
 FAN_API int FanRectIsEmpty(FanRect rect);
+
+// threading
 
 #endif
