@@ -16,6 +16,36 @@ Color FanColorToRL(FanColor color) {
     return rl_color;
 }
 
+Sound FanSoundToRL(FanSound sound) {
+    Sound rl_sound = (Sound) {
+        .frameCount = sound.frame_count,
+        .stream = (AudioStream) {
+            sound.stream.buffer,
+            sound.stream.processor,
+            sound.stream.sample_rate,
+            sound.stream.sample_size,
+            sound.stream.channels,
+        },
+    };
+    return rl_sound;
+}
+
+Music FanMusicToRL(FanMusic music) {
+    Music rl_music = (Music) {
+        .frameCount = music.frame_count,
+        .stream = (AudioStream) {
+            music.stream.buffer,
+            music.stream.processor,
+            music.stream.sample_rate,
+            music.stream.sample_size,
+            music.stream.channels,
+        },
+        .ctxType = music.ctx_type,
+        .ctxData = music.ctx_data,
+    };
+    return rl_music;
+}
+
 void FanWindowCreate(int width, int height, const char *title) {
     InitWindow(width, height, title);
 }
@@ -42,13 +72,177 @@ int FanWindowHeight(void) {
     return result;
 }
 
-double FanGetFrameTime(void) {
-    double result = GetFrameTime();
+
+void FanAudioDevCreate(void) {
+    InitAudioDevice();
+}
+
+void FanAudioDevClose(void) {
+    CloseAudioDevice();
+}
+
+FanSound FanSoundLoad(const char *filepath) {
+    Sound rl_sound = LoadSound(filepath);
+
+    FanSound sound = (FanSound) {
+        .frame_count = rl_sound.frameCount,
+        .stream = (FanAudioStream) {
+            rl_sound.stream.buffer,
+            rl_sound.stream.processor,
+            rl_sound.stream.sampleRate,
+            rl_sound.stream.sampleSize,
+            rl_sound.stream.channels,
+        },
+    };
+
+    return sound;
+}
+
+void FanSoundUnload(FanSound sound) {
+    Sound rl_sound = FanSoundToRL(sound);
+
+    UnloadSound(rl_sound);
+}
+
+void FanSoundPlay(FanSound sound) {
+    Sound rl_sound = FanSoundToRL(sound);
+
+    PlaySound(rl_sound);
+}
+
+void FanSoundStop(FanSound sound) {
+    Sound rl_sound = FanSoundToRL(sound);
+
+    StopSound(rl_sound);
+}
+
+void FanSoundPause(FanSound sound) {
+    Sound rl_sound = FanSoundToRL(sound);
+
+    PauseSound(rl_sound);
+}
+
+void FanSoundResume(FanSound sound) {
+    Sound rl_sound = FanSoundToRL(sound);
+
+    ResumeSound(rl_sound);
+}
+
+void FanSoundSetVolume(FanSound sound, float volume) {
+    Sound rl_sound = FanSoundToRL(sound);
+
+    SetSoundVolume(rl_sound, volume);
+}
+
+void FanSoundSetPitch(FanSound sound, float pitch) {
+    Sound rl_sound = FanSoundToRL(sound);
+
+    SetSoundPitch(rl_sound, pitch);
+}
+
+void FanSoundSetPan(FanSound sound, float pan) {
+    Sound rl_sound = FanSoundToRL(sound);
+
+    SetSoundPan(rl_sound, pan);
+}
+
+FanMusic FanMusicLoad(const char *filepath) {
+    Music rl_music = LoadMusicStream(filepath);
+
+    FanMusic music = (FanMusic) {
+        .frame_count = rl_music.frameCount,
+        .stream = (FanAudioStream) {
+            rl_music.stream.buffer,
+            rl_music.stream.processor,
+            rl_music.stream.sampleRate,
+            rl_music.stream.sampleSize,
+            rl_music.stream.channels,
+        },
+        .ctx_type = rl_music.ctxType,
+        .ctx_data = rl_music.ctxData,
+    };
+
+    return music;
+}
+
+void FanMusicUnload(FanMusic music) {
+    Music rl_music = FanMusicToRL(music);
+
+    UnloadMusicStream(rl_music);
+}
+
+void FanMusicPlay(FanMusic music) {
+    Music rl_music = FanMusicToRL(music);
+
+    PlayMusicStream(rl_music);
+}
+
+void FanMusicStop(FanMusic music) {
+    Music rl_music = FanMusicToRL(music);
+
+    StopMusicStream(rl_music);
+}
+
+void FanMusicPause(FanMusic music) {
+    Music rl_music = FanMusicToRL(music);
+
+    PauseMusicStream(rl_music);
+}
+
+void FanMusicResume(FanMusic music) {
+    Music rl_music = FanMusicToRL(music);
+
+    ResumeMusicStream(rl_music);
+}
+
+void FanMusicSeek(FanMusic music, float pos) {
+    Music rl_music = FanMusicToRL(music);
+
+    SeekMusicStream(rl_music, pos);
+}
+
+void FanMusicSetVolume(FanMusic music, float volume) {
+    Music rl_music = FanMusicToRL(music);
+
+    SetMusicVolume(rl_music, volume);
+}
+
+void FanMusicSetPitch(FanMusic music, float pitch) {
+    Music rl_music = FanMusicToRL(music);
+
+    SetMusicPitch(rl_music, pitch);
+}
+
+void FanMusicSetPan(FanMusic music, float pan) {
+    Music rl_music = FanMusicToRL(music);
+
+    SetMusicPan(rl_music, pan);
+}
+
+float FanMusicTimePlayed(FanMusic music) {
+    Music rl_music = FanMusicToRL(music);
+
+    return GetMusicTimePlayed(rl_music);
+}
+
+float FanMusicTimeLength(FanMusic music) {
+    Music rl_music = FanMusicToRL(music);
+
+    return GetMusicTimeLength(rl_music);
+}
+
+float FanGetFrameTime(void) {
+    float result = GetFrameTime();
     return result;
 }
 
-double FanGetTime(void) {
-    double result = GetTime();
+float FanGetTime(void) {
+    float result = GetTime();
+    return result;
+}
+
+int FanGetFPS(void) {
+    float result = GetFPS();
     return result;
 }
 

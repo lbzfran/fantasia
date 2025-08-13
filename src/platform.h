@@ -5,26 +5,26 @@
 #  define FAN_API extern
 # endif
 
-typedef struct FanVector2 {
+typedef struct {
     float x;
     float y;
 } FanVector2;
 
-typedef struct FanColor {
+typedef struct {
     int r;
     int g;
     int b;
     int a;
 } FanColor;
 
-typedef struct FanRect {
+typedef struct {
     int x;
     int y;
     int width;
     int height;
 } FanRect;
 
-typedef struct FanTexture {
+typedef struct {
     unsigned int id;
     int width;
     int height;
@@ -32,12 +32,34 @@ typedef struct FanTexture {
     int format;
 } FanTexture;
 
-typedef struct FanCamera2D {
+typedef struct {
     FanVector2 target;
     FanVector2 offset;
     float rotation;
     float zoom;
 } FanCamera2D;
+
+typedef struct {
+    void *buffer;
+    void *processor;
+
+    unsigned int sample_rate;
+    unsigned int sample_size;
+    unsigned int channels;
+} FanAudioStream;
+
+typedef struct {
+    FanAudioStream stream;
+    unsigned int frame_count;
+} FanSound;
+
+typedef struct {
+    FanAudioStream stream;
+    unsigned int frame_count;
+    int loop;
+    int ctx_type;
+    void *ctx_data;
+} FanMusic;
 
 typedef enum {
     FanKey_NULL            = 0,        // Key: NULL, used for no key pressed
@@ -194,7 +216,7 @@ typedef enum {
 
 FAN_API void FanWindowCreate(int width, int height, const char *title);
 FAN_API void FanWindowClose(void);
-FAN_API int FanWindowShouldClose(void);
+FAN_API int  FanWindowShouldClose(void);
 
 FAN_API void FanWindowConfig(int);
 FAN_API void FanSetLogLevel(int);
@@ -202,17 +224,46 @@ FAN_API void FanSetLogLevel(int);
 FAN_API int FanWindowWidth(void);
 FAN_API int FanWindowHeight(void);
 
-FAN_API double FanGetFrameTime(void);
-FAN_API double FanGetTime(void);
+FAN_API void FanAudioDevCreate(void);
+FAN_API void FanAudioDevClose(void);
+
+FAN_API FanSound FanSoundLoad(const char *filepath);
+FAN_API void     FanSoundUnload(FanSound);
+FAN_API void     FanSoundPlay(FanSound);
+FAN_API void     FanSoundStop(FanSound);
+FAN_API void     FanSoundPause(FanSound sound);
+FAN_API void     FanSoundResume(FanSound sound);
+
+FAN_API void     FanSoundSetVolume(FanSound, float);
+FAN_API void     FanSoundSetPitch(FanSound, float);
+FAN_API void     FanSoundSetPan(FanSound, float);
+
+FAN_API FanMusic FanMusicLoad(const char *filepath);
+FAN_API void     FanMusicUnload(FanMusic);
+FAN_API void     FanMusicPlay(FanMusic);
+FAN_API void     FanMusicStop(FanMusic);
+FAN_API void     FanMusicPause(FanMusic music);
+FAN_API void     FanMusicResume(FanMusic music);
+FAN_API void     FanMusicSeek(FanMusic, float);
+FAN_API void     FanMusicSetVolume(FanMusic, float);
+FAN_API void     FanMusicSetPitch(FanMusic, float);
+FAN_API void     FanMusicSetPan(FanMusic, float);
+
+FAN_API float    FanMusicTimePlayed(FanMusic music);
+FAN_API float    FanMusicTimeLength(FanMusic music);
+
+FAN_API float FanGetFrameTime(void);
+FAN_API float FanGetTime(void);
+FAN_API int   FanGetFPS(void);
 
 FAN_API void FanRandomSeed(int seed);
-FAN_API int FanRandomInt(int min, int max);
+FAN_API int  FanRandomInt(int min, int max);
 
 FAN_API int FanKeyPressed(FanKey key);
 FAN_API int FanKeyDown(FanKey key);
 
 FAN_API FanTexture FanTextureLoad(const char *filepath);
-FAN_API void FanTextureUnload(FanTexture texture);
+FAN_API void       FanTextureUnload(FanTexture texture);
 
 FAN_API void FanDrawBegin(void);
 FAN_API void FanDrawClear(FanColor color);
@@ -255,8 +306,8 @@ FAN_API float FanVector2LengthSqr(FanVector2 v);
 FAN_API FanVector2 FanVector2Scale(FanVector2 v, float scale);
 FAN_API FanVector2 FanVector2Negate(FanVector2 v);
 
-FAN_API float FanVector2Dot(FanVector2 v1, FanVector2 v2);
-FAN_API float FanVector2Cross(FanVector2 v1, FanVector2 v2);
+FAN_API float      FanVector2Dot(FanVector2 v1, FanVector2 v2);
+FAN_API float      FanVector2Cross(FanVector2 v1, FanVector2 v2);
 FAN_API FanVector2 FanVector2Hadamard(FanVector2 v1, FanVector2 v2);
 
 FAN_API FanVector2 FanVector2Round(FanVector2 v);
