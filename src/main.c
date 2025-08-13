@@ -39,7 +39,6 @@ typedef uintptr_t  uintptr;
 #define coalesce(a, b)      ((a) ? (a) : (b))
 #define init_if_null(a, x)  ((a) = coalesce((a), (x)))
 
-
 #if !defined(true) && !defined(false)
 # define true    1
 # define false   0
@@ -314,14 +313,21 @@ typedef struct CBehavior {
     float64 duration;
 } CBehavior;
 
+typedef struct {
+    int32 id;
+    int32 flags;
+} AnimationRequest;
+
 // state manager component
 typedef struct CAnimation {
-    const char8 *name;
-    int32        id;
-    float32      timer;
-    int32        current_frame;
-    bool32       finished;
-    int32        animation_flags;
+    const char8       *name;
+    int32              id;
+    float32            timer;
+    int32              current_frame;
+    bool32             finished;
+    int32              flags;
+
+    AnimationRequest   request;
 } CAnimation;
 
 typedef struct {
@@ -381,7 +387,8 @@ typedef enum {
  * type: System
  * component(s): CTransform
  */
-void TransformUpdate(CTransform *t, FanVector2 position, FanVector2 scale, float32 angle, int32 flags, float dt) {
+void TransformUpdate(CTransform *t, FanVector2 position, FanVector2 scale, float32 angle, int32 flags, float32 dt) {
+    (void)dt;
     if (not t->initialized) {
         init_if_null(t->scale.x, 96.0f);
         init_if_null(t->scale.y, 96.0f);
@@ -404,7 +411,7 @@ void TransformUpdate(CTransform *t, FanVector2 position, FanVector2 scale, float
         t->rotation = t->rotation + angle;
 }
 
-void MovementUpdate(CMovement *m, CTransform *t, FanVector2 direction, float32 dt) {
+void MovementSystemUpdate(CMovement *m, CTransform *t, FanVector2 direction, float32 dt) {
     if (not m->initialized) {
         init_if_null(m->speed,       400.0f);
         init_if_null(m->max_speed,   500.0f);
@@ -589,37 +596,6 @@ bool32 CollisionResolve(CTransform *a, CMovement *a_m, CTransform *b, CMovement 
     return false;
 }
 
-typedef enum {
-    ShapeUpdate_SetColor,
-    ShapeUpdate_SetOffset,
-    ShapeUpdate_SetLayer,
-} ShapeUpdateFlags;
-/*
- * type: System
- * component(s): Shape
- */
-void ShapeUpdate(CShape *s, FanColor color, FanVector2 offset, int32 layer, int32 flags, float dt) {
-    (void)dt;
-    if (not s->initialized) {
-        if (s->color.a == 0) {
-            s->color = FanColor_WHITE;
-        }
-        init_if_null(s->layer, 2);
-
-        s->visible = true;
-        s->initialized = true;
-    }
-
-    if (flags & ShapeUpdate_SetColor)
-        s->color = color;
-
-    if (flags & ShapeUpdate_SetOffset)
-        s->offset = offset;
-
-    if (flags & ShapeUpdate_SetLayer)
-        s->layer = layer;
-}
-
 /*
  * type: System
  * component(s): CTexture
@@ -635,12 +611,13 @@ void TextureUpdate(CTexture *t, FanVector2 pos, FanVector2 size, float dt) {
     };
 }
 
-inline CAnimation AnimationApply(int32 new_id, int32 flags) {
+inline CAnimation AnimationApply_(int32 new_id, int32 flags, AnimationRequest ar) {
     assert(new_id != -1 && "Out of Bounds Access!");
     CAnimation new_state = (CAnimation) {
         .id = new_id,
         .name = anim_table[new_id].name,
-        .animation_flags = flags
+        .flags = flags,
+        .request = ar
     };
     return new_state;
 }
@@ -653,9 +630,10 @@ typedef enum {
  * type: System
  * components: CAnimation, CTexture
  */
-void AnimationUpdate(CAnimation *a, CTexture *t, int32 request_id, int32 flags, float dt) {
-    if (request_id != -1 and (a->animation_flags & AnimationFlag_NotInterruptible) == false) {
-        *a = AnimationApply(request_id, flags);
+void AnimationSystem(CAnimation *a, CTexture *t, float dt) {
+    if (a->finished or
+        (a->request.id != -1 and (a->flags & AnimationFlag_NotInterruptible) == false)) {
+        *a = AnimationApply_(a->request.id, a->request.flags, (AnimationRequest){ -1, 0 });
     }
 
     AnimationData *data = &anim_table[a->id];
@@ -666,12 +644,12 @@ void AnimationUpdate(CAnimation *a, CTexture *t, int32 request_id, int32 flags, 
         a->current_frame++;
 
         if (a->current_frame >= data->frame_count) {
-            if (data->loop and (a->animation_flags & AnimationFlag_DisableLoop) == false) {
+            if (data->loop and (a->flags & AnimationFlag_DisableLoop) == false) {
                 a->current_frame = 0;
             }
             else {
                 if (data->next_id != -1) {
-                    *a = AnimationApply(data->next_id, flags);
+                    *a = AnimationApply_(data->next_id, a->flags, a->request);
                 }
                 else {
                     a->finished = true;
@@ -695,31 +673,6 @@ void AnimationUpdate(CAnimation *a, CTexture *t, int32 request_id, int32 flags, 
 }
 
 typedef enum {
-    InteractFlag_SetPosition = 1,
-    InteractFlag_SetScale,
-} InteractUpdateFlags;
-
-// void InteractionUpdate(CInteraction *r, CTransform *t, CMovement *m, FanVector2 position, FanVector2 scale, bool32 interacting, int32 flags) {
-//     if (not r->initialized) {
-//
-//         r->active = true;
-//         r->initialized = true;
-//     }
-//
-//     if (flags & InteractFlag_SetPosition) {
-//         r->zone.x = position.x;
-//         r->zone.y = position.y;
-//     }
-//
-//     if (flags & InteractFlag_SetScale) {
-//         r->zone.width  = scale.x;
-//         r->zone.height = scale.y;
-//     }
-//
-//     r->interacting = interacting;
-// }
-
-typedef enum {
     RenderFlag_FlipX        = (1 << 0),
     RenderFlag_FlipY        = (1 << 1),
     RenderFlag_ShowInteract = (1 << 2)
@@ -728,7 +681,7 @@ typedef enum {
  * type: System
  * component(s): Transform, Shape, Texture (opt), Physics (opt)
  */
-void ShapeRender(CShape *s, CTransform *t, CTexture *tx, CMovement *m, bool32 interacting, FanRect zone, int32 flags) {
+void RenderSystem(CShape *s, CTransform *t, CTexture *tx, CMovement *m, bool32 interacting, FanRect zone, int32 flags) {
     if (tx is null) {
         if (FanVector2Length(s->offset) > 0.0f) {
             FanDrawRectV(FanVector2Add(t->position, s->offset), t->scale, (FanColor){ 50, 50, 50, 255 });
@@ -886,238 +839,35 @@ global void UpdateEntitySplit(void) {
     }
 }
 
-void UpdateAndRender(
-        FanVector2 player_direction,
-        FanVector2 player_offset,
-        bool32 player_interacting,
-        int32 player_animation_id,
-        bool32 update_entity_split,
-        float32 dt
-    ) {
-    if (called_object_dump)
-        printf("[CTransform]\n");
+typedef struct {
+    FanVector2 direction;
+    int32 actions[4];
+} PlayerInput;
 
-    if (update_entity_split)
-        UpdateEntitySplit();
-
-    for (ssize i = 0; i < world.c_transform.size; i++) {
-        // int32 self_id = dynamic_entities[i];
-        int32 id = world.c_transform.dense[i];
-
-        int32 transform_idx    = world.c_transform.sparse[id];
-        int32 move_idx         = world.c_movement.sparse[id];
-        int32 behavior_idx     = world.c_behavior.sparse[id];
-
-        int32 interaction_idx  = world.c_interaction.sparse[id];
-        // int32 interactable_idx = world.c_interactable.sparse[id];
-        int32 zone_idx         = world.c_zone.sparse[id];
-
-        CTransform *transform      = &world.c_transform.data[transform_idx];
-        CMovement  *move           = null;
-        CBehavior  *behavior       = null;
-        bool32     *interacting    = null;
-        bool32     *interacted     = null;
-        FanRect    *zone_ptr       = null;
-
-        FanVector2 position        = FanVector2Zero();
-        FanVector2 scale           = FanVector2Zero();
-        float32    rotation        = 0.0f;
-        FanRect    zone            = { 0 };
-        int32      transform_flags = 0;
-
-        TransformUpdate(transform, position, scale, rotation, transform_flags, dt);
-
-        if (zone_idx != -1) {
-            zone_ptr    = &world.c_zone.data[zone_idx];
-            zone        = *zone_ptr;
-        }
-        else {
-            zone = (FanRect) {
-                .x      = transform->position.x,
-                .y      = transform->position.y,
-                .width  = transform->scale.x,
-                .height = transform->scale.y,
-            };
-        }
-        if (interaction_idx  != -1) {
-            interacting = &world.c_interaction.data[interaction_idx];
-        }
-        // if (interactable_idx != -1) {
-        //     interacted  = &world.c_interactable.data[interactable_idx];
-        // }
-
-        if (move_idx != -1) {
-            move = &world.c_movement.data[move_idx];
-
-            if (move->active and not (move->flags & MovementFlag_NoCollision)) {
-                for (ssize j = i + 1; j < dynamic_entity_count; j++) {
-                    int32 other_id = dynamic_entities[j];
-
-                    int32 other_transform_idx    = world.c_transform.sparse[other_id];
-                    int32 other_move_idx         = world.c_movement.sparse[other_id];
-                    assert(other_move_idx != -1);
-                    int32 other_interactable_idx = world.c_interactable.sparse[other_id];
-                    int32 other_zone_idx         = world.c_zone.sparse[other_id];
-
-                    CTransform *other_transform  = &world.c_transform.data[other_transform_idx];
-                    CMovement  *other_move       = &world.c_movement.data[other_move_idx];
-                    bool32     *other_interacted = null;
-                    FanRect    *other_zone       = null;
-
-                    if (other_zone_idx == -1) {
-                        FanRect other_fallback_zone = (FanRect) {
-                            other_transform->position.x,
-                            other_transform->position.y,
-                            other_transform->scale.x,
-                            other_transform->scale.y,
-                        };
-                        if (CollisionCheckR(zone, other_fallback_zone)) {
-                            CollisionResolve(transform, move, other_transform, other_move, dt);
-                            if (other_interactable_idx != -1) {
-                                other_interacted = &world.c_interactable.data[other_interactable_idx];
-
-                                *interacting      = true;
-                                *other_interacted = true;
-                            }
-                        }
-                    }
-                    else {
-                        (void)CollisionResolve(transform, move, other_transform, other_move, dt);
-
-                        if (other_interactable_idx != -1) {
-                            other_interacted = &world.c_interactable.data[other_interactable_idx];
-                            other_zone = &world.c_zone.data[other_zone_idx];
-
-                            if (CollisionCheckR(zone, *other_zone)) {
-                                *interacting      = true;
-                                *other_interacted = true;
-                            } else {
-                                *interacting      = false;
-                                *other_interacted = false;
-                            }
-                        }
-                    }
-                }
-                for (ssize s = 0; s < static_entity_count; s++) {
-                    int32 other_id = static_entities[s];
-
-                    int32 other_transform_idx    = world.c_transform.sparse[other_id];
-                    int32 other_move_idx         = world.c_movement.sparse[other_id];
-                    assert(other_move_idx != -1);
-                    int32 other_interactable_idx = world.c_interactable.sparse[other_id];
-                    int32 other_zone_idx         = world.c_zone.sparse[other_id];
-
-                    CTransform *other_transform  = &world.c_transform.data[other_transform_idx];
-                    CMovement  *other_move       = &world.c_movement.data[other_move_idx];
-                    bool32     *other_interacted = null;
-                    FanRect    *other_zone       = null;
-
-                    if (other_zone_idx == -1) {
-                        bool32 collided = CollisionResolve(transform, move, other_transform, other_move, dt);
-                    }
-                    else {
-                        (void)CollisionResolve(transform, move, other_transform, other_move, dt);
-
-                        other_zone = &world.c_zone.data[other_zone_idx];
-                        if (CollisionCheckR(zone, *other_zone)) {
-                            *interacting      = true;
-                            *other_interacted = true;
-                        }
-                    }
-                }
-            }
-
-            FanVector2 direction = FanVector2Zero();
-            if (id == world.spec_id.player) {
-                direction = player_direction;
-            }
-            else {
-                if (behavior_idx != -1) {
-                    behavior = &world.c_behavior.data[behavior_idx];
-
-                    switch (behavior->type) {
-                        case BehaviorType_Random: {
-                            if (world.current_time - behavior->start_time > behavior->duration) {
-                                direction = (FanVector2) {
-                                    FanRandomInt(-1, 1),
-                                    FanRandomInt(-1, 1)
-                                };
-                                behavior->start_time = world.current_time;
-                            }
-                            else {
-                                // keeps entity moving rather than staying still
-                                direction = move->direction;
-                            }
-                        } break;
-                        case BehaviorType_Follow: {
-                            CTransform *target_transform = &world.c_transform.data[0];
-                            FanVector2 target_face = target_transform->position;
-                            if (id == world.spec_id.camera) {
-                                CShape *target_shape = &world.c_shape.data[0];
-                                target_face = FanVector2Add(target_face, target_shape->offset);
-                            }
-                            FanVector2 face = FanVector2Normalize(FanVector2Sub(target_face, transform->position));
-                            direction = (FanVector2){ signof(face.x), signof(face.y) };
-
-                        } break;
-                        case BehaviorType_None:
-                        default: break;
-                    }
-                }
-            }
-
-            MovementUpdate(move, transform, direction, dt);
-        }
-
-        if (called_object_dump) {
-            printf("\tid: %d\n", id);
-
-            if (id == world.spec_id.player) {
-                // printf("\ttransform: %d\n", transform_idx);
-                // printf("\t");
-                FanVector2Print(transform->position);
-                // printf("\t");
-                // FanVector2Print(transform->scale);
-                // printf("\ttransform->rotation: %f\n", transform->rotation);
-
-                if (move) {
-                    printf("\t");
-                    FanVector2Print(move->velocity);
-                    FanVector2Print(move->direction);
-                    printf("\tmove->speed: %f\n", move->speed);
-                }
-
-                if (interacting) {
-                    printf("\tinteracting: %s\n", interacting ? "true" : "false");
-                }
-
-                // if (behavior) {
-                //     printf("\tbehavior: %d\n", behavior_idx);
-                //     printf("\tbehavior->type: %d\n", behavior->type);
-                //     printf("\tbehavior->start_time: %f\n", behavior->start_time);
-                //     printf("\tbehavior->duration: %f\n", behavior->duration);
-                // }
-            }
-        }
-    }
-
-    if (called_object_dump) {
-        printf("[CBody : Y-axis ordered]\n");
-    }
-
+void RenderEntities(float32 dt) {
     RenderEntry render_array[128] = { { -1, 0.0f, 0 } };
     ssize render_entry_count = 0;
+
     for (ssize i = 0; i < world.c_shape.size; i++) {
         int32 id = world.c_shape.dense[i];
-        if (id == -1) {
+        if (id == -1)
             continue;
-        }
         CShape *shape = &world.c_shape.data[i];
 
         int32 transform_idx = world.c_transform.sparse[id];
         if (transform_idx == -1)
             continue;
         CTransform *transform = &world.c_transform.data[transform_idx];
+
+        if (not shape->initialized) {
+            if (shape->color.a == 0) {
+                shape->color = FanColor_WHITE;
+            }
+            init_if_null(shape->layer, 2);
+
+            shape->visible = true;
+            shape->initialized = true;
+        }
 
         render_array[render_entry_count++] = (RenderEntry) {
             id,
@@ -1130,9 +880,8 @@ void UpdateAndRender(
 
     for (ssize i = 0; i < render_entry_count; i++) {
         int32 id = render_array[i].id;
-        if (id == -1) {
+        if (id == -1)
             continue;
-        }
 
         int32 shape_idx        = world.c_shape.sparse[id];
         int32 transform_idx    = world.c_transform.sparse[id];
@@ -1151,72 +900,31 @@ void UpdateAndRender(
         CMovement    *move        = &world.c_movement.data[move_idx];
         CTexture     *texture     = null;
         CAnimation   *animation   = null;
+        bool32        interacting = false;
+        bool32        interacted  = false;
 
-        FanColor   color  = (FanColor){ 0, 0, 0, 0 };
-        FanVector2 offset = FanVector2Zero();
-        int32  layer = 0;
-        bool32 interacting = false;
-        bool32 interacted = false;
-        FanRect zone = { 0 };
-        int32 shape_flags  = 0;
+        if (not shape->visible) {
+            printf("skipping %d!\n", id);
+            continue;
+        }
+
+        FanRect zone       = { 0 };
         int32 render_flags = 0;
-        if (id == world.spec_id.player) {
-            offset = player_offset;
-            shape_flags |= ShapeUpdate_SetOffset;
-        }
-        else if (istagged(tag_bg)) {
-            transform->scale = (FanVector2){ FanWindowWidth(), FanWindowHeight() };
-        }
 
         if (zone_idx != -1) {
-            zone = world.c_zone.data[zone_idx];
+            zone        = world.c_zone.data[zone_idx];
         }
         if (interaction_idx != -1) {
             interacting = world.c_interaction.data[interaction_idx];
-            if (interacting) {
-                // interaction_pos = (FanVector2) {
-                //     transform->position.x + transform->scale.x * move->direction.x,
-                //     transform->position.y + transform->scale.y * move->direction.y
-                // };
-                // interaction_scale = (FanVector2) {
-                //     transform->scale.x,
-                //     transform->scale.y
-                // };
-                //
-                color = FanColor_RED;
-                shape_flags  |= ShapeUpdate_SetColor;
-                render_flags |= RenderFlag_ShowInteract;
-            }
-            else {
-                color = FanColor_WHITE;
-                shape_flags  |= ShapeUpdate_SetColor;
-            }
         }
         else if (interactable_idx != -1) {
-            interacted = world.c_interactable.data[interactable_idx];
-
-            if (interacted) {
-                color = FanColor_BLUE;
-                shape_flags  |= ShapeUpdate_SetColor;
-            }
-            else {
-                color = FanColor_WHITE;
-                shape_flags  |= ShapeUpdate_SetColor;
-            }
+            interacted  = world.c_interactable.data[interactable_idx];
         }
 
-        ShapeUpdate(shape, color, offset, layer, shape_flags, dt);
-
         if (texture_idx != -1) {
-            texture = &world.c_texture.data[texture_idx];
+            texture     = &world.c_texture.data[texture_idx];
             if (animation_idx != -1) {
                 animation = &world.c_animation.data[animation_idx];
-
-                int32 animation_id = 0;
-                if (id == world.spec_id.player) {
-                    animation_id = player_animation_id;
-                }
-                AnimationUpdate(animation, texture, animation_id, 0, dt);
             }
         }
 
@@ -1224,36 +932,151 @@ void UpdateAndRender(
             move = &world.c_movement.data[move_idx];
         }
 
-        if (shape->visible) {
-            // if (id != world.spec_id.player) {
-            render_flags |= RenderFlag_FlipX;
-            // }
-            ShapeRender(shape, transform, texture, move, interacting, zone, render_flags);
+        render_flags |= RenderFlag_FlipX;
+        RenderSystem(shape, transform, texture, move, interacting, zone, render_flags);
+    }
+}
+
+
+void UpdateEntities(
+        PlayerInput p_input,
+        bool32 update_entity_split,
+        float32 dt
+    ) {
+    if (update_entity_split) {
+        UpdateEntitySplit();
+    }
+
+    for (ssize i = 0; i < world.c_transform.size; i++) {
+        int32 id = world.c_transform.dense[i];
+        if (id == -1)
+            continue;
+
+        TransformUpdate(&world.c_transform.data[i], FanVector2Zero(), FanVector2Zero(), 0.0f, 0, dt);
+    }
+
+    for (ssize i = 0; i < world.c_movement.size; i++) {
+        int32 id = world.c_movement.dense[i];
+        if (id == -1)
+            continue;
+
+        int32 transform_idx   = world.c_transform.sparse[id];
+        int32 behavior_idx    = world.c_behavior.sparse[id];
+
+        CMovement  *move      = &world.c_movement.data[i];
+        CTransform *transform = &world.c_transform.data[transform_idx];
+        CBehavior  *behavior  = null;
+
+        FanVector2 direction = FanVector2Zero();
+
+        if (id == world.spec_id.player) {
+            direction = p_input.direction;
         }
+        else if (behavior_idx != -1) {
+            behavior = &world.c_behavior.data[behavior_idx];
+            switch (behavior->type) {
+                case BehaviorType_Random: {
+                    if (world.current_time - behavior->start_time > behavior->duration) {
+                        direction = (FanVector2) {
+                            FanRandomInt(-1, 1),
+                            FanRandomInt(-1, 1)
+                        };
+                        behavior->start_time = world.current_time;
+                    }
+                    else {
+                        // keeps entity moving rather than staying still
+                        direction = move->direction;
+                    }
+                } break;
+                case BehaviorType_Follow: {
+                    CTransform *target_transform = &world.c_transform.data[0];
+                    FanVector2 target_face = target_transform->position;
+                       if (id == world.spec_id.camera) {
+                        CShape *target_shape = &world.c_shape.data[0];
+                        target_face = FanVector2Add(target_face, target_shape->offset);
+                    }
+                    FanVector2 face = FanVector2Normalize(FanVector2Sub(target_face, transform->position));
+
+                    direction = (FanVector2){ signof(face.x), signof(face.y) };
+                } break;
+                case BehaviorType_None:
+                default: {
+                } break;
+            }
+        }
+
+        MovementSystemUpdate(move, transform, direction, dt);
 
 
         if (called_object_dump) {
             printf("\tid: %d\n", id);
 
             if (id == world.spec_id.player) {
-                printf("\tshape: %d\n", shape_idx);
-                printf("\tshape->initialized: %s\n", shape->initialized ? "true" : "false");
-                printf("\tshape->layer: %d\n", shape->layer);
-                printf("\t");
-                FanColorPrint(shape->color);
-                printf("\t");
-                FanVector2Print(shape->offset);
+                FanVector2Print(transform->position);
+                FanVector2Print(transform->scale);
 
-                if (animation) {
-                    printf("\tanimation: %s (%d)\n", animation->name, animation_idx);
-                    printf("\tanimation->id: %d\n", animation->id);
-                    printf("\tanimation->timer: %f\n", animation->timer);
-                    printf("\tanimation->current_frame: %d\n", animation->current_frame);
-                    printf("\tanimation->finished: %d\n", animation->finished);
+                if (move) {
+                    printf("\t");
+                    FanVector2Print(move->velocity);
+                    FanVector2Print(move->direction);
+                    printf("\tmove->speed: %f\n", move->speed);
                 }
             }
         }
     }
+
+    for (ssize i = 0; i < world.c_animation.size; i++) {
+        int32 id = world.c_animation.dense[i];
+        if (id == -1)
+            continue;
+
+        int32 texture_idx = world.c_texture.sparse[id];
+
+        CAnimation *anim  = &world.c_animation.data[i];
+        CTexture *texture = &world.c_texture.data[texture_idx];
+
+        AnimationSystem(anim, texture, dt);
+    }
+
+    for (ssize i = 0; i < dynamic_entity_count; i++) {
+        int32 id = dynamic_entities[i];
+
+
+        int32 move_idx        = world.c_movement.sparse[id];
+        int32 transform_idx   = world.c_transform.sparse[id];
+
+        CMovement  *move      = &world.c_movement.data[move_idx];
+        CTransform *transform = &world.c_transform.data[transform_idx];
+
+        if (move->active and not (move->flags & MovementFlag_NoCollision)) {
+            for (ssize j = i + 1; j < dynamic_entity_count; j++) {
+                int32 other_id = dynamic_entities[j];
+
+                int32 other_transform_idx    = world.c_transform.sparse[other_id];
+                int32 other_move_idx         = world.c_movement.sparse[other_id];
+                assert(other_move_idx != -1);
+
+                CTransform *other_transform  = &world.c_transform.data[other_transform_idx];
+                CMovement  *other_move       = &world.c_movement.data[other_move_idx];
+
+                CollisionResolve(transform, move, other_transform, other_move, dt);
+            }
+            for (ssize i = 0; i < static_entity_count; i++) {
+                int32 other_id = static_entities[i];
+
+                int32 other_transform_idx    = world.c_transform.sparse[other_id];
+                int32 other_move_idx         = world.c_movement.sparse[other_id];
+                assert(other_move_idx != -1);
+
+                CTransform *other_transform  = &world.c_transform.data[other_transform_idx];
+                CMovement  *other_move       = &world.c_movement.data[other_move_idx];
+
+                CollisionResolve(transform, move, other_transform, other_move, dt);
+            }
+        }
+    }
+
+    RenderEntities(dt);
 }
 
 
@@ -1464,23 +1287,22 @@ int main(void) {
             running = false;
         }
 
-        FanVector2 player_direction = FanVector2Zero();
-        bool32 player_interacting = false;
+        PlayerInput p_input = { 0 };
         int32 player_animation_id = -1;
         if (FanKeyDown(FanKey_W)) {
-            player_direction.y -= 1;
+            p_input.direction.y -= 1;
             player_animation_id = 1;
         }
         if (FanKeyDown(FanKey_S)) {
-            player_direction.y += 1;
+            p_input.direction.y += 1;
             player_animation_id = 0;
         }
         if (FanKeyDown(FanKey_A)) {
-            player_direction.x -= 1;
+            p_input.direction.x -= 1;
             player_animation_id = 2;
         }
         if (FanKeyDown(FanKey_D)) {
-            player_direction.x += 1;
+            p_input.direction.x += 1;
             player_animation_id = 3;
         }
 
@@ -1510,7 +1332,7 @@ int main(void) {
         }
 
         if (FanKeyDown(FanKey_E)) {
-            player_interacting = true;
+            p_input.actions[0] = true;
         }
 
         if (FanKeyDown(FanKey_O)) {
@@ -1535,6 +1357,7 @@ int main(void) {
             printf("[[DEBUG INFO]]\n");
         }
 
+
         world.current_time = FanGetTime();
         int32 cam_move_idx = world.c_transform.sparse[world.spec_id.camera];
         CTransform *cam_transform = &world.c_transform.data[cam_move_idx];
@@ -1556,7 +1379,8 @@ int main(void) {
         FanDrawBegin();
             FanDrawClear(FanColor_WHITE);
             FanCameraBegin(camera);
-            UpdateAndRender(player_direction, player_offset, player_interacting, player_animation_id, update_entity_split, dt);
+            // UpdateAndRender(player_direction, player_offset, player_interacting, player_animation_id, update_entity_split, dt);
+            UpdateEntities(p_input, update_entity_split, dt);
             FanCameraEnd();
             FanDrawFPS(2, 2);
         FanDrawEnd();
