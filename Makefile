@@ -14,6 +14,7 @@ CC := gcc
 
 CFLAGS := -Wall -Wextra -I include -L lib -g -O1
 LDFLAGS := -L bin -lplatform
+MAIN_FLAGS := -Wl,-rpath,'$$ORIGIN'
 PLATFORM_FLAGS :=
 
 
@@ -42,7 +43,7 @@ RAYLIB_VERSION ?= 5.5
 TARGET ?= win64_mingw-w64
 
 all: platform game
-	$(CC) $(CFLAGS) -o $(BINARY) ./src/main.c ./src/os.c $(LDFLAGS)
+	$(CC) $(CFLAGS) -o $(BINARY) ./src/main.c ./src/os.c $(LDFLAGS) $(MAIN_FLAGS)
 
 # Game DLL
 game: platform
