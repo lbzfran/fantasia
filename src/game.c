@@ -476,7 +476,7 @@ void RenderEntities(World *world, PlayerInput p_input, float32 dt) {
         if (world->called_object_dump) {
             printf("id: %d\n", id);
             printf("interacting: %s\n", interacting ? "true" : "false");
-            printf("interacted: %s\n", interacted ? "true" : "false");
+            printf("interacted: %s\n",  interacted  ? "true" : "false");
             FanRectPrint(zone);
         }
     }
@@ -708,9 +708,15 @@ void UpdateEntities(
                 }
 
                 CollisionSystem(transform, move, other_transform, other_move, dt);
-                if (interact and other_interacted and
-                    not (istagged(tag_enemy) and istagged(other_tag_enemy)) and
-                    CollisionCheckR(zone, other_zone)) {
+                if (
+                        interact and
+                        other_interacted and
+                        CollisionCheckR(zone, other_zone) and
+                        not (istagged(tag_enemy) and istagged(other_tag_enemy))
+                    ) {
+                    printf("colliding!!\n");
+                    FanRectPrint(zone);
+                    FanRectPrint(other_zone);
                     *interact = true;
                     *other_interacted = true;
                 }
@@ -838,14 +844,13 @@ global void SceneMain(World *world) {
         .color = (FanColor){ 50, 255, 255, 255 },
         .offset = (FanVector2){ 0, 6 },
     );
-    ComponentAddArgs(&world->c_movement, world->entity_count, .speed = 400.0f);
+    ComponentAddArgs(&world->c_movement, world->entity_count, .speed = 100.0f);
     ComponentAddArgs(&world->c_texture,  world->entity_count,
         .texture = tex_sprite,
         .rect = { .width = 36, .height = 36 },
     );
     ComponentAddArgs(&world->c_behavior, world->entity_count,
-        .type = BehaviorType_Random,
-        .duration = 0.2f,
+        .type = BehaviorType_Follow,
     );
     ComponentAdd(&world->c_interaction,  world->entity_count);
     ComponentAdd(&world->c_interactable, world->entity_count);
@@ -855,25 +860,25 @@ global void SceneMain(World *world) {
     ComponentAdd(&world->c_tag_enemy,    world->entity_count);
     world->entity_count++;
 
-    ComponentAdd(&world->c_transform,    world->entity_count);
-    ComponentAddArgs(&world->c_shape,    world->entity_count,
-        .color = (FanColor){ 255, 50, 255, 255 },
-    );
-    ComponentAddArgs(&world->c_movement, world->entity_count, .speed = 150.0f);
-    ComponentAddArgs(&world->c_texture,  world->entity_count,
-        .texture = tex_sprite,
-        .rect = { .x = 64, .y = 0, .width = 14, .height = 16 },
-    );
-    ComponentAddArgs(&world->c_behavior, world->entity_count,
-        .type = BehaviorType_Follow,
-    );
-    ComponentAdd(&world->c_interaction,  world->entity_count);
-    ComponentAdd(&world->c_interactable, world->entity_count);
-    ComponentAdd(&world->c_tag_enemy,    world->entity_count);
-    world->entity_count++;
+    // ComponentAdd(&world->c_transform,    world->entity_count);
+    // ComponentAddArgs(&world->c_shape,    world->entity_count,
+    //     .color = (FanColor){ 255, 50, 255, 255 },
+    // );
+    // ComponentAddArgs(&world->c_movement, world->entity_count, .speed = 150.0f);
+    // ComponentAddArgs(&world->c_texture,  world->entity_count,
+    //     .texture = tex_sprite,
+    //     .rect = { .x = 64, .y = 0, .width = 14, .height = 16 },
+    // );
+    // ComponentAddArgs(&world->c_behavior, world->entity_count,
+    //     .type = BehaviorType_Follow,
+    // );
+    // ComponentAdd(&world->c_interaction,  world->entity_count);
+    // ComponentAdd(&world->c_interactable, world->entity_count);
+    // ComponentAdd(&world->c_tag_enemy,    world->entity_count);
+    // world->entity_count++;
 
     ComponentAddArgs(&world->c_transform,  world->entity_count,
-        .scale = (FanVector2){ FanWindowWidth(), FanWindowHeight() },
+        .scale = (FanVector2){ FanWindowWidth() * 2, FanWindowHeight() * 2 },
     );
     ComponentAddArgs(&world->c_shape,      world->entity_count,
         .layer = 1,
@@ -930,8 +935,10 @@ global void SceneMain(World *world) {
     );
     world->spec_id.camera = world->entity_count;
     world->entity_count++;
+
 }
 
+FanMusic muse = { 0 };
 void GameInit(Allocator *a, World *world) {
 
     int32 split_size = kilobytes(1);
@@ -960,11 +967,20 @@ void GameInit(Allocator *a, World *world) {
 
     SceneMain(world);
 
+    world->bounding_zone = (FanRect){ .width = FanWindowWidth() * 2, .height = FanWindowHeight() * 2 };
+
+    muse = FanMusicLoad("./resources/My Uncles Last Voyage.mp3");
+    FanMusicPlay(muse);
+    FanMusicSetVolume(muse, 0.6f);
+
     printf("Successfully passed initialization!\n");
 }
 
 void GameUpdateAndRender(Allocator *a, World *world, PlayerInput p_input, float32 dt) {
     (void)a;
+
+    FanMusicUpdate(muse);
+
     UpdateEntities(world, p_input, dt);
     RenderEntities(world, p_input, dt);
 }

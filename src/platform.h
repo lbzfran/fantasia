@@ -256,6 +256,7 @@ FAN_API void     FanSoundSetPan(FanSound, float);
 
 FAN_API FanMusic FanMusicLoad(const char *filepath);
 FAN_API void     FanMusicUnload(FanMusic);
+FAN_API void     FanMusicUpdate(FanMusic);
 FAN_API void     FanMusicPlay(FanMusic);
 FAN_API void     FanMusicStop(FanMusic);
 FAN_API void     FanMusicPause(FanMusic music);

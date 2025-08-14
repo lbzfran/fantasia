@@ -171,6 +171,12 @@ void FanMusicUnload(FanMusic music) {
     UnloadMusicStream(rl_music);
 }
 
+void FanMusicUpdate(FanMusic music) {
+    Music rl_music = FanMusicToRL(music);
+
+    UpdateMusicStream(rl_music);
+}
+
 void FanMusicPlay(FanMusic music) {
     Music rl_music = FanMusicToRL(music);
 

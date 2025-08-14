@@ -21,6 +21,7 @@ World world = {};
 
 int main(void) {
     FanWindowCreate(800, 600, "Fantasia");
+    FanAudioDevCreate();
 
     world.arena = (Arena){
         .data     = heap_allocator.make(null, megabytes(1)),
@@ -133,7 +134,6 @@ int main(void) {
             printf("[[DEBUG INFO]]\n");
         }
 
-        world.bounding_zone = (FanRect){ .width = FanWindowWidth(), .height = FanWindowHeight() };
         world.current_time = FanGetTime();
         int32 cam_move_idx = world.c_transform.sparse[world.spec_id.camera];
         CTransform *cam_transform = &world.c_transform.data[cam_move_idx];
@@ -163,6 +163,7 @@ int main(void) {
         world.update_entity_split = false;
     }
 
+    FanAudioDevClose();
     FanWindowClose();
     LibClose(lib);
     heap_allocator.free(null, world.arena.data, world.arena.capacity);
