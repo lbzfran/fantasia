@@ -11,12 +11,14 @@
 #include <string.h>
 
 #if defined(OS_WINDOWS)
+    #define GAME_LIB_PATH "libgame.dll"
     #if defined(BUILD_SHARED)
         #define GAME_API __declspec(dllexport)
     #elif defined(USE_SHARED)
         #define GAME_API __declspec(dllimport)
     #endif
 #else
+    #define GAME_LIB_PATH "libgame.so"
     #if defined(BUILD_SHARED)
         #define GAME_API __attribute((visibility("default")))
     #endif

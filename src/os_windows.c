@@ -4,9 +4,9 @@
 #include "os.h"
 
 void* LibOpen(const char *path) {
-    void *res = (void *)LoadLibraryA((TEXT(path)));
+    void *res = (void *)LoadLibraryA(path);
     if (res == NULL) {
-        printf("Failed to load DLL: '%lu'.\n", GetLastError());
+        printf("Failed to load DLL '%s': '%lu'.\n", path, GetLastError());
     }
     return res;
 }
@@ -14,7 +14,7 @@ void* LibOpen(const char *path) {
 void* LibLoad(void *lib, const char *name) {
     void *res = (void *)GetProcAddress((HMODULE)lib, name);
     if (res == NULL) {
-        printf("Failed to load function: '%lu'.\n", GetLastError());
+        printf("Failed to load function '%s': '%lu'.\n", name, GetLastError());
     }
     return res;
 }

@@ -61,7 +61,7 @@ int main(void) {
     camera.zoom = 0.8f;
     PlayerInput p_input = { 0 };
 
-    void *lib = LibOpen("bin/game.so");
+    void *lib = LibOpen(GAME_LIB_PATH);
     game.init = LibLoad(lib, "GameInit");
     game.update_and_render = LibLoad(lib, "GameUpdateAndRender");
 

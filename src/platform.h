@@ -1,20 +1,24 @@
 #ifndef FAN_PLATFORM_H
 #define FAN_PLATFORM_H
 
-#if defined(OS_WINDOWS)
-    #if defined(PLATFORM_BUILD_SHARED)
+#if defined(PLATFORM_BUILD_SHARED)
+    #if defined(OS_WINDOWS)
         #define FAN_API __declspec(dllexport)
-    #elif defined(PLATFORM_USE_SHARED)
-        #define FAN_API __declspec(dllimport)
+    #elif defined(OS_LINUX)
+        #define FAN_API __attribute__ ((visibility ("default")))
+    #else
+        #define FAN_API
     #endif
 #else
-    #if defined(PLATFORM_BUILD_SHARED)
-        #define FAN_API __attribute((visibility("default")))
+    #if defined(OS_WINDOWS)
+        #define FAN_API __declspec(dllimport)
+    #else
+        #define FAN_API
     #endif
 #endif
 
 # ifndef FAN_API
-#  define FAN_API extern
+    #define FAN_API extern
 # endif
 
 typedef struct {
@@ -337,4 +341,4 @@ FAN_API int FanRectIsEmpty(FanRect rect);
 
 // threading
 
-#endif
+#endif // FAN_PLATFORM_H
