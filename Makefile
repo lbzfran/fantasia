@@ -38,19 +38,16 @@ OBJS := $(BUILD_DIR)/main.o $(BUILD_DIR)/platform.o
 BINARY := $(BIN_DIR)/$(BIN)$(EXT)
 
 GAME_LIB := libgame$(LIBEXT)
-
-RAYLIB_VERSION ?= 5.5
-TARGET ?= win64_mingw-w64
+PLATFORM_LIB := libplatform$(LIBEXT)
 
 all: platform game
 	$(CC) $(CFLAGS) -o $(BINARY) ./src/main.c ./src/os.c $(LDFLAGS) $(MAIN_FLAGS)
 
-# Game DLL
 game: platform
 	$(CC) $(CFLAGS) $(LIBFLAGS) -o $(BIN_DIR)/$(GAME_LIB) ./src/game.c $(LDFLAGS)
 
 platform:
-	$(CC) $(CFLAGS) $(LIBFLAGS) -DPLATFORM_BUILD_SHARED -o $(BIN_DIR)/libplatform$(LIBEXT) ./src/platform.c $(PLATFORM_FLAGS)
+	$(CC) $(CFLAGS) $(LIBFLAGS) -DPLATFORM_BUILD_SHARED -o $(BIN_DIR)/$(PLATFORM_LIB) ./src/platform.c $(PLATFORM_FLAGS)
 
 clean:
-	rm -f $(BINARY) $(BIN_DIR)/game$(LIBEXT)
+	rm -f $(BINARY) $(BIN_DIR)/$(GAME_LIB) $(BIN_DIR)/$(PLATFORM_LIB)

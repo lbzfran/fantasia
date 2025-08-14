@@ -204,8 +204,6 @@ typedef struct {
     bool32                 update_entity_split;
 
 
-
-
     CTransformStorage      c_transform;
     CShapeStorage          c_shape;
     CMovementStorage       c_movement;
@@ -225,5 +223,6 @@ typedef struct {
 
 void GAME_API GameInit(Allocator *a, World *world);
 void GAME_API GameUpdateAndRender(Allocator *a, World *world, PlayerInput p_input, float32 dt);
+void GAME_API GameClose(Allocator *a, World *world);
 
 #endif // FAN_GAME_H

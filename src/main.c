@@ -6,6 +6,7 @@
 typedef struct {
     void (GAME_API *init)(Allocator *a, World *world);
     void (GAME_API *update_and_render)(Allocator *a, World *world, PlayerInput p_input, float32 dt);
+    void (GAME_API *close)(Allocator *a, World *world);
 } GameAPI;
 GameAPI game = {};
 
@@ -40,23 +41,6 @@ int main(void) {
 
     FanRandomSeed(12398);
 
-    ssize component_size  = kilobytes(1);
-
-    ComponentStorageCreate(&world.c_transform,      &arena_allocator, component_size);
-    ComponentStorageCreate(&world.c_shape,          &arena_allocator, component_size);
-    ComponentStorageCreate(&world.c_movement,       &arena_allocator, component_size);
-    ComponentStorageCreate(&world.c_texture,        &arena_allocator, component_size);
-    ComponentStorageCreate(&world.c_behavior,       &arena_allocator, component_size);
-    ComponentStorageCreate(&world.c_animation,      &arena_allocator, component_size);
-    ComponentStorageCreate(&world.c_physics,        &arena_allocator, component_size);
-
-    ComponentStorageCreate(&world.c_interaction,    &arena_allocator, component_size);
-    ComponentStorageCreate(&world.c_interactable,   &arena_allocator, component_size);
-    ComponentStorageCreate(&world.c_zone,           &arena_allocator, component_size);
-
-    ComponentStorageCreate(&world.c_tag_background, &arena_allocator, component_size);
-    ComponentStorageCreate(&world.c_tag_enemy,      &arena_allocator, component_size);
-
     FanCamera2D camera = { 0 };
     camera.zoom = 0.8f;
     PlayerInput p_input = { 0 };
@@ -64,6 +48,7 @@ int main(void) {
     void *lib = LibOpen(GAME_LIB_PATH);
     game.init = LibLoad(lib, "GameInit");
     game.update_and_render = LibLoad(lib, "GameUpdateAndRender");
+    game.close = LibLoad(lib, "GameClose");
 
     game.init(&arena_allocator, &world);
     while (running) {

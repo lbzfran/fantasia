@@ -1,6 +1,7 @@
 
 #include "game.h"
 
+
 void MovementSystem(CMovement *m, CTransform *t, FanVector2 direction, FanRect bounding_zone, float32 dt) {
     if (not m->initialized) {
         init_if_null(m->speed,       400.0f);
@@ -930,16 +931,34 @@ global void SceneMain(World *world) {
     world->spec_id.camera = world->entity_count;
     world->entity_count++;
 }
+
 void GameInit(Allocator *a, World *world) {
-    SceneMain(world);
 
     int32 split_size = kilobytes(1);
+    ssize component_size  = kilobytes(1);
+
+    ComponentStorageCreate(&world->c_transform,      a, component_size);
+    ComponentStorageCreate(&world->c_shape,          a, component_size);
+    ComponentStorageCreate(&world->c_movement,       a, component_size);
+    ComponentStorageCreate(&world->c_texture,        a, component_size);
+    ComponentStorageCreate(&world->c_behavior,       a, component_size);
+    ComponentStorageCreate(&world->c_animation,      a, component_size);
+    ComponentStorageCreate(&world->c_physics,        a, component_size);
+
+    ComponentStorageCreate(&world->c_interaction,    a, component_size);
+    ComponentStorageCreate(&world->c_interactable,   a, component_size);
+    ComponentStorageCreate(&world->c_zone,           a, component_size);
+
+    ComponentStorageCreate(&world->c_tag_background, a, component_size);
+    ComponentStorageCreate(&world->c_tag_enemy,      a, component_size);
 
     world->split.dynamic_entities = a->make(a->ctx, split_size);
     world->split.dynamic_capacity = split_size;
 
     world->split.static_entities  = a->make(a->ctx, split_size);
     world->split.static_capacity  = split_size;
+
+    SceneMain(world);
 
     printf("Successfully passed initialization!\n");
 }
