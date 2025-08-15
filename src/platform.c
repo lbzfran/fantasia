@@ -7,6 +7,7 @@
 # include "platform_raylib.c"
 #endif
 
+
 bool32 FanRectIsEmpty(FanRect rect) {
     int result = 1;
     if (rect.x && rect.y && rect.width && rect.height) {
@@ -99,6 +100,10 @@ float32 FanFloat32NegativeInf(void) {
 
 float32 FanFloat32Round(float32 x) {
     return round(x);
+}
+
+int32 FanFloat32Truncate(float32 x) {
+    return (int32)x;
 }
 
 float32 FanFloat32Exp(float32 x) {

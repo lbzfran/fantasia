@@ -305,6 +305,7 @@ FAN_API float FanFloat32NegativeInf(void);
 FAN_API float FanFloat32Exp(float);
 
 FAN_API float FanFloat32Round(float);
+FAN_API int   FanFloat32Truncate(float);
 
 FAN_API void FanVector2Print_(FanVector2, const char *);
 FAN_API void FanColorPrint_(FanColor, const char *);
@@ -335,8 +336,6 @@ FAN_API float      FanVector2Cross(FanVector2 v1, FanVector2 v2);
 FAN_API FanVector2 FanVector2Hadamard(FanVector2 v1, FanVector2 v2);
 
 FAN_API FanVector2 FanVector2Round(FanVector2 v);
-
-// custom api
 
 FAN_API int FanRectIsEmpty(FanRect rect);
 

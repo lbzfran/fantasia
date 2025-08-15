@@ -169,6 +169,19 @@ typedef struct {
     ssize  static_capacity;
 } EntitySplit;
 
+typedef struct {
+    ssize rows;
+    ssize cols;
+    int32 *V;
+} MatrixInt32;
+
+typedef struct {
+    MatrixInt32 tiles; // 1D repr 2D plane
+
+    FanVector2 origin; // top-left, relative to screen
+    int32 tile_size;
+} TileMap;
+
 ComponentDeclare(CTransform, CTransform);
 ComponentDeclare(CShape,     CShape);
 ComponentDeclare(CMovement,  CMovement);
@@ -201,8 +214,9 @@ typedef struct {
     bool32                 called_object_dump;
 
     EntitySplit            split;
-    bool32                 update_entity_split;
+	bool32                 update_entity_split;
 
+	TileMap                map;
 
     CTransformStorage      c_transform;
     CShapeStorage          c_shape;

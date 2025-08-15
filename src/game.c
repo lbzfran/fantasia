@@ -1,5 +1,6 @@
 
 #include "game.h"
+#include "platform.h"
 
 
 void MovementSystem(CMovement *m, CTransform *t, FanVector2 direction, FanRect bounding_zone, float32 dt) {
@@ -111,6 +112,38 @@ bool32 CollisionCheckV(FanVector2 aPos, FanVector2 aSize, FanVector2 bPos, FanVe
                   aPos.y + aSize.y < bPos.y or bPos.y + bSize.y < aPos.y);
 
     return result;
+}
+
+/*
+ * MATRIX
+ */
+int32 MatrixInt32Get_(MatrixInt32 m, int32 i, int32 j) {
+    int32 idx = i * m.cols + j;
+    return m.V[idx];
+}
+#define MatrixInt32Get(m, i, j) MatrixInt32Get_(m, max(i, m.rows - 1), max(j, m.cols - 1))
+
+MatrixInt32 MatrixInt32Create(Allocator *a, ssize rows, ssize cols, int32 default_value) {
+    ssize size = rows * cols;
+    int32 *data = (int32 *)a->make(a->ctx, size * sizeof(int32));
+    for (ssize i = 0; i < size; i++)
+        data[i] = default_value;
+    return (MatrixInt32) {
+        .V = data,
+        .rows = rows,
+        .cols = cols
+    };
+}
+
+FanVector2 TileMapGetPosition(TileMap map, FanVector2 position) {
+    int32 mapX = FanFloat32Truncate((position.x - map.origin.x) / map.tile_size);
+    int32 mapY = FanFloat32Truncate((position.y - map.origin.y) / map.tile_size);
+
+    FanVector2 tile_pos = (FanVector2) {
+        mapX,
+        mapY
+    };
+    return tile_pos;
 }
 
 bool32 CollisionSystem(
@@ -466,6 +499,32 @@ void RenderEntities(World *world, PlayerInput p_input, float32 dt) {
             move = &world->c_movement.data[move_idx];
         }
 
+            FanVector2 center_pos = FanVector2Add(
+                transform->position,
+                (FanVector2) {
+                    transform->scale.x * 0.5f,
+                    transform->scale.y * 0.75f,
+                }
+            );
+
+            FanVector2 map_pos = TileMapGetPosition(world->map, center_pos);
+            int32 tile_data = MatrixInt32Get(world->map.tiles, map_pos.x, map_pos.y);
+
+
+            if (id == world->spec_id.player) {
+                if (tile_data == 1) {
+                    FanDrawRectR(
+                        (FanRect) {
+                        map_pos.x * world->map.tile_size,
+                        map_pos.y * world->map.tile_size,
+                        world->map.tile_size,
+                        world->map.tile_size,
+                        },
+                        FanColor_BLUE
+                    );
+                }
+            }
+
         render_flags |= RenderFlag_FlipX;
 
         if (p_input.actions[1])
@@ -680,9 +739,9 @@ void UpdateEntities(
                 int32 other_move_idx         = world->c_movement.sparse[other_id];
                 assert(other_move_idx != -1);
                 int32 other_interacted_idx   = world->c_interactable.sparse[other_id];
-                int32 other_zone_idx         = world->c_zone.sparse[id];
+                int32 other_zone_idx         = world->c_zone.sparse[other_id];
 
-                int32 other_tag_enemy        = world->c_tag_enemy.sparse[id];
+                int32 other_tag_enemy        = world->c_tag_enemy.sparse[other_id];
 
                 CTransform *other_transform  = &world->c_transform.data[other_transform_idx];
                 CMovement  *other_move       = &world->c_movement.data[other_move_idx];
@@ -714,9 +773,8 @@ void UpdateEntities(
                         CollisionCheckR(zone, other_zone) and
                         not (istagged(tag_enemy) and istagged(other_tag_enemy))
                     ) {
-                    printf("colliding!!\n");
-                    FanRectPrint(zone);
-                    FanRectPrint(other_zone);
+                    // FanRectPrint(zone);
+                    // FanRectPrint(other_zone);
                     *interact = true;
                     *other_interacted = true;
                 }
@@ -972,6 +1030,13 @@ void GameInit(Allocator *a, World *world) {
     muse = FanMusicLoad("./resources/My Uncles Last Voyage.mp3");
     FanMusicPlay(muse);
     FanMusicSetVolume(muse, 0.6f);
+
+    TileMap map = (TileMap) {
+        .tile_size = 96,
+		.tiles = MatrixInt32Create(a, 10, 10, 1),
+    };
+
+	world->map = map;
 
     printf("Successfully passed initialization!\n");
 }

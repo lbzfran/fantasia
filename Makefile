@@ -34,20 +34,19 @@ ifeq ($(PLATFORM),windows)
 	EXT := .exe
 endif
 
-OBJS := $(BUILD_DIR)/main.o $(BUILD_DIR)/platform.o
 BINARY := $(BIN_DIR)/$(BIN)$(EXT)
 
 GAME_LIB := libgame$(LIBEXT)
 PLATFORM_LIB := libplatform$(LIBEXT)
 
-all: platform game
+all: src/main.c $(BIN_DIR)/$(GAME_LIB) $(BIN_DIR)/$(PLATFORM_LIB)
 	$(CC) $(CFLAGS) -o $(BINARY) ./src/main.c ./src/os.c $(LDFLAGS) $(MAIN_FLAGS)
 
-game: platform
-	$(CC) $(CFLAGS) $(LIBFLAGS) -o $(BIN_DIR)/$(GAME_LIB) ./src/game.c $(LDFLAGS)
+$(BIN_DIR)/$(GAME_LIB): src/game.c $(BIN_DIR)/$(PLATFORM_LIB)
+	$(CC) $(CFLAGS) $(LIBFLAGS) -o $(BIN_DIR)/$(GAME_LIB) $< $(LDFLAGS)
 
-platform:
-	$(CC) $(CFLAGS) $(LIBFLAGS) -DPLATFORM_BUILD_SHARED -o $(BIN_DIR)/$(PLATFORM_LIB) ./src/platform.c $(PLATFORM_FLAGS)
+$(BIN_DIR)/$(PLATFORM_LIB): src/platform.c
+	$(CC) $(CFLAGS) $(LIBFLAGS) -DPLATFORM_BUILD_SHARED -o $(BIN_DIR)/$(PLATFORM_LIB) $< $(PLATFORM_FLAGS)
 
 clean:
 	rm -f $(BINARY) $(BIN_DIR)/$(GAME_LIB) $(BIN_DIR)/$(PLATFORM_LIB)
