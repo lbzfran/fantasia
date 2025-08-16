@@ -237,6 +237,8 @@ typedef enum {
 #define FanColor_BLUE    (FanColor){   0,   0, 255, 255 }
 #define FanColor_MAGENTA (FanColor){ 255,   0, 255, 255 }
 
+#define PI 3.14159265358979323846f
+
 FAN_API void FanWindowCreate(int width, int height, const char *title);
 FAN_API void FanWindowClose(void);
 FAN_API int  FanWindowShouldClose(void);
@@ -297,6 +299,9 @@ FAN_API void FanDrawEnd(void);
 FAN_API void FanDrawRect(int x, int y, int w, int h, FanColor color);
 FAN_API void FanDrawRectV(FanVector2 pos, FanVector2 scale, FanColor color);
 FAN_API void FanDrawRectR(FanRectInt32 rect, FanColor color);
+
+FAN_API void FanDrawLine(int, int, int, int, FanColor color);
+FAN_API void FanDrawLineV(FanVector2 start, FanVector2 end, FanColor color);
 FAN_API void FanDrawTexture(FanTexture texture, FanRectInt32 src, FanRectInt32 dst, FanVector2 origin, float angle, FanColor);
 
 FAN_API void FanCameraBegin(FanCamera2D);
@@ -313,6 +318,13 @@ FAN_API float FanFloat32Exp(float);
 
 FAN_API float FanFloat32Round(float);
 FAN_API int   FanFloat32Truncate(float);
+
+FAN_API float FanFloat32Sin(float);
+FAN_API float FanFloat32Cos(float);
+FAN_API float FanFloat32Sqrt(float);
+
+FAN_API float FanFloat32Rad(float);
+FAN_API float FanFloat32Deg(float);
 
 FAN_API void FanVector2Print_(FanVector2, const char *);
 FAN_API void FanColorPrint_(FanColor, const char *);
@@ -347,6 +359,9 @@ FAN_API float      FanVector2Cross(FanVector2 v1, FanVector2 v2);
 FAN_API FanVector2 FanVector2Hadamard(FanVector2 v1, FanVector2 v2);
 
 FAN_API FanVector2 FanVector2Round(FanVector2 v);
+FAN_API FanVector2 FanVector2Rotate(FanVector2 v, float angle);
+
+FAN_API FanVector2 FanVector2Lerp(FanVector2 v1, float t, FanVector2 v2);
 
 FAN_API int FanRectIsEmpty(FanRectInt32 rect);
 

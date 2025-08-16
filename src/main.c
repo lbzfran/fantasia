@@ -103,7 +103,7 @@ int main(void) {
             }
         }
 
-        if (FanKeyDown(FanKey_E)) {
+        if (FanKeyPressed(FanKey_E)) {
             p_input->actions[0] = true;
         }
         else {

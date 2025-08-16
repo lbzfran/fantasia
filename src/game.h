@@ -15,7 +15,7 @@
          ssize  capacity;                \
     } name##Storage
 
-#define ComponentStorageCreate(storage, mem, size) do{                                 \
+#define ComponentCreate(storage, mem, size) do{                                 \
     (storage)->sparse   = (mem)->make((mem)->ctx, sizeof(*(storage)->sparse) * size);  \
     (storage)->dense    = (mem)->make((mem)->ctx, sizeof(*(storage)->dense)  * size);  \
     (storage)->data     = (mem)->make((mem)->ctx, sizeof(*(storage)->data)   * size);  \
@@ -60,7 +60,7 @@ typedef enum {
     MovementFlag_CollideSoftly = (1 << 2),
 } MovementFlags;
 
-typedef struct CTransform {
+typedef struct {
     FanVector2 position;
     FanVector2 scale;
     float32    rotation;
@@ -68,7 +68,7 @@ typedef struct CTransform {
     bool32     initialized;
 } CTransform;
 
-typedef struct CShape {
+typedef struct {
     FanColor   color;
     FanVector2 offset;
     int32      layer;
@@ -77,8 +77,9 @@ typedef struct CShape {
     bool32     initialized;
 } CShape;
 
-typedef struct CMovement {
-    FanVector2 velocity;
+typedef struct {
+    FanVector2 velocity_input;
+    FanVector2 velocity_force;
 
     FanVector2 direction;
 
@@ -90,7 +91,7 @@ typedef struct CMovement {
     bool32     initialized;
 } CMovement;
 
-typedef struct CPhysics {
+typedef struct {
     FanVector2 last_position;
 
     float32    speed;
@@ -102,7 +103,7 @@ typedef struct CPhysics {
     bool32     initialized;
 } CPhysics;
 
-typedef struct CTexture {
+typedef struct {
     FanTexture texture;
     FanRectInt32    rect;
 } CTexture;
@@ -143,6 +144,32 @@ typedef struct {
 
     AnimationRequest   request;
 } CAnimation;
+
+// typedef struct {
+//     int32 id;
+//     const char *name;
+// } CItem;
+//
+// typedef struct {
+//     float32 value;
+// } CEquipment;
+//
+// #define MAX_INVENTORY 8
+//
+// typedef struct {
+//     int32 slots[MAX_INVENTORY];
+//     int32 count;
+// } CInventory;
+
+typedef struct {
+    float32 attack_range;
+    float32 knockback;
+
+    float32 arc_angle;
+    float32 swing_time;
+    float32 timer;
+    bool32  attacking;
+} CAttack;
 
 typedef struct {
     int32 player;
@@ -207,6 +234,7 @@ ComponentDeclare(CPhysics,   CPhysics);
 ComponentDeclare(CInteraction,  bool32);
 ComponentDeclare(CInteractable, bool32);
 ComponentDeclare(CZone,         FanRectFloat32);
+ComponentDeclare(CAttack,       CAttack);
 
 ComponentDeclare(CEnemyTag,      uint8);
 ComponentDeclare(CBackgroundTag, uint8);
@@ -238,6 +266,7 @@ typedef struct {
     CInteractionStorage    c_interaction;
     CInteractableStorage   c_interactable;
     CZoneStorage           c_zone;
+    CAttackStorage         c_attack;
 
     CEnemyTagStorage       c_tag_enemy;
     CBackgroundTagStorage  c_tag_background;

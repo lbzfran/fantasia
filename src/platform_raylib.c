@@ -324,6 +324,16 @@ void FanDrawRectR(FanRectInt32 rect, FanColor color) {
     FanDrawRect(rect.x, rect.y, rect.width, rect.height, color);
 }
 
+void FanDrawLine(int sx, int sy, int ex, int ey, FanColor color) {
+    Color rl_color = FanColorToRL(color);
+
+    DrawLine(sx, sy, ex, ey, rl_color);
+}
+
+void FanDrawLineV(FanVector2 start, FanVector2 end, FanColor color) {
+    FanDrawLine(start.x, start.y, end.x, end.y, color);
+}
+
 void FanDrawTexture(FanTexture texture, FanRectInt32 src, FanRectInt32 dst, FanVector2 origin, float angle, FanColor color) {
     Texture2D rl_texture = (Texture2D){
         .id      = texture.id,

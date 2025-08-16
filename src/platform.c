@@ -112,6 +112,42 @@ float32 FanFloat32Exp(float32 x) {
     return u.f;
 }
 
+float32 FanFloat32Sin(float32 x) {
+    return sinf(x);
+}
+
+float32 FanFloat32Cos(float32 x) {
+    return cosf(x);
+}
+
+float32 FanFloat32Sqrt(float32 x) {
+    return sqrt(x);
+}
+
+float FanFloat32Rad(float deg) {
+    return deg * (PI / 180.0f);
+}
+float FanFloat32Deg(float rad) {
+    return rad * (180.0f / PI);
+}
+
+FanVector2 FanVector2Rotate(FanVector2 v, float32 angle) {
+    float32 cos_a = FanFloat32Cos(angle);
+    float32 sin_a = FanFloat32Sin(angle);
+
+    return (FanVector2) {
+        v.x * cos_a - v.y * sin_a,
+        v.x * sin_a + v.y * cos_a
+    };
+}
+
+FanVector2 FanVector2Lerp(FanVector2 v1, float t, FanVector2 v2) {
+    return (FanVector2) {
+        FanLerp(v1.x, t, v2.x),
+        FanLerp(v1.y, t, v2.y)
+    };
+}
+
 void FanVector2Print_(FanVector2 v, const char *name) {
     printf("%s: (%f, %f)\n", name, v.x, v.y);
 }
