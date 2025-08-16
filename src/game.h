@@ -113,8 +113,9 @@ typedef struct CBehavior {
         BehaviorType_Random = 1,
         BehaviorType_Follow = 2,
     } type;
-    float64 start_time;
-    float64 duration;
+    float32 timer;
+    float32 update_time;
+    bool32  updating;
 } CBehavior;
 
 typedef struct {

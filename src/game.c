@@ -346,9 +346,9 @@ void RenderSystem(
     FanVector2 screen_scale  = FanVector2Scale(t->scale,  pixels_per_unit * camera_zoom);
     if (tx is null) {
         if (FanVector2Length(s->offset) > 0.0f) {
-            FanDrawRectV(FanVector2Add(screen_pos, screen_offset), t->scale, (FanColor){ 50, 50, 50, 255 });
+            FanDrawRectV(FanVector2Add(screen_pos, screen_offset), screen_scale, (FanColor){ 50, 50, 50, 255 });
         }
-        FanDrawRectV(screen_pos, t->scale, s->color);
+        FanDrawRectV(screen_pos, screen_scale, s->color);
     }
     else {
         float width  = (tx->rect.width)  ? tx->rect.width  : tx->texture.width;
@@ -601,15 +601,14 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
             printf("id: %d\n", id);
             printf("interacting: %s\n", interacting ? "true" : "false");
             printf("interacted: %s\n",  interacted  ? "true" : "false");
-            // FanRectPrint(zone);
+            FanRectPrint(zone);
+            printf("\t");
+            FanVector2Print(transform->position);
+            printf("\t");
+            FanVector2Print(transform->scale);
         }
     }
 }
-
-// int32 dynamic_entities[128] = { -1 };
-// int32 static_entities[128]  = { -1 };
-// ssize dynamic_entity_count  = 0;
-// ssize static_entity_count   = 0;
 
 // NOTE(liam): must call whenever entities are added/removed
 global void UpdateEntitySplit(World *world) {
@@ -700,14 +699,21 @@ void UpdateEntities(
         }
         else if (behavior_idx != -1) {
             behavior = &world->c_behavior.data[behavior_idx];
+
+            behavior->updating = false;
+            behavior->timer += dt;
+            if (behavior->timer >= behavior->update_time) {
+                behavior->timer = 0.0f;
+                behavior->updating = true;
+            }
+
             switch (behavior->type) {
                 case BehaviorType_Random: {
-                    if (state->current_time - behavior->start_time > behavior->duration) {
+                    if (behavior->updating) {
                         direction = (FanVector2) {
                             FanRandomInt(-1, 1),
                             FanRandomInt(-1, 1)
                         };
-                        behavior->start_time = state->current_time;
                     }
                     else {
                         // keeps entity moving rather than staying still
@@ -715,15 +721,19 @@ void UpdateEntities(
                     }
                 } break;
                 case BehaviorType_Follow: {
-                    CTransform *target_transform = &world->c_transform.data[0];
-                    FanVector2 target_face       = target_transform->position;
-                       if (id == world->spec_id.camera) {
-                        CShape *target_shape = &world->c_shape.data[0];
-                        target_face = FanVector2Add(target_face, target_shape->offset);
+                    if (behavior->updating) {
+                        CTransform *target_transform = &world->c_transform.data[0];
+                        FanVector2 target_face       = target_transform->position;
+                        if (id == world->spec_id.camera) {
+                            CShape *target_shape = &world->c_shape.data[0];
+                            target_face = FanVector2Add(target_face, target_shape->offset);
+                        }
+                        FanVector2 face = FanVector2Normalize(FanVector2Sub(target_face, transform->position));
+                        direction = (FanVector2){ signof(face.x), signof(face.y) };
                     }
-                    FanVector2 face = FanVector2Normalize(FanVector2Sub(target_face, transform->position));
-
-                    direction = (FanVector2){ signof(face.x), signof(face.y) };
+                    else {
+                        direction = move->direction;
+                    }
                 } break;
                 case BehaviorType_None:
                 default: {
@@ -737,12 +747,15 @@ void UpdateEntities(
             printf("\tid: %d\n", id);
 
             if (id == world->spec_id.player) {
+                printf("\t");
                 FanVector2Print(transform->position);
+                printf("\t");
                 FanVector2Print(transform->scale);
 
                 if (move) {
                     printf("\t");
                     FanVector2Print(move->velocity);
+                    printf("\t");
                     FanVector2Print(move->direction);
                     printf("\tmove->speed: %f\n", move->speed);
                 }
@@ -944,9 +957,7 @@ global void SceneSolo(World *world) {
 global void SceneMain(World *world) {
     FanTexture tex_sprite = FanTextureLoad("./resources/Sprite-0001.png");
 
-    ComponentAddArgs(&world->c_transform,     world->entity_count,
-        .position = (FanVector2){ 5.0f, 5.0f }
-    );
+    ComponentAdd(&world->c_transform,     world->entity_count);
     ComponentAdd(&world->c_shape,         world->entity_count);
     ComponentAddArgs(&world->c_movement,  world->entity_count,
         // .flags = MovementFlag_CollideSoftly
@@ -957,35 +968,32 @@ global void SceneMain(World *world) {
         // .rect = (FanRectInt32){ 0, 0, tex_link.width / 10.0f, tex_link.height / 8.0f }
     );
     // ComponentAddArgs(&world->c_animation, world->entity_count);
-    ComponentAdd(&world->c_interaction, world->entity_count);
+    ComponentAdd(&world->c_interaction,  world->entity_count);
     ComponentAdd(&world->c_interactable, world->entity_count);
     world->spec_id.player = world->entity_count;
     world->entity_count++;
 
-    // FanTexture tex_mewee = FanTextureLoad("./resources/mewee.png");
-    // ComponentAddArgs(&world->c_transform,    world->entity_count,
-    //     .scale = (FanVector2){ 108, 108 },
-    // );
-    // ComponentAddArgs(&world->c_shape,    world->entity_count,
-    //     .color = (FanColor){ 50, 255, 255, 255 },
-    //     .offset = (FanVector2){ 0, 6 },
-    // );
-    // ComponentAddArgs(&world->c_movement, world->entity_count, .speed = 100.0f);
-    // ComponentAddArgs(&world->c_texture,  world->entity_count,
-    //     .texture = tex_sprite,
-    //     .rect = { .width = 36, .height = 36 },
-    // );
-    // ComponentAddArgs(&world->c_behavior, world->entity_count,
-    //     .type = BehaviorType_Random,
-    //     .duration = 3.0f,
-    // );
-    // ComponentAdd(&world->c_interaction,  world->entity_count);
-    // ComponentAdd(&world->c_interactable, world->entity_count);
+    FanTexture tex_mewee = FanTextureLoad("./resources/mewee.png");
+    ComponentAdd(&world->c_transform,    world->entity_count);
+    ComponentAddArgs(&world->c_shape,    world->entity_count,
+        .color = (FanColor){ 50, 255, 255, 255 },
+    );
+    ComponentAddArgs(&world->c_movement, world->entity_count, .speed = 1.0f);
+    ComponentAddArgs(&world->c_texture,  world->entity_count,
+        .texture = tex_sprite,
+        .rect = { .width = 36, .height = 36 },
+    );
+    ComponentAddArgs(&world->c_behavior, world->entity_count,
+        .type = BehaviorType_Random,
+        .update_time = 3.0f,
+    );
+    ComponentAdd(&world->c_interaction,  world->entity_count);
+    ComponentAdd(&world->c_interactable, world->entity_count);
     // ComponentAddArgs(&world->c_zone,     world->entity_count,
-    //     .x = 12, .y = 12, .width = 64, .height = 64,
+    //     .x = 0, .y = 0, .width = 1, .height = 1,
     // );
-    // ComponentAdd(&world->c_tag_enemy,    world->entity_count);
-    // world->entity_count++;
+    ComponentAdd(&world->c_tag_enemy,    world->entity_count);
+    world->entity_count++;
 
     ComponentAdd(&world->c_transform,    world->entity_count);
     ComponentAddArgs(&world->c_shape,    world->entity_count,
@@ -1005,8 +1013,8 @@ global void SceneMain(World *world) {
     world->entity_count++;
 
     ComponentAddArgs(&world->c_transform,  world->entity_count,
-        .position = (FanVector2){ -100, -100 },
-        .scale = (FanVector2){ 100, 100 },
+        .position = (FanVector2){   0,  5 },
+        .scale    = (FanVector2){  10,  6 },
     );
     ComponentAddArgs(&world->c_shape,      world->entity_count,
         .layer = 1,
@@ -1042,16 +1050,16 @@ global void SceneMain(World *world) {
     // );
     // world->entity_count++;
 
-    // ComponentAddArgs(&world->c_transform, world->entity_count,
-    //     .position = (FanVector2){ 296, 100 },
-    // );
-    // ComponentAddArgs(&world->c_shape,     world->entity_count,
-    //     .color = (FanColor){ 50, 255, 255, 255 },
-    // );
-    // ComponentAddArgs(&world->c_movement,  world->entity_count,
-    //     .flags = MovementFlag_Immovable,
-    // );
-    // world->entity_count++;
+    ComponentAddArgs(&world->c_transform, world->entity_count,
+        .position = (FanVector2){ 5, 2 },
+    );
+    ComponentAddArgs(&world->c_shape,     world->entity_count,
+        .color = (FanColor){ 50, 255, 255, 255 },
+    );
+    ComponentAddArgs(&world->c_movement,  world->entity_count,
+        .flags = MovementFlag_Immovable,
+    );
+    world->entity_count++;
 
     ComponentAdd(&world->c_transform,    world->entity_count);
     ComponentAddArgs(&world->c_movement, world->entity_count,
@@ -1063,7 +1071,6 @@ global void SceneMain(World *world) {
     );
     world->spec_id.camera = world->entity_count;
     world->entity_count++;
-
 }
 
 FanMusic muse = { 0 };
