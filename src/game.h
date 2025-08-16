@@ -82,12 +82,12 @@ typedef struct CMovement {
 
     FanVector2 direction;
 
-    float32 speed;
-    float32 max_speed;
+    float32    speed;
+    float32    max_speed;
 
-    int32 flags;
-    bool32 active;
-    bool32 initialized;
+    int32      flags;
+    bool32     active;
+    bool32     initialized;
 } CMovement;
 
 typedef struct CPhysics {
@@ -104,7 +104,7 @@ typedef struct CPhysics {
 
 typedef struct CTexture {
     FanTexture texture;
-    FanRect    rect;
+    FanRectInt32    rect;
 } CTexture;
 
 typedef struct CBehavior {
@@ -123,13 +123,13 @@ typedef struct {
 } AnimationRequest;
 
 typedef struct {
-    const char8 *name;
-    FanRect     *frames;
-    float32      frame_time;
-    int32        frame_count;
-    bool32       loop;
+    const char8      *name;
+    FanRectInt32     *frames;
+    float32           frame_time;
+    int32             frame_count;
+    bool32            loop;
 
-    int32        next_id;
+    int32             next_id;
 } AnimationData;
 
 typedef struct {
@@ -156,8 +156,20 @@ typedef enum {
 
 typedef struct {
     FanVector2 direction;
-    int32 actions[4];
+    int32      actions[4];
 } PlayerInput;
+
+typedef struct {
+    SystemMode   mode;
+
+    PlayerInput  p_input;
+
+    FanRectInt32 bound_zone;
+    float64      current_time;
+    float32      camera_zoom;
+
+    bool32       called_object_dump;
+} GameState;
 
 typedef struct {
     int32 *dynamic_entities;
@@ -193,7 +205,7 @@ ComponentDeclare(CPhysics,   CPhysics);
 
 ComponentDeclare(CInteraction,  bool32);
 ComponentDeclare(CInteractable, bool32);
-ComponentDeclare(CZone,         FanRect);
+ComponentDeclare(CZone,         FanRectFloat32);
 
 ComponentDeclare(CEnemyTag,      uint8);
 ComponentDeclare(CBackgroundTag, uint8);
@@ -201,22 +213,17 @@ ComponentDeclare(CBackgroundTag, uint8);
 typedef struct {
     Arena                  arena;
 
-    int32                  current_mode;
-    FanRect                bounding_zone;
-
     uint8                  entity_count;
     SpecialEntityID        spec_id;
 
     AnimationData         *anim_table;
     ssize                  anim_table_size;
 
-    float64                current_time;
-    bool32                 called_object_dump;
-
     EntitySplit            split;
 	bool32                 update_entity_split;
 
 	TileMap                map;
+    int32                  pixels_per_unit;
 
     CTransformStorage      c_transform;
     CShapeStorage          c_shape;
@@ -235,8 +242,8 @@ typedef struct {
     CBackgroundTagStorage  c_tag_background;
 } World;
 
-void GAME_API GameInit(Allocator *a, World *world);
-void GAME_API GameUpdateAndRender(Allocator *a, World *world, PlayerInput p_input, float32 dt);
-void GAME_API GameClose(Allocator *a, World *world);
+void GAME_API GameInit(Allocator *a, World *world, GameState *state);
+void GAME_API GameUpdateAndRender(Allocator *a, World *world, GameState *state, float32 dt);
+void GAME_API GameClose(Allocator *a, World *world, GameState *state);
 
 #endif // FAN_GAME_H

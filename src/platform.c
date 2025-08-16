@@ -8,7 +8,7 @@
 #endif
 
 
-bool32 FanRectIsEmpty(FanRect rect) {
+bool32 FanRectIsEmpty(FanRectInt32 rect) {
     int result = 1;
     if (rect.x && rect.y && rect.width && rect.height) {
         result = 0;
@@ -120,6 +120,10 @@ void FanColorPrint_(FanColor c, const char *name) {
     printf("%s: (%d, %d, %d, %d)\n", name, c.r, c.g, c.b, c.a);
 }
 
-void FanRectPrint_(FanRect r, const char *name) {
+void FanRectInt32Print_(FanRectInt32 r, const char *name) {
     printf("%s: (%d, %d, %d, %d)\n", name, r.x, r.y, r.width, r.height);
+}
+
+void FanRectFloat32Print_(FanRectFloat32 r, const char *name) {
+    printf("%s: (%f, %f, %f, %f)\n", name, r.x, r.y, r.width, r.height);
 }

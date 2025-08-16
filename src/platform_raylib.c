@@ -320,11 +320,11 @@ void FanDrawRectV(FanVector2 pos, FanVector2 scale, FanColor color) {
     FanDrawRect(pos.x, pos.y, scale.x, scale.y, color);
 }
 
-void FanDrawRectR(FanRect rect, FanColor color) {
+void FanDrawRectR(FanRectInt32 rect, FanColor color) {
     FanDrawRect(rect.x, rect.y, rect.width, rect.height, color);
 }
 
-void FanDrawTexture(FanTexture texture, FanRect src, FanRect dst, FanVector2 origin, float angle, FanColor color) {
+void FanDrawTexture(FanTexture texture, FanRectInt32 src, FanRectInt32 dst, FanVector2 origin, float angle, FanColor color) {
     Texture2D rl_texture = (Texture2D){
         .id      = texture.id,
         .width   = texture.width,

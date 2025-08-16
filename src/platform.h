@@ -38,7 +38,14 @@ typedef struct {
     int y;
     int width;
     int height;
-} FanRect;
+} FanRectInt32;
+
+typedef struct {
+    float x;
+    float y;
+    float width;
+    float height;
+} FanRectFloat32;
 
 typedef struct {
     unsigned int id;
@@ -289,8 +296,8 @@ FAN_API void FanDrawEnd(void);
 
 FAN_API void FanDrawRect(int x, int y, int w, int h, FanColor color);
 FAN_API void FanDrawRectV(FanVector2 pos, FanVector2 scale, FanColor color);
-FAN_API void FanDrawRectR(FanRect rect, FanColor color);
-FAN_API void FanDrawTexture(FanTexture texture, FanRect src, FanRect dst, FanVector2 origin, float angle, FanColor);
+FAN_API void FanDrawRectR(FanRectInt32 rect, FanColor color);
+FAN_API void FanDrawTexture(FanTexture texture, FanRectInt32 src, FanRectInt32 dst, FanVector2 origin, float angle, FanColor);
 
 FAN_API void FanCameraBegin(FanCamera2D);
 FAN_API void FanCameraEnd(void);
@@ -309,10 +316,14 @@ FAN_API int   FanFloat32Truncate(float);
 
 FAN_API void FanVector2Print_(FanVector2, const char *);
 FAN_API void FanColorPrint_(FanColor, const char *);
-FAN_API void FanRectPrint_(FanRect, const char *);
+FAN_API void FanRectInt32Print_(FanRectInt32, const char *);
+FAN_API void FanRectFloat32Print_(FanRectFloat32, const char *);
 #define FanVector2Print(v) FanVector2Print_(v, #v)
 #define FanColorPrint(c) FanColorPrint_(c, #c)
-#define FanRectPrint(r) FanRectPrint_(r, #r)
+#define FanRectPrint(r) _Generic((r),           \
+    FanRectInt32:   FanRectInt32Print_,         \
+    FanRectFloat32: FanRectFloat32Print_)(r, #r)
+
 
 FAN_API FanVector2 FanVector2Zero(void);
 FAN_API FanVector2 FanVector2One(void);
@@ -337,7 +348,7 @@ FAN_API FanVector2 FanVector2Hadamard(FanVector2 v1, FanVector2 v2);
 
 FAN_API FanVector2 FanVector2Round(FanVector2 v);
 
-FAN_API int FanRectIsEmpty(FanRect rect);
+FAN_API int FanRectIsEmpty(FanRectInt32 rect);
 
 // threading
 

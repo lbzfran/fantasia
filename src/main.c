@@ -4,9 +4,9 @@
 #include "game.h"
 
 typedef struct {
-    void (GAME_API *init)(Allocator *a, World *world);
-    void (GAME_API *update_and_render)(Allocator *a, World *world, PlayerInput p_input, float32 dt);
-    void (GAME_API *close)(Allocator *a, World *world);
+    void (GAME_API *init)(Allocator *a, World *world, GameState *state);
+    void (GAME_API *update_and_render)(Allocator *a, World *world, GameState *state, float32 dt);
+    void (GAME_API *close)(Allocator *a, World *world, GameState *state);
 } GameAPI;
 GameAPI game = {};
 
@@ -17,6 +17,7 @@ Allocator heap_allocator = {
     .ctx    = null
 };
 
+GameState state = {};
 World world = {};
 
 int main(void) {
@@ -44,14 +45,14 @@ int main(void) {
 
     FanCamera2D camera = { 0 };
     camera.zoom = 0.8f;
-    PlayerInput p_input = { 0 };
+    PlayerInput *p_input = &state.p_input;
 
     void *lib = LibOpen(GAME_LIB_PATH);
     game.init = LibLoad(lib, "GameInit");
     game.update_and_render = LibLoad(lib, "GameUpdateAndRender");
     game.close = LibLoad(lib, "GameClose");
 
-    game.init(&arena_allocator, &world);
+    game.init(&arena_allocator, &world, &state);
     while (running) {
         float dt = FanGetFrameTime();
         if (FanWindowShouldClose() || FanKeyPressed(FanKey_ESCAPE)) {
@@ -59,21 +60,21 @@ int main(void) {
         }
 
         int32 player_animation_id = -1;
-        p_input.direction = (FanVector2){ 0 };
+        p_input->direction = (FanVector2){ 0 };
         if (FanKeyDown(FanKey_W)) {
-            p_input.direction.y -= 1;
+            p_input->direction.y += 1;
             player_animation_id = 1;
         }
         if (FanKeyDown(FanKey_S)) {
-            p_input.direction.y += 1;
+            p_input->direction.y -= 1;
             player_animation_id = 0;
         }
         if (FanKeyDown(FanKey_A)) {
-            p_input.direction.x -= 1;
+            p_input->direction.x -= 1;
             player_animation_id = 2;
         }
         if (FanKeyDown(FanKey_D)) {
-            p_input.direction.x += 1;
+            p_input->direction.x += 1;
             player_animation_id = 3;
         }
 
@@ -103,13 +104,13 @@ int main(void) {
         }
 
         if (FanKeyDown(FanKey_E)) {
-            p_input.actions[0] = true;
+            p_input->actions[0] = true;
         }
         else {
-            p_input.actions[0] = false;
+            p_input->actions[0] = false;
         }
         if (FanKeyPressed(FanKey_R)) {
-            p_input.actions[1] = not p_input.actions[1];
+            p_input->actions[1] = not p_input->actions[1];
         }
 
         if (FanKeyDown(FanKey_O)) {
@@ -130,19 +131,19 @@ int main(void) {
         }
 
         if (FanKeyPressed(FanKey_P)) {
-            world.called_object_dump = true;
+            state.called_object_dump = true;
             printf("[[DEBUG INFO]]\n");
         }
 
-        world.current_time = FanGetTime();
+        state.current_time = FanGetTime();
         int32 cam_move_idx = world.c_transform.sparse[world.spec_id.camera];
         CTransform *cam_transform = &world.c_transform.data[cam_move_idx];
         camera.target = FanVector2Add(cam_transform->position, FanVector2Scale(cam_transform->scale, 0.5f));
-        camera.offset = (FanVector2){ FanWindowWidth() / 2.0f, FanWindowHeight() / 2.0f };
+        // camera.offset = (FanVector2){ FanWindowWidth() / 2.0f, FanWindowHeight() / 2.0f };
 
-        if (world.called_object_dump) {
+        if (state.called_object_dump) {
             printf("Total Allocations: %.2f / %.2f KB\n", (double)world.arena.size / 1000.0f, (double)world.arena.capacity / 1000.0f);
-            printf("current_time: %.3f\n", world.current_time);
+            printf("current_time: %.3f\n", state.current_time);
 
             printf("Total Component 'Transform' size/capacity: \t%zu/%zu\n", world.c_transform.size, world.c_transform.capacity);
             printf("Total Component 'Shape' size/capacity:     \t%zu/%zu\n", world.c_shape.size,     world.c_shape.capacity);
@@ -155,17 +156,18 @@ int main(void) {
         FanDrawBegin();
             FanDrawClear(FanColor_WHITE);
             FanCameraBegin(camera);
-            game.update_and_render(&arena_allocator, &world, p_input, dt);
+            game.update_and_render(&arena_allocator, &world, &state, dt);
             FanCameraEnd();
             FanDrawFPS(2, 2);
         FanDrawEnd();
-        world.called_object_dump = false;
+        state.called_object_dump = false;
         world.update_entity_split = false;
     }
 
     FanAudioDevClose();
     FanWindowClose();
     LibClose(lib);
+    game.close(&arena_allocator, &world, &state);
     heap_allocator.free(null, world.arena.data, world.arena.capacity);
     return 0;
 }
