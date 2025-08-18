@@ -294,7 +294,7 @@ void AttackSystem(CAttack *a, CMovement *m, CTransform *t, CMovement *o_m, CTran
     if (dist_squared <= a->attack_range * a->attack_range) {
         if (AttackInArc(target_dist, m->direction, a->arc_angle, progress)) {
             FanVector2 knockback_dist = FanVector2Scale(target_dist, 1 / FanFloat32Sqrt(dist_squared));
-            FanVector2Print(knockback_dist);
+            // FanVector2Print(knockback_dist);
             o_m->velocity_force = FanVector2Add(o_m->velocity_force, FanVector2Scale(knockback_dist, a->knockback));
         }
     }
@@ -306,8 +306,8 @@ void TextureUpdate(CTexture *t, FanVector2 pos, FanVector2 size, float dt) {
     t->rect = (FanRectInt32){
         .x      = pos.x,
         .y      = pos.y,
-        .width  = t->rect.width,
-        .height = t->rect.height
+        .width  = coalesce(size.x, t->rect.width),
+        .height = coalesce(size.y, t->rect.height)
     };
 }
 
@@ -496,6 +496,7 @@ void SortRender(RenderEntry *entries, int32 low, int32 high) {
 }
 
 void RenderEntities(World *world, GameState *state, float32 dt) {
+    (void)dt;
     RenderEntry render_array[128] = { { -1, 0.0f, 0 } };
     ssize render_entry_count = 0;
 
@@ -541,11 +542,12 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
         int32 shape_idx        = world->c_shape.sparse[id];
         int32 transform_idx    = world->c_transform.sparse[id];
         int32 move_idx         = world->c_movement.sparse[id];
-        int32 animation_idx    = world->c_animation.sparse[id];
+        // int32 animation_idx    = world->c_animation.sparse[id];
         int32 texture_idx      = world->c_texture.sparse[id];
         int32 attack_idx       = world->c_attack.sparse[id];
 
         int32 tag_bg           = world->c_tag_background.sparse[id];
+        (void)tag_bg;
 
         int32 interaction_idx  = world->c_interaction.sparse[id];
         int32 interactable_idx = world->c_interactable.sparse[id];
@@ -555,7 +557,7 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
         CTransform     *transform   = &world->c_transform.data[transform_idx];
         CMovement      *move        = &world->c_movement.data[move_idx];
         CTexture       *texture     = null;
-        CAnimation     *animation   = null;
+        // CAnimation     *animation   = null;
         CAttack        *attack      = &world->c_attack.data[attack_idx];
         bool32          interacting = false;
         bool32          interacted  = false;
@@ -592,9 +594,9 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
 
         if (texture_idx != -1) {
             texture       = &world->c_texture.data[texture_idx];
-            if (animation_idx != -1) {
-                animation = &world->c_animation.data[animation_idx];
-            }
+            // if (animation_idx != -1) {
+            //     animation = &world->c_animation.data[animation_idx];
+            // }
         }
 
         if (move_idx != -1) {
@@ -682,7 +684,7 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
                 FanVector2 screen_point = WorldToScreen(world_point, camera_position, camera_zoom, pixels_per_unit);
 
                 // FanVector2Print(sweep_dir);
-                FanVector2Print(screen_point);
+                // FanVector2Print(screen_point);
 
                 FanDrawLineV(prev, screen_point, FanColor_RED);
                 prev = screen_point;
@@ -774,18 +776,18 @@ void UpdateEntities(
         int32 behavior_idx    = world->c_behavior.sparse[id];
         int32 interact_idx    = world->c_interaction.sparse[id];
         int32 interacted_idx  = world->c_interactable.sparse[id];
-        int32 zone_idx        = world->c_zone.sparse[id];
+        // int32 zone_idx        = world->c_zone.sparse[id];
 
         CMovement       *move      = &world->c_movement.data[i];
         CTransform      *transform = &world->c_transform.data[transform_idx];
         CBehavior       *behavior  = null;
-        FanRectFloat32  *zone      = null;
+        // FanRectFloat32  *zone      = null;
 
         FanVector2 direction = FanVector2Zero();
 
-        if (zone_idx != -1) {
-            zone = &world->c_zone.data[zone_idx];
-        }
+        // if (zone_idx != -1) {
+        //     zone = &world->c_zone.data[zone_idx];
+        // }
 
         if (interact_idx != -1) {
             world->c_interaction.data[interact_idx] = false;
@@ -1063,7 +1065,7 @@ AnimationData anim_table[] = {
     { "player_idle_right", player_idle_right_frames, .frame_time = 0.5f, .frame_count = 3, false,  0 },
 };
 
-global void SceneSolo(World *world) {
+void SceneSolo(World *world) {
     FanTexture tex_link = FanTextureLoad("./resources/link.png");
     FanVector2 sprite_link_size = (FanVector2){ tex_link.width / 10.0f, tex_link.height / 8.0f };
     player_idle_down_frames[0]  = (FanRectInt32){ 0,                         0,                         0, 0 };
@@ -1133,7 +1135,7 @@ global void SceneMain(World *world) {
     world->spec_id.player = world->entity_count;
     world->entity_count++;
 
-    FanTexture tex_mewee = FanTextureLoad("./resources/mewee.png");
+    // FanTexture tex_mewee = FanTextureLoad("./resources/mewee.png");
     ComponentAdd(&world->c_transform,    world->entity_count);
     ComponentAddArgs(&world->c_shape,    world->entity_count,
         .color = (FanColor){ 50, 255, 255, 255 },
@@ -1292,6 +1294,8 @@ void GameUpdateAndRender(Allocator *a, World *world, GameState *state, float32 d
 }
 
 void GameClose(Allocator *a, World *world, GameState *state) {
+    (void)a;
+    (void)state;
     for (ssize i = 0; i < world->c_texture.size; i++) {
         if (world->c_texture.dense[i] == -1) {
             continue;

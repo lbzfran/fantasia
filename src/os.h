@@ -69,7 +69,7 @@ typedef uintptr_t  uintptr;
 #define local   static
 #define global  static
 
-#define null    0
+#define null            0
 #define kilobytes(x)    ((x)*1024LL)
 #define megabytes(x)    (kilobytes(x)*1024LL)
 #define gigabytes(x)    (megabytes(x)*1024LL)
@@ -104,14 +104,14 @@ void  heap_free(void *ctx, void *ptr, ssize size);
 void *heap_resize(void *ctx, void *ptr, ssize old, ssize new);
 
 void *arena_make(void *ctx, ssize size);
-void arena_free(void *ctx, void *ptr, ssize size);
+void  arena_free(void *ctx, void *ptr, ssize size);
 void *arena_resize(void *ctx, void *ptr, ssize old, ssize new);
 
-void arena_clear(Arena *a);
+void  arena_clear(Arena *a);
 
-void* LibOpen(const char* path);
-void* LibLoad(void *lib, const char *name);
-void LibClose(void *lib);
+void *LibOpen(const char* path);
+void *LibLoad(void *lib, const char *name);
+void  LibClose(void *lib);
 
 // char* LibGetError(void);
 

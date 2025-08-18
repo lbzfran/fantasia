@@ -59,23 +59,18 @@ int main(void) {
             running = false;
         }
 
-        int32 player_animation_id = -1;
         p_input->direction = (FanVector2){ 0 };
         if (FanKeyDown(FanKey_W)) {
             p_input->direction.y += 1;
-            player_animation_id = 1;
         }
         if (FanKeyDown(FanKey_S)) {
             p_input->direction.y -= 1;
-            player_animation_id = 0;
         }
         if (FanKeyDown(FanKey_A)) {
             p_input->direction.x -= 1;
-            player_animation_id = 2;
         }
         if (FanKeyDown(FanKey_D)) {
             p_input->direction.x += 1;
-            player_animation_id = 3;
         }
 
         if (FanKeyDown(FanKey_K)) {
