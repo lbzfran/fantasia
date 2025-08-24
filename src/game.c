@@ -310,7 +310,7 @@ void AttackSystem(CAttack *a, CMovement *m, CTransform *t, CMovement *o_m, CTran
         if (AttackInArc(target_dist, m->direction, a->arc_angle, progress)) {
             float32 knockback_base_factor = 1.0f;
             FanVector2 knockback_dir  = FanVector2Scale(target_dist, 1.0 / FanFloat32Sqrt(dist_squared));
-            FanVector2 knockback_dist = FanVector2Scale(knockback_dir, a->knockback);
+            FanVector2 knockback_dist = FanVector2Scale(knockback_dir, a->knockback * knockback_base_factor);
             o_m->velocity_force = FanVector2Add(o_m->velocity_force, knockback_dist);
         }
     }
@@ -355,7 +355,6 @@ void AnimationSystem(CAnimation *a, CTexture *t, AnimationData *table, float dt)
 
     AnimationData *data = &table[a->id];
     if (data->frame_count <= 0) {
-        printf("Early return!\n");
         return;
     }
 
@@ -363,7 +362,6 @@ void AnimationSystem(CAnimation *a, CTexture *t, AnimationData *table, float dt)
     // printf("a->timer: %f\n", a->timer);
     // printf("data->frame_time: %f\n", data->frame_time);
     if (a->timer >= data->frame_time) {
-        printf("Update!\n");
         a->timer -= data->frame_time;
         a->current_frame++;
 
@@ -588,7 +586,6 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
         FanRectFloat32  zone        = { 0 };
 
         if (not shape->visible) {
-            printf("skipping %d!\n", id);
             continue;
         }
 
