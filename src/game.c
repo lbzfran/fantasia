@@ -46,8 +46,10 @@ void MovementSystem(CMovement *m, CTransform *t, FanVector2 direction, FanRectIn
     }
 
     FanVector2 velocity;
-    if (FanVector2Length(m->velocity_force) > 0.01f) {
+    if (FanVector2Length(m->velocity_force) > 0.001f) {
         velocity = m->velocity_force;
+        float32 damp_factor = 0.98f;
+        m->velocity_force = FanVector2Scale(m->velocity_force, damp_factor);
         m->lock_time = 0.15f;
     }
     else {
@@ -65,10 +67,10 @@ void MovementSystem(CMovement *m, CTransform *t, FanVector2 direction, FanRectIn
 
     t->position = FanVector2Add(t->position, FanVector2Scale(velocity, dt));
 
-    float32 damp_factor = 0.9f;
-    m->velocity_force = FanVector2Scale(m->velocity_force, damp_factor);
+    // float32 damp_factor = 0.9f;
+    // m->velocity_force = FanVector2Scale(m->velocity_force, damp_factor);
+    // m->velocity_force = FanVector2AddValue(m->velocity_force, -decay * dt);
 
-    float32 softness = 0.005f;
     if (not (m->flags & MovementFlag_NoCollision)) {
         if (FanVector2Length(t->scale) > 0.0f) {
             bound_zone.width  -= t->scale.x;
@@ -76,6 +78,7 @@ void MovementSystem(CMovement *m, CTransform *t, FanVector2 direction, FanRectIn
         }
 
         float32 overlap;
+        float32 softness = 0.005f;
         if (t->position.x < bound_zone.x) {
             overlap = bound_zone.x - t->position.x;
             t->position.x += overlap * softness;
@@ -282,7 +285,7 @@ void AttackSystem(CAttack *a, CMovement *m, CTransform *t, CMovement *o_m, CTran
     if (not a->attacking) return;
 
     if (a->cast_timer > 0.0f) {
-        printf("cast_timer: %f\n", a->cast_timer);
+        // printf("cast_timer: %f\n", a->cast_timer);
         a->cast_timer = max(a->cast_timer - dt, 0.0f);
         return;
     }
@@ -305,23 +308,22 @@ void AttackSystem(CAttack *a, CMovement *m, CTransform *t, CMovement *o_m, CTran
 
     if (dist_squared <= a->attack_range * a->attack_range) {
         if (AttackInArc(target_dist, m->direction, a->arc_angle, progress)) {
-            FanVector2 knockback_dir  = FanVector2Normalize(target_dist);
+            float32 knockback_base_factor = 1.0f;
+            FanVector2 knockback_dir  = FanVector2Scale(target_dist, 1.0 / FanFloat32Sqrt(dist_squared));
             FanVector2 knockback_dist = FanVector2Scale(knockback_dir, a->knockback);
-            // FanVector2 knockback_dist = FanVector2Scale(target_dist, FanFloat32Sqrt(dist_squared));
-            // FanVector2Print(knockback_dist);
             o_m->velocity_force = FanVector2Add(o_m->velocity_force, knockback_dist);
         }
     }
 }
 
-void TextureUpdate(CTexture *t, FanVector2 pos, FanVector2 size, float dt) {
+void TextureUpdate(CTexture *tx, FanVector2 pos, FanVector2 size, float dt) {
     (void)dt;
 
-    t->rect = (FanRectInt32){
-        .x      = pos.x,
-        .y      = pos.y,
-        .width  = coalesce(size.x, t->rect.width),
-        .height = coalesce(size.y, t->rect.height)
+    tx->rect = (FanRectInt32){
+        .x      = (int32)pos.x,
+        .y      = (int32)pos.y,
+        .width  = (int32)size.x,
+        .height = (int32)size.y
     };
 }
 
@@ -345,16 +347,23 @@ typedef enum {
  * components: CAnimation, CTexture
  */
 void AnimationSystem(CAnimation *a, CTexture *t, AnimationData *table, float dt) {
-    if (table is null) return;
+    if (table is null or a is null or t is null) return;
     if (a->finished or
-        (a->request.id != -1 and (a->flags & AnimationFlag_NotInterruptible) == false)) {
+        (not a->finished and a->request.id != -1 and (a->flags & AnimationFlag_NotInterruptible) == false)) {
         *a = AnimationApply_(table, a->request.id, a->request.flags, (AnimationRequest){ -1, 0 });
     }
 
     AnimationData *data = &table[a->id];
+    if (data->frame_count <= 0) {
+        printf("Early return!\n");
+        return;
+    }
 
     a->timer += dt;
+    // printf("a->timer: %f\n", a->timer);
+    // printf("data->frame_time: %f\n", data->frame_time);
     if (a->timer >= data->frame_time) {
+        printf("Update!\n");
         a->timer -= data->frame_time;
         a->current_frame++;
 
@@ -362,27 +371,28 @@ void AnimationSystem(CAnimation *a, CTexture *t, AnimationData *table, float dt)
             if (data->loop and (a->flags & AnimationFlag_DisableLoop) == false) {
                 a->current_frame = 0;
             }
+            else if (data->next_id != -1) {
+                *a = AnimationApply_(table, data->next_id, a->flags, a->request);
+            }
             else {
-                if (data->next_id != -1) {
-                    *a = AnimationApply_(table, data->next_id, a->flags, a->request);
-                }
-                else {
-                    a->finished = true;
-                    a->current_frame = data->frame_count - 1;
-                }
+                a->finished = true;
+                a->current_frame = data->frame_count - 1;
             }
         }
     }
 
     if (a->current_frame >= data->frame_count) {
-        a->current_frame = data->frame_count > 0 ? data->frame_count - 1 : 0;
+        a->current_frame = data->frame_count - 1;
     }
 
-    FanRectInt32 current_data = data->frames[a->current_frame];
+    FanRectInt32 current = data->frames[a->current_frame];
     TextureUpdate(
         t,
-        (FanVector2){ current_data.x,     current_data.y },
-        (FanVector2){ current_data.width, current_data.height },
+        (FanVector2){ current.x,     current.y },
+        (FanVector2){
+            coalesce(current.width,  t->rect.width),
+            coalesce(current.height, t->rect.height)
+        },
         dt
     );
 }
@@ -556,7 +566,7 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
         int32 shape_idx        = world->c_shape.sparse[id];
         int32 transform_idx    = world->c_transform.sparse[id];
         int32 move_idx         = world->c_movement.sparse[id];
-        // int32 animation_idx    = world->c_animation.sparse[id];
+        int32 animation_idx    = world->c_animation.sparse[id];
         int32 texture_idx      = world->c_texture.sparse[id];
         int32 attack_idx       = world->c_attack.sparse[id];
 
@@ -650,7 +660,8 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
             }
         }
 
-        render_flags |= RenderFlag_FlipX;
+        if (animation_idx == -1)
+            render_flags |= RenderFlag_FlipX;
 
         if (state->p_input.actions[1])
             render_flags |= RenderFlag_ShowInteract;
@@ -821,6 +832,7 @@ void UpdateEntities(
             if ((attack is null) or (attack and not attack->attacking)) {
                 direction = state->p_input.direction;
             }
+
         }
         else if (behavior_idx != -1) {
             behavior = &world->c_behavior.data[behavior_idx];
@@ -894,9 +906,28 @@ void UpdateEntities(
             continue;
 
         int32 texture_idx = world->c_texture.sparse[id];
+        int32 move_idx    = world->c_movement.sparse[id];
 
-        CAnimation *anim  = &world->c_animation.data[i];
-        CTexture *texture = &world->c_texture.data[texture_idx];
+        CAnimation *anim    = &world->c_animation.data[i];
+        CTexture   *texture = &world->c_texture.data[texture_idx];
+        CMovement  *move    = &world->c_movement.data[move_idx];
+
+        if (id == world->spec_id.player) {
+            FanVector2 direction = state->p_input.direction;
+            if (direction.x > 0.0f) {
+                anim->request.id = 3;
+            }
+            else if (direction.x < 0.0f) {
+                anim->request.id = 2;
+            }
+
+            if (direction.y > 0.0f) {
+                anim->request.id = 1;
+            }
+            else if (direction.y < 0.0f) {
+                anim->request.id = 0;
+            }
+        }
 
         AnimationSystem(anim, texture, world->anim_table, dt);
     }
@@ -1075,37 +1106,23 @@ void UpdateEntities(
     }
 }
 
-
-
-
-FanRectInt32 player_idle_up_frames[1]    = { 0 };
-FanRectInt32 player_idle_down_frames[3]  = { 0 };
-FanRectInt32 player_idle_left_frames[3]  = { 0 };
-FanRectInt32 player_idle_right_frames[3] = { 0 };
-
-AnimationData anim_table[] = {
-    { "player_idle_down",  player_idle_down_frames,  .frame_time = 0.5f, .frame_count = 3, true,  -1 },
-    { "player_idle_up",    player_idle_up_frames,    .frame_time = 1.5f, .frame_count = 1, false,  0 },
-    { "player_idle_left",  player_idle_left_frames,  .frame_time = 0.5f, .frame_count = 3, false,  0 },
-    { "player_idle_right", player_idle_right_frames, .frame_time = 0.5f, .frame_count = 3, false,  0 },
-};
-
 void SceneSolo(World *world) {
     FanTexture tex_link = FanTextureLoad("./resources/link.png");
-    FanVector2 sprite_link_size = (FanVector2){ tex_link.width / 10.0f, tex_link.height / 8.0f };
-    player_idle_down_frames[0]  = (FanRectInt32){ 0,                         0,                         0, 0 };
-    player_idle_down_frames[1]  = (FanRectInt32){ sprite_link_size.x,        0,                         0, 0 };
-    player_idle_down_frames[2]  = (FanRectInt32){ 2.0f * sprite_link_size.x, 0,                         0, 0 };
+    // FanVector2 sprite_link_size = (FanVector2){ tex_link.width / 10.0f, tex_link.height / 8.0f };
+    // player_idle_down_frames[0]  = (FanRectInt32){ 0,                         0,                         0, 0 };
+    // player_idle_down_frames[1]  = (FanRectInt32){ sprite_link_size.x,        0,                         0, 0 };
+    // player_idle_down_frames[2]  = (FanRectInt32){ 2.0f * sprite_link_size.x, 0,                         0, 0 };
+    //
+    // player_idle_up_frames[0]    = (FanRectInt32){ 0,                         2.0f * sprite_link_size.y, 0, 0 };
+    //
+    // player_idle_left_frames[0]  = (FanRectInt32){ 0,                         sprite_link_size.y,        0, 0 };
+    // player_idle_left_frames[1]  = (FanRectInt32){ sprite_link_size.x,        sprite_link_size.y,        0, 0 };
+    // player_idle_left_frames[2]  = (FanRectInt32){ 2.0f * sprite_link_size.x, sprite_link_size.y,        0, 0 };
+    //
+    // player_idle_right_frames[0] = (FanRectInt32){ 0,                         3.0f * sprite_link_size.y, 0, 0 };
+    // player_idle_right_frames[1] = (FanRectInt32){ sprite_link_size.x,        3.0f * sprite_link_size.y, 0, 0 };
+    // player_idle_right_frames[2] = (FanRectInt32){ 2.0f * sprite_link_size.x, 3.0f * sprite_link_size.y, 0, 0 };
 
-    player_idle_up_frames[0]    = (FanRectInt32){ 0,                         2.0f * sprite_link_size.y, 0, 0 };
-
-    player_idle_left_frames[0]  = (FanRectInt32){ 0,                         sprite_link_size.y,        0, 0 };
-    player_idle_left_frames[1]  = (FanRectInt32){ sprite_link_size.x,        sprite_link_size.y,        0, 0 };
-    player_idle_left_frames[2]  = (FanRectInt32){ 2.0f * sprite_link_size.x, sprite_link_size.y,        0, 0 };
-
-    player_idle_right_frames[0] = (FanRectInt32){ 0,                         3.0f * sprite_link_size.y, 0, 0 };
-    player_idle_right_frames[1] = (FanRectInt32){ sprite_link_size.x,        3.0f * sprite_link_size.y, 0, 0 };
-    player_idle_right_frames[2] = (FanRectInt32){ 2.0f * sprite_link_size.x, 3.0f * sprite_link_size.y, 0, 0 };
 
     ComponentAdd(&world->c_transform,     world->entity_count);
     ComponentAdd(&world->c_shape,         world->entity_count);
@@ -1116,7 +1133,7 @@ void SceneSolo(World *world) {
         .texture = tex_link,
         .rect = (FanRectInt32){ 0, 0, tex_link.width / 10.0f, tex_link.height / 8.0f }
     );
-    ComponentAddArgs(&world->c_animation, world->entity_count);
+    // ComponentAddArgs(&world->c_animation, world->entity_count);
     world->spec_id.player = world->entity_count;
     world->entity_count++;
 
@@ -1138,14 +1155,57 @@ void SceneSolo(World *world) {
 global void SceneMain(World *world) {
     FanTexture tex_sprite = FanTextureLoad("./resources/Sprite-0001.png");
 
+    // FanRectInt32 player_idle_up_frames[1]    = { 0 };
+    // global FanRectInt32 player_idle_down_frames[2]  = { 0 };
+    // player_idle_down_frames[0] = (FanRectInt32){ 0, 0,  .width = 32, .height = 32 };
+    // player_idle_down_frames[1] = (FanRectInt32){ 32, 0, .width = 32, .height = 32 };
+    // FanRectInt32 player_idle_left_frames[3]  = { 0 };
+    // FanRectInt32 player_idle_right_frames[3] = { 0 }tex_sprite.height;
+
+    // global AnimationData anim_table[] = {
+    //     { "player_idle_down",  player_idle_down_frames,  .frame_time = 0.5f, .frame_count = 2, true, -1 },
+        // { "player_idle_up",    player_idle_up_frames,    .frame_time = 1.5f, .frame_count = 1, false,  0 },
+        // { "player_idle_left",  player_idle_left_frames,  .frame_time = 0.5f, .frame_count = 3, false,  0 },
+        // { "player_idle_right", player_idle_right_frames, .frame_time = 0.5f, .frame_count = 3, false,  0 },
+    // };
+
+    FanTexture tex_link = FanTextureLoad("./resources/link.png");
+    FanVector2 sprite_link_size = (FanVector2){ tex_link.width / 10.0f, tex_link.height / 8.0f };
+    global FanRectInt32 player_idle_down_frames[3]  = { 0 };
+    global FanRectInt32 player_idle_up_frames[1]    = { 0 };
+    global FanRectInt32 player_idle_left_frames[3]  = { 0 };
+    global FanRectInt32 player_idle_right_frames[3] = { 0 };
+    player_idle_down_frames[0]  = (FanRectInt32){ 0,                         0,                         sprite_link_size.x, sprite_link_size.y };
+    player_idle_down_frames[1]  = (FanRectInt32){ sprite_link_size.x,        0,                         sprite_link_size.x, sprite_link_size.y };
+    player_idle_down_frames[2]  = (FanRectInt32){ 2.0f * sprite_link_size.x, 0,                         sprite_link_size.x, sprite_link_size.y };
+
+    player_idle_up_frames[0]    = (FanRectInt32){ 0,                         2.0f * sprite_link_size.y, sprite_link_size.x, sprite_link_size.y };
+
+    player_idle_left_frames[0]  = (FanRectInt32){ 0,                         sprite_link_size.y,        sprite_link_size.x, sprite_link_size.y };
+    player_idle_left_frames[1]  = (FanRectInt32){ sprite_link_size.x,        sprite_link_size.y,        sprite_link_size.x, sprite_link_size.y };
+    player_idle_left_frames[2]  = (FanRectInt32){ 2.0f * sprite_link_size.x, sprite_link_size.y,        sprite_link_size.x, sprite_link_size.y };
+
+    player_idle_right_frames[0] = (FanRectInt32){ 0,                         3.0f * sprite_link_size.y, sprite_link_size.x, sprite_link_size.y };
+    player_idle_right_frames[1] = (FanRectInt32){ sprite_link_size.x,        3.0f * sprite_link_size.y, sprite_link_size.x, sprite_link_size.y };
+    player_idle_right_frames[2] = (FanRectInt32){ 2.0f * sprite_link_size.x, 3.0f * sprite_link_size.y, sprite_link_size.x, sprite_link_size.y };
+
+    global AnimationData anim_table[] = {
+        { "player_idle_down",  player_idle_down_frames,  .frame_time = 0.5f, .frame_count = 3, true,  -1 },
+        { "player_idle_up",    player_idle_up_frames,    .frame_time = 1.5f, .frame_count = 1, true,  -1 },
+        { "player_idle_left",  player_idle_left_frames,  .frame_time = 0.5f, .frame_count = 3, true,  -1 },
+        { "player_idle_right", player_idle_right_frames, .frame_time = 0.5f, .frame_count = 3, true,  -1 },
+    };
+
+    world->anim_table = anim_table;
+
     ComponentAdd(&world->c_transform,     world->entity_count);
     ComponentAdd(&world->c_shape,         world->entity_count);
     ComponentAddArgs(&world->c_movement,  world->entity_count,
         // .flags = MovementFlag_CollideSoftly
     );
     ComponentAddArgs(&world->c_texture,   world->entity_count,
-        .texture = tex_sprite,
-        .rect = { .x = 64, .y = 0, .width = 14, .height = 16 },
+        .texture = tex_link,
+        .rect = player_idle_down_frames[0],
         // .rect = (FanRectInt32){ 0, 0, tex_link.width / 10.0f, tex_link.height / 8.0f }
     );
     // ComponentAddArgs(&world->c_animation, world->entity_count);
@@ -1154,9 +1214,10 @@ global void SceneMain(World *world) {
     ComponentAddArgs(&world->c_attack,   world->entity_count,
         .arc_angle    = FanFloat32Rad(45.0f),
         .swing_time   = 0.4f,
-        .knockback    = 5.0f,
+        .knockback    = 1.0f,
         .attack_range = 1.5f,
     );
+    ComponentAddArgs(&world->c_animation, world->entity_count);
     world->spec_id.player = world->entity_count;
     world->entity_count++;
 
