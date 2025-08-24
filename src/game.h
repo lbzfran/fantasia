@@ -170,6 +170,9 @@ typedef struct {
     float32 arc_angle;
     float32 swing_time;
     float32 timer;
+
+    float32 cooldown_time;
+    float32 cast_timer;
     bool32  attacking;
 } CAttack;
 

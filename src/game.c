@@ -1,5 +1,6 @@
 
 #include "game.h"
+#include "os.h"
 #include "platform.h"
 
 FanVector2 WorldToScreen(FanVector2 world_coord, FanVector2 camera_position, float32 camera_zoom, int32 pixels_per_unit) {
@@ -52,10 +53,7 @@ void MovementSystem(CMovement *m, CTransform *t, FanVector2 direction, FanRectIn
     else {
         m->velocity_input = FanVector2Zero();
         if (m->lock_time > 0.0f) {
-            m->lock_time -= dt;
-            if (m->lock_time <= 0.0f) {
-                m->lock_time = 0.0f;
-            }
+            m->lock_time = max(m->lock_time - dt, 0.0f);
         }
         else if (FanVector2Length(direction) > 0.0f) {
             m->direction       = direction;
@@ -283,12 +281,19 @@ bool32 AttackInArc(FanVector2 target, FanVector2 facing, float32 arc_angle, floa
 void AttackSystem(CAttack *a, CMovement *m, CTransform *t, CMovement *o_m, CTransform *o_t, float32 dt) {
     if (not a->attacking) return;
 
+    if (a->cast_timer > 0.0f) {
+        printf("cast_timer: %f\n", a->cast_timer);
+        a->cast_timer = max(a->cast_timer - dt, 0.0f);
+        return;
+    }
+
     a->timer += dt;
     float32 progress = a->timer / a->swing_time;
 
     if (progress >= 1.0f) {
         a->attacking = false;
         a->timer = 0.0f;
+        m->lock_time = coalesce(a->cooldown_time, 0.2f);
         return;
     }
 
@@ -300,9 +305,11 @@ void AttackSystem(CAttack *a, CMovement *m, CTransform *t, CMovement *o_m, CTran
 
     if (dist_squared <= a->attack_range * a->attack_range) {
         if (AttackInArc(target_dist, m->direction, a->arc_angle, progress)) {
-            FanVector2 knockback_dist = FanVector2Scale(target_dist, 1 / FanFloat32Sqrt(dist_squared));
+            FanVector2 knockback_dir  = FanVector2Normalize(target_dist);
+            FanVector2 knockback_dist = FanVector2Scale(knockback_dir, a->knockback);
+            // FanVector2 knockback_dist = FanVector2Scale(target_dist, FanFloat32Sqrt(dist_squared));
             // FanVector2Print(knockback_dist);
-            o_m->velocity_force = FanVector2Add(o_m->velocity_force, FanVector2Scale(knockback_dist, a->knockback));
+            o_m->velocity_force = FanVector2Add(o_m->velocity_force, knockback_dist);
         }
     }
 }
@@ -662,7 +669,7 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
         );
 
 
-        if (attack_idx != -1 and attack->attacking) {
+        if (attack_idx != -1 and attack->attacking and attack->cast_timer <= 0.0f) {
             FanVector2 center = FanVector2Add(transform->position, (FanVector2){ transform->scale.x * 0.5f, transform->scale.y * -0.5f });
             FanVector2 facing = move->direction;
             float32 length    = attack->attack_range;
@@ -965,10 +972,13 @@ void UpdateEntities(
                 }
 
                 if (attack_idx != -1) {
-                    if (id == world->spec_id.player and state->p_input.actions[0]) {
+                    if (id == world->spec_id.player and state->p_input.actions[0] and not attack->attacking) {
                         attack->attacking = true;
+                        attack->cast_timer = 0.5f;
                     }
-                    AttackSystem(attack, move, transform, other_move, other_transform, dt);
+                    if (move->lock_time <= 0.0f) {
+                        AttackSystem(attack, move, transform, other_move, other_transform, dt);
+                    }
                 }
 
                 CollisionSystem(transform, move, other_transform, other_move, dt);
