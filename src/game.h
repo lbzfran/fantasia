@@ -86,6 +86,8 @@ typedef struct {
     float32    speed;
     float32    max_speed;
 
+    float32    lock_time;
+
     int32      flags;
     bool32     active;
     bool32     initialized;

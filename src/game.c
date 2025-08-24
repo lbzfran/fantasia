@@ -47,10 +47,17 @@ void MovementSystem(CMovement *m, CTransform *t, FanVector2 direction, FanRectIn
     FanVector2 velocity;
     if (FanVector2Length(m->velocity_force) > 0.01f) {
         velocity = m->velocity_force;
+        m->lock_time = 0.15f;
     }
     else {
         m->velocity_input = FanVector2Zero();
-        if (FanVector2Length(direction) > 0.0f) {
+        if (m->lock_time > 0.0f) {
+            m->lock_time -= dt;
+            if (m->lock_time <= 0.0f) {
+                m->lock_time = 0.0f;
+            }
+        }
+        else if (FanVector2Length(direction) > 0.0f) {
             m->direction       = direction;
             direction          = FanVector2Normalize(direction);
             m->velocity_input  = FanVector2Scale(direction, m->speed);
@@ -286,8 +293,8 @@ void AttackSystem(CAttack *a, CMovement *m, CTransform *t, CMovement *o_m, CTran
     }
 
     FanVector2 target_dist = (FanVector2) {
-        o_t->position.x - t->position.x,
-        o_t->position.y - t->position.y
+        (o_t->position.x + (o_t->scale.x / 2)) - (t->position.x + (t->scale.x / 2)),
+        (o_t->position.y + (o_t->scale.y / 2)) - (t->position.y + (t->scale.y / 2))
     };
     float32 dist_squared = FanVector2LengthSqr(target_dist);
 
@@ -656,10 +663,10 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
 
 
         if (attack_idx != -1 and attack->attacking) {
-            FanVector2 center = transform->position;
+            FanVector2 center = FanVector2Add(transform->position, (FanVector2){ transform->scale.x * 0.5f, transform->scale.y * -0.5f });
             FanVector2 facing = move->direction;
-            float32 radius    = attack->attack_range;
-            float32 arc       = attack->arc_angle;
+            float32 length    = attack->attack_range;
+            float32 angle     = attack->arc_angle;
 
             FanVector2 prev = WorldToScreen(center, camera_position, camera_zoom, pixels_per_unit);
 
@@ -668,8 +675,8 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
             int32 segments = 20;
 
             // Precompute start and end directions by rotating facing
-            FanVector2 start_dir = FanVector2Rotate(facing, -arc * 0.5f);
-            FanVector2 end_dir   = FanVector2Rotate(facing,  arc * 0.5f);
+            FanVector2 start_dir = FanVector2Rotate(facing, -angle * 0.5f);
+            FanVector2 end_dir   = FanVector2Rotate(facing,  angle * 0.5f);
 
             for (int32 i = 0; i <= segments; i++) {
                 float32 t_seg = (float32)i / (float32)segments;
@@ -678,8 +685,8 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
                 FanVector2 sweep_dir = FanVector2Normalize(FanVector2Lerp(start_dir, t_seg, end_dir));
 
                 FanVector2 world_point = {
-                    center.x + sweep_dir.x * radius,
-                    center.y + sweep_dir.y * radius
+                    center.x + sweep_dir.x * length,
+                    center.y + sweep_dir.y * length
                 };
                 FanVector2 screen_point = WorldToScreen(world_point, camera_position, camera_zoom, pixels_per_unit);
 
@@ -693,8 +700,8 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
             // Draw line from center to current sweep tip
             FanVector2 sweep_tip = FanVector2Normalize(FanVector2Lerp(start_dir, progress, end_dir));
             FanVector2 world_sweep_tip = {
-                center.x + sweep_tip.x * radius,
-                center.y + sweep_tip.y * radius
+                center.x + sweep_tip.x * length,
+                center.y + sweep_tip.y * length
             };
             FanVector2 screen_sweep_tip = WorldToScreen(world_sweep_tip, camera_position, camera_zoom, pixels_per_unit);
             FanDrawLineV(WorldToScreen(center, camera_position, camera_zoom, pixels_per_unit), screen_sweep_tip, FanColor_RED);
@@ -776,11 +783,13 @@ void UpdateEntities(
         int32 behavior_idx    = world->c_behavior.sparse[id];
         int32 interact_idx    = world->c_interaction.sparse[id];
         int32 interacted_idx  = world->c_interactable.sparse[id];
+        int32 attack_idx      = world->c_attack.sparse[id];
         // int32 zone_idx        = world->c_zone.sparse[id];
 
         CMovement       *move      = &world->c_movement.data[i];
         CTransform      *transform = &world->c_transform.data[transform_idx];
         CBehavior       *behavior  = null;
+        CAttack         *attack    = null;
         // FanRectFloat32  *zone      = null;
 
         FanVector2 direction = FanVector2Zero();
@@ -797,8 +806,14 @@ void UpdateEntities(
             world->c_interactable.data[interacted_idx] = false;
         }
 
+        if (attack_idx != -1) {
+            attack = &world->c_attack.data[attack_idx];
+        }
+
         if (id == world->spec_id.player) {
-            direction = state->p_input.direction;
+            if ((attack is null) or (attack and not attack->attacking)) {
+                direction = state->p_input.direction;
+            }
         }
         else if (behavior_idx != -1) {
             behavior = &world->c_behavior.data[behavior_idx];
@@ -1126,11 +1141,11 @@ global void SceneMain(World *world) {
     // ComponentAddArgs(&world->c_animation, world->entity_count);
     ComponentAdd(&world->c_interaction,  world->entity_count);
     ComponentAdd(&world->c_interactable, world->entity_count);
-    ComponentAddArgs(&world->c_attack,       world->entity_count,
-        .arc_angle = FanFloat32Rad(45.0f),
-        .swing_time = 0.4f,
-        .knockback = 5.0f,
-        .attack_range = 4.0f,
+    ComponentAddArgs(&world->c_attack,   world->entity_count,
+        .arc_angle    = FanFloat32Rad(45.0f),
+        .swing_time   = 0.4f,
+        .knockback    = 5.0f,
+        .attack_range = 1.5f,
     );
     world->spec_id.player = world->entity_count;
     world->entity_count++;
