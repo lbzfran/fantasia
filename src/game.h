@@ -147,6 +147,14 @@ typedef struct {
     AnimationRequest   request;
 } CAnimation;
 
+typedef struct {
+    FanSound sound;
+    bool32   playing;
+    bool32   looping;
+    float32  volume;
+    float32  pitch;
+} CSound;
+
 // typedef struct {
 //     int32 id;
 //     const char *name;
@@ -176,6 +184,7 @@ typedef struct {
     bool32  attacking;
 } CAttack;
 
+
 typedef struct {
     int32 player;
     int32 camera;
@@ -194,6 +203,7 @@ typedef struct {
 
 typedef struct {
     SystemMode   mode;
+    FanMusic     music;
 
     PlayerInput  p_input;
 
@@ -235,6 +245,7 @@ ComponentDeclare(CTexture,   CTexture);
 ComponentDeclare(CBehavior,  CBehavior);
 ComponentDeclare(CAnimation, CAnimation);
 ComponentDeclare(CPhysics,   CPhysics);
+ComponentDeclare(CSound,     CSound);
 
 ComponentDeclare(CInteraction,  bool32);
 ComponentDeclare(CInteractable, bool32);
@@ -243,6 +254,7 @@ ComponentDeclare(CAttack,       CAttack);
 
 ComponentDeclare(CEnemyTag,      uint8);
 ComponentDeclare(CBackgroundTag, uint8);
+
 
 typedef struct {
     Arena                  arena;
@@ -267,6 +279,7 @@ typedef struct {
     CBehaviorStorage       c_behavior;
     CAnimationStorage      c_animation;
     CPhysicsStorage        c_physics;
+    CSoundStorage          c_sound;
 
     CInteractionStorage    c_interaction;
     CInteractableStorage   c_interactable;

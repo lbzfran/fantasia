@@ -141,6 +141,19 @@ void PhysicsSystem(CPhysics *p, CTransform *t, FanVector2 force, float32 dt) {
     t->position = new_position;
 }
 
+void SoundSystem(CSound *s, bool32 playing, float32 volume, float32 dt) {
+    if (s->playing and not playing) {
+        FanSoundStop(s->sound);
+        s->playing = false;
+    }
+    if (playing) {
+        FanSoundSetVolume(s->sound, coalesce(volume, s->volume));
+        FanSoundSetPitch(s->sound, s->pitch);
+        FanSoundPlay(s->sound);
+        s->playing = true;
+    }
+}
+
 inline bool32 CollisionCheckR(FanRectFloat32 a, FanRectFloat32 b) {
     bool32 result = false;
 
@@ -798,6 +811,7 @@ void UpdateEntities(
         int32 behavior_idx    = world->c_behavior.sparse[id];
         int32 interact_idx    = world->c_interaction.sparse[id];
         int32 interacted_idx  = world->c_interactable.sparse[id];
+        int32 animation_idx   = world->c_animation.sparse[id];
         int32 attack_idx      = world->c_attack.sparse[id];
         // int32 zone_idx        = world->c_zone.sparse[id];
 
@@ -805,6 +819,7 @@ void UpdateEntities(
         CTransform      *transform = &world->c_transform.data[transform_idx];
         CBehavior       *behavior  = null;
         CAttack         *attack    = null;
+        CAnimation      *anim      = null;
         // FanRectFloat32  *zone      = null;
 
         FanVector2 direction = FanVector2Zero();
@@ -828,8 +843,25 @@ void UpdateEntities(
         if (id == world->spec_id.player) {
             if ((attack is null) or (attack and not attack->attacking)) {
                 direction = state->p_input.direction;
-            }
 
+                if (animation_idx != -1) {
+                    anim = &world->c_animation.data[animation_idx];
+
+                    if (direction.x > 0.0f) {
+                        anim->request.id = 3;
+                    }
+                    else if (direction.x < 0.0f) {
+                        anim->request.id = 2;
+                    }
+
+                    if (direction.y > 0.0f) {
+                        anim->request.id = 1;
+                    }
+                    else if (direction.y < 0.0f) {
+                        anim->request.id = 0;
+                    }
+                }
+            }
         }
         else if (behavior_idx != -1) {
             behavior = &world->c_behavior.data[behavior_idx];
@@ -909,24 +941,20 @@ void UpdateEntities(
         CTexture   *texture = &world->c_texture.data[texture_idx];
         CMovement  *move    = &world->c_movement.data[move_idx];
 
-        if (id == world->spec_id.player) {
-            FanVector2 direction = state->p_input.direction;
-            if (direction.x > 0.0f) {
-                anim->request.id = 3;
-            }
-            else if (direction.x < 0.0f) {
-                anim->request.id = 2;
-            }
-
-            if (direction.y > 0.0f) {
-                anim->request.id = 1;
-            }
-            else if (direction.y < 0.0f) {
-                anim->request.id = 0;
-            }
-        }
-
         AnimationSystem(anim, texture, world->anim_table, dt);
+    }
+
+    for (ssize i = 0; i < world->c_sound.size; i++) {
+        int32 id = world->c_sound.dense[i];
+        if (id == -1)
+            continue;
+
+        CSound *sound = &world->c_sound.data[i];
+
+        bool32 playing = false;
+        float32 volume = 0.0f;
+
+        SoundSystem(sound, playing, volume, dt);
     }
 
     for (ssize i = 0; i < split->dynamic_count; i++) {
@@ -1318,7 +1346,6 @@ global void SceneMain(World *world) {
     world->entity_count++;
 }
 
-FanMusic muse = { 0 };
 void GameInit(Allocator *a, World *world, GameState *state) {
 
     int32 split_size = kilobytes(1);
@@ -1331,6 +1358,7 @@ void GameInit(Allocator *a, World *world, GameState *state) {
     ComponentCreate(&world->c_behavior,       a, component_size);
     ComponentCreate(&world->c_animation,      a, component_size);
     ComponentCreate(&world->c_physics,        a, component_size);
+    ComponentCreate(&world->c_sound,          a, component_size);
 
     ComponentCreate(&world->c_interaction,    a, component_size);
     ComponentCreate(&world->c_interactable,   a, component_size);
@@ -1351,10 +1379,9 @@ void GameInit(Allocator *a, World *world, GameState *state) {
     state->bound_zone = (FanRectInt32){ .width = 10, .height = 6 };
     state->camera_zoom = 1.0f;
 
-    muse = FanMusicLoad("./resources/My Uncles Last Voyage.mp3");
-    FanMusicPlay(muse);
-    FanMusicSetVolume(muse, 0.6f);
-
+    state->music = FanMusicLoad("./resources/My Uncles Last Voyage.mp3");
+    FanMusicPlay(state->music);
+    FanMusicSetVolume(state->music, 0.4f);
 
     TileMap map = (TileMap) {
         .tile_size = 1,
@@ -1370,7 +1397,7 @@ void GameInit(Allocator *a, World *world, GameState *state) {
 void GameUpdateAndRender(Allocator *a, World *world, GameState *state, float32 dt) {
     (void)a;
 
-    FanMusicUpdate(muse);
+    FanMusicUpdate(state->music);
 
     UpdateEntities(world, state, dt);
     RenderEntities(world, state, dt);
