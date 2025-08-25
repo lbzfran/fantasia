@@ -408,6 +408,48 @@ void AnimationSystem(CAnimation *a, CTexture *t, AnimationData *table, float dt)
     );
 }
 
+void LightSystem(
+        CLight     *l,
+        CTransform *t,
+        FanRTexture lightmap,
+        FanVector2  camera_pos,
+        float32     camera_zoom,
+        int32       pixels_per_unit,
+        float32     dt
+    ) {
+    (void)dt;
+
+    FanVector2 screen_pos = WorldToScreen(
+        t->position,
+        camera_pos,
+        camera_zoom,
+        pixels_per_unit
+    );
+
+    FanDrawCircleGradient(
+        (int32)screen_pos.x,
+        (int32)screen_pos.y,
+        l->radius,
+        l->color,
+        (FanColor){ 0, 0, 0, 0 }
+    );
+}
+
+void LightingProcessPost(FanRTexture lightmap) {
+    FanModeBlendBegin(FanBlend_MULTIPLIED);
+
+        FanDrawTexture(
+            lightmap.texture,
+            (FanRectInt32){ 0, 0, lightmap.texture.width, lightmap.texture.height },
+            (FanRectInt32){ 0, 0, FanWindowWidth(), FanWindowHeight() },
+            FanVector2Zero(),
+            0.0f,
+            FanColor_WHITE
+        );
+
+    FanModeBlendEnd();
+}
+
 typedef enum {
     RenderFlag_FlipX        = (1 << 0),
     RenderFlag_FlipY        = (1 << 1),
@@ -746,6 +788,23 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
             FanVector2Print(transform->scale);
         }
     }
+
+    FanColor ambient = { 30, 30, 30, 255 };
+    FanModeTextureBegin(state->lightmap);
+        FanDrawClear(ambient);
+        for (ssize i = 0; i < world->c_light.size; i++) {
+            int32 id = world->c_light.dense[i];
+
+            int32 transform_idx   =  world->c_transform.sparse[id];
+
+            CLight     *light     = &world->c_light.data[i];
+            CTransform *transform = &world->c_transform.data[transform_idx];
+
+            LightSystem(light, transform, state->lightmap, camera_position, camera_zoom, pixels_per_unit, dt);
+        }
+    FanModeTextureEnd();
+
+    LightingProcessPost(state->lightmap);
 }
 
 // NOTE(liam): must call whenever entities are added/removed
@@ -1243,6 +1302,10 @@ global void SceneMain(World *world) {
         .attack_range = 1.5f,
     );
     ComponentAddArgs(&world->c_animation, world->entity_count);
+    ComponentAddArgs(&world->c_light,     world->entity_count,
+        .color  = FanColor_YELLOW,
+        .radius = 100.0f,
+    );
     world->spec_id.player = world->entity_count;
     world->entity_count++;
 
@@ -1348,7 +1411,7 @@ global void SceneMain(World *world) {
 
 void GameInit(Allocator *a, World *world, GameState *state) {
 
-    int32 split_size = kilobytes(1);
+    int32 split_size      = kilobytes(1);
     ssize component_size  = kilobytes(1);
 
     ComponentCreate(&world->c_transform,      a, component_size);
@@ -1359,6 +1422,7 @@ void GameInit(Allocator *a, World *world, GameState *state) {
     ComponentCreate(&world->c_animation,      a, component_size);
     ComponentCreate(&world->c_physics,        a, component_size);
     ComponentCreate(&world->c_sound,          a, component_size);
+    ComponentCreate(&world->c_light,          a, component_size);
 
     ComponentCreate(&world->c_interaction,    a, component_size);
     ComponentCreate(&world->c_interactable,   a, component_size);
@@ -1378,6 +1442,8 @@ void GameInit(Allocator *a, World *world, GameState *state) {
 
     state->bound_zone = (FanRectInt32){ .width = 10, .height = 6 };
     state->camera_zoom = 1.0f;
+
+    state->lightmap = FanRTextureLoad(FanWindowWidth(), FanWindowHeight());
 
     state->music = FanMusicLoad("./resources/My Uncles Last Voyage.mp3");
     FanMusicPlay(state->music);
@@ -1405,11 +1471,11 @@ void GameUpdateAndRender(Allocator *a, World *world, GameState *state, float32 d
 
 void GameClose(Allocator *a, World *world, GameState *state) {
     (void)a;
-    (void)state;
     for (ssize i = 0; i < world->c_texture.size; i++) {
         if (world->c_texture.dense[i] == -1) {
             continue;
         }
         FanTextureUnload(world->c_texture.data[i].texture);
     }
+    FanRTextureUnload(state->lightmap);
 }

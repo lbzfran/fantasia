@@ -18,6 +18,8 @@
                                  collision, and live within the map.
                                  Tiles within tilemaps are non-entity and
                                  provide proper collision to all entities.
+- [ ] Lighting
+- [ ] Shadows
 - [ ] Loading/Saving Game Data (with versioning)
 - [ ] Behaviors
     - [ ] dynamic behaviors (based on conditions, decision tree maybe..?)

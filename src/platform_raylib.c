@@ -46,6 +46,28 @@ Music FanMusicToRL(FanMusic music) {
     return rl_music;
 }
 
+Texture2D FanTextureToRL(FanTexture tx) {
+    Texture2D rl_texture = (Texture2D){
+        .id      = tx.id,
+        .width   = tx.width,
+        .height  = tx.height,
+        .mipmaps = tx.mipmaps,
+        .format  = tx.format
+    };
+    return rl_texture;
+}
+
+RenderTexture FanRTextureToRL(FanRTexture rtx) {
+    Texture2D rl_texture = FanTextureToRL(rtx.texture);
+    Texture2D rl_depth = FanTextureToRL(rtx.depth);
+
+    return (RenderTexture) {
+        .texture = rl_texture,
+        .depth   = rl_depth,
+        .id      = rtx.id
+    };
+}
+
 void FanWindowCreate(int width, int height, const char *title) {
     InitWindow(width, height, title);
 }
@@ -274,22 +296,16 @@ int FanKeyDown(FanKey key) {
 FanTexture FanTextureLoad(const char *filepath) {
     Texture2D rl_texture = LoadTexture(filepath);
     FanTexture texture = (FanTexture){
-        .id = rl_texture.id,
-        .width = rl_texture.width,
-        .height = rl_texture.height,
+        .id      = rl_texture.id,
+        .width   = rl_texture.width,
+        .height  = rl_texture.height,
         .mipmaps = rl_texture.mipmaps,
-        .format = rl_texture.format
+        .format  = rl_texture.format
     };
     return texture;
 }
 void FanTextureUnload(FanTexture texture) {
-    Texture2D rl_texture = (Texture2D){
-        .id = texture.id,
-        .width = texture.width,
-        .height = texture.height,
-        .mipmaps = texture.mipmaps,
-        .format = texture.format
-    };
+    Texture2D rl_texture = FanTextureToRL(texture);
     UnloadTexture(rl_texture);
 }
 
@@ -375,4 +391,61 @@ void FanCameraBegin(FanCamera2D camera) {
 
 void FanCameraEnd(void) {
     EndMode2D();
+}
+
+FanRTexture FanRTextureLoad(int width, int height) {
+    RenderTexture rl_rtx = LoadRenderTexture(width, height);
+
+    FanTexture texture = (FanTexture){
+        .id      = rl_rtx.texture.id,
+        .width   = rl_rtx.texture.width,
+        .height  = rl_rtx.texture.height,
+        .mipmaps = rl_rtx.texture.mipmaps,
+        .format  = rl_rtx.texture.format
+    };
+
+    FanTexture depth = (FanTexture){
+        .id      = rl_rtx.depth.id,
+        .width   = rl_rtx.depth.width,
+        .height  = rl_rtx.depth.height,
+        .mipmaps = rl_rtx.depth.mipmaps,
+        .format  = rl_rtx.depth.format
+    };
+
+    FanRTexture rtx = (FanRTexture) {
+        .id      = rl_rtx.id,
+        .texture = texture,
+        .depth   = depth
+    };
+
+    return rtx;
+}
+
+void FanRTextureUnload(FanRTexture rtx) {
+    RenderTexture rl_rtx = FanRTextureToRL(rtx);
+
+    UnloadRenderTexture(rl_rtx);
+}
+
+void FanModeTextureBegin(FanRTexture rtx) {
+    RenderTexture rl_rtx = FanRTextureToRL(rtx);
+
+    BeginTextureMode(rl_rtx);
+}
+void FanModeTextureEnd(void) {
+    EndTextureMode();
+}
+
+void FanModeBlendBegin(int mode) {
+    BeginBlendMode(mode);
+}
+
+void FanModeBlendEnd(void) {
+    EndBlendMode();
+}
+void FanDrawCircleGradient(int x, int y, float r, FanColor in, FanColor out) {
+    Color rl_in = FanColorToRL(in);
+    Color rl_out = FanColorToRL(out);
+
+    DrawCircleGradient(x, y, r, rl_in, rl_out);
 }

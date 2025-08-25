@@ -15,7 +15,7 @@
          ssize  capacity;                \
     } name##Storage
 
-#define ComponentCreate(storage, mem, size) do{                                 \
+#define ComponentCreate(storage, mem, size) do{                                        \
     (storage)->sparse   = (mem)->make((mem)->ctx, sizeof(*(storage)->sparse) * size);  \
     (storage)->dense    = (mem)->make((mem)->ctx, sizeof(*(storage)->dense)  * size);  \
     (storage)->data     = (mem)->make((mem)->ctx, sizeof(*(storage)->data)   * size);  \
@@ -155,6 +155,20 @@ typedef struct {
     float32  pitch;
 } CSound;
 
+/*
+ *
+ * directional, point light, spotlight
+ *
+ */
+
+typedef struct {
+    FanVector2 direction;
+    float32    radius;
+
+    FanColor   color;
+    float32    intensity;
+} CLight;
+
 // typedef struct {
 //     int32 id;
 //     const char *name;
@@ -211,6 +225,8 @@ typedef struct {
     float64      current_time;
     float32      camera_zoom;
 
+    FanRTexture  lightmap;
+
     bool32       called_object_dump;
 } GameState;
 
@@ -246,6 +262,7 @@ ComponentDeclare(CBehavior,  CBehavior);
 ComponentDeclare(CAnimation, CAnimation);
 ComponentDeclare(CPhysics,   CPhysics);
 ComponentDeclare(CSound,     CSound);
+ComponentDeclare(CLight,     CLight);
 
 ComponentDeclare(CInteraction,  bool32);
 ComponentDeclare(CInteractable, bool32);
@@ -280,6 +297,7 @@ typedef struct {
     CAnimationStorage      c_animation;
     CPhysicsStorage        c_physics;
     CSoundStorage          c_sound;
+    CLightStorage          c_light;
 
     CInteractionStorage    c_interaction;
     CInteractableStorage   c_interactable;

@@ -56,6 +56,12 @@ typedef struct {
 } FanTexture;
 
 typedef struct {
+    unsigned int id;
+    FanTexture   texture;
+    FanTexture   depth;
+} FanRTexture;
+
+typedef struct {
     FanVector2 target;
     FanVector2 offset;
     float rotation;
@@ -225,6 +231,16 @@ typedef enum {
     FanWindow_MSAA_4X_HINT       = 0x00000020,   // Set to try enabling MSAA 4X
     FanWindow_INTERLACED_HINT    = 0x00010000    // Set to try enabling interlaced video format (for V3D)
 } FanWindowFlag;
+typedef enum {
+    FanBlend_ALPHA = 0,                // Blend textures considering alpha (default)
+    FanBlend_ADDITIVE,                 // Blend textures adding colors
+    FanBlend_MULTIPLIED,               // Blend textures multiplying colors
+    FanBlend_ADD_COLORS,               // Blend textures adding colors (alternative)
+    FanBlend_SUBTRACT_COLORS,          // Blend textures subtracting colors (alternative)
+    FanBlend_ALPHA_PREMULTIPLY,        // Blend premultiplied textures considering alpha
+    FanBlend_CUSTOM,                   // Blend textures using custom src/dst factors (use rlSetBlendFactors())
+    FanBlend_CUSTOM_SEPARATE           // Blend textures using custom rgb/alpha separate src/dst factors (use rlSetBlendFactorsSeparate())
+} FanBlendFlag;
 
 #define FanColor_WHITE   (FanColor){ 210, 210, 210, 255 }
 #define FanColor_GRAY    (FanColor){  80,  80,  80, 255 }
@@ -306,6 +322,14 @@ FAN_API void FanDrawTexture(FanTexture texture, FanRectInt32 src, FanRectInt32 d
 
 FAN_API void FanCameraBegin(FanCamera2D);
 FAN_API void FanCameraEnd(void);
+
+FAN_API FanRTexture FanRTextureLoad(int, int);
+FAN_API void FanRTextureUnload(FanRTexture);
+FAN_API void FanModeTextureBegin(FanRTexture);
+FAN_API void FanModeTextureEnd(void);
+FAN_API void FanModeBlendBegin(int);
+FAN_API void FanModeBlendEnd(void);
+FAN_API void FanDrawCircleGradient(int x, int y, float r, FanColor in, FanColor out);
 
 // quick maths
 
