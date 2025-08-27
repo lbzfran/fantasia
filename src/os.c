@@ -6,7 +6,7 @@
 # include "os_linux.c"
 #endif
 
-void *heap_make(void *ctx, ssize size) {
+void *fan_heap_make(void *ctx, ssize size) {
     (void)ctx;
     void *result = malloc(size);
     assert(result && "ERROR: Reached Out-Of-Memory state.");
@@ -14,7 +14,7 @@ void *heap_make(void *ctx, ssize size) {
     return result;
 }
 
-void heap_free(void *ctx, void *ptr, ssize size) {
+void fan_heap_free(void *ctx, void *ptr, ssize size) {
     (void)ctx;
     (void)size;
 
@@ -22,9 +22,9 @@ void heap_free(void *ctx, void *ptr, ssize size) {
     ptr = null;
 }
 
-void *heap_resize(void *ctx, void *ptr, ssize old, ssize new) {
+void *fan_heap_resize(void *ctx, void *ptr, ssize old, ssize new) {
     (void)ctx;
-    void *result = heap_make(ctx, new);
+    void *result = fan_heap_make(ctx, new);
 
     if (ptr isnt null) {
         if (new > old) {
@@ -33,17 +33,17 @@ void *heap_resize(void *ctx, void *ptr, ssize old, ssize new) {
         else {
             memmove(result, ptr, old);
         }
-        heap_free(ctx, ptr, old);
+        fan_heap_free(ctx, ptr, old);
     }
 
     return result;
 }
 
-void *arena_make(void *ctx, ssize size) {
+void *fan_arena_make(void *ctx, ssize size) {
     Arena *a = (Arena *)ctx;
 
     uintptr base = (uintptr)(a->data + a->size);
-    uintptr alignment = align_forward(base, ARENA_ALIGNMENT);
+    uintptr alignment = fan_align_forward(base, ARENA_ALIGNMENT);
     ssize offset = alignment - (uintptr)a->data;
 
     assert(size + offset <= a->capacity && "ERROR: Reached Out-Of-Memory state.");
@@ -54,7 +54,7 @@ void *arena_make(void *ctx, ssize size) {
     return result;
 }
 
-void arena_free(void *ctx, void *ptr, ssize size) {
+void fan_arena_free(void *ctx, void *ptr, ssize size) {
     Arena *a = (Arena *)ctx;
 
     uintptr ptr_val = (uintptr)ptr;
@@ -68,11 +68,11 @@ void arena_free(void *ctx, void *ptr, ssize size) {
     }
 }
 
-void arena_clear(Arena *a) {
+void fan_arena_clear(Arena *a) {
     a->size = 0;
 }
 
-void *arena_resize(void *ctx, void *ptr, ssize old, ssize new) {
+void *fan_arena_resize(void *ctx, void *ptr, ssize old, ssize new) {
     Arena *a = (Arena *)ctx;
 
     if (new == old) {
@@ -81,7 +81,7 @@ void *arena_resize(void *ctx, void *ptr, ssize old, ssize new) {
 
     void *result = null;
     if (ptr is null) {
-        result = arena_make(ctx, new);
+        result = fan_arena_make(ctx, new);
     }
     else {
         uintptr ptr_val  = (uintptr)ptr;
@@ -90,7 +90,7 @@ void *arena_resize(void *ctx, void *ptr, ssize old, ssize new) {
         ssize offset = ptr_val - base_val;
 
         if (new > old) {
-            result = arena_make(ctx, new);
+            result = fan_arena_make(ctx, new);
             memcpy(result, ptr, old);
         }
         else if (a->size == offset + old) {

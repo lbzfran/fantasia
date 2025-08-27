@@ -94,7 +94,6 @@ int FanWindowHeight(void) {
     return result;
 }
 
-
 void FanAudioDevCreate(void) {
     InitAudioDevice();
 }

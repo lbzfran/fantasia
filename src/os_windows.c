@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include "os.h"
 
-void* LibOpen(const char *path) {
+void* fan_lib_open(const char *path) {
     void *res = (void *)LoadLibraryA(path);
     if (res == NULL) {
         printf("Failed to load DLL '%s': '%lu'.\n", path, GetLastError());
@@ -11,7 +11,7 @@ void* LibOpen(const char *path) {
     return res;
 }
 
-void* LibLoad(void *lib, const char *name) {
+void* fan_lib_load(void *lib, const char *name) {
     void *res = (void *)GetProcAddress((HMODULE)lib, name);
     if (res == NULL) {
         printf("Failed to load function '%s': '%lu'.\n", name, GetLastError());
@@ -19,7 +19,7 @@ void* LibLoad(void *lib, const char *name) {
     return res;
 }
 
-void LibClose(void *lib) {
+void fan_lib_close(void *lib) {
     FreeLibrary((HMODULE)lib);
     lib = NULL;
 }

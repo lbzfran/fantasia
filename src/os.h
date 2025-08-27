@@ -95,23 +95,23 @@ typedef struct Arena {
 } Arena;
 #define ARENA_ALIGNMENT 16
 
-inline uintptr align_forward(uintptr ptr, ssize alignment) {
+inline uintptr fan_align_forward(uintptr ptr, ssize alignment) {
     return (ptr + (alignment - 1)) & ~(alignment - 1);
 }
 
-void *heap_make(void *ctx, ssize size);
-void  heap_free(void *ctx, void *ptr, ssize size);
-void *heap_resize(void *ctx, void *ptr, ssize old, ssize new);
+void *fan_heap_make(void *ctx, ssize size);
+void  fan_heap_free(void *ctx, void *ptr, ssize size);
+void *fan_heap_resize(void *ctx, void *ptr, ssize old, ssize new);
 
-void *arena_make(void *ctx, ssize size);
-void  arena_free(void *ctx, void *ptr, ssize size);
-void *arena_resize(void *ctx, void *ptr, ssize old, ssize new);
+void *fan_arena_make(void *ctx, ssize size);
+void  fan_arena_free(void *ctx, void *ptr, ssize size);
+void *fan_arena_resize(void *ctx, void *ptr, ssize old, ssize new);
 
-void  arena_clear(Arena *a);
+void  fan_arena_clear(Arena *a);
 
-void *LibOpen(const char* path);
-void *LibLoad(void *lib, const char *name);
-void  LibClose(void *lib);
+void *fan_lib_open(const char* path);
+void *fan_lib_load(void *lib, const char *name);
+void  fan_lib_close(void *lib);
 
 // char* LibGetError(void);
 

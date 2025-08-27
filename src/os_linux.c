@@ -4,7 +4,7 @@
 #include <dlfcn.h>
 #include "os.h"
 
-void* LibOpen(const char *path) {
+void* fan_lib_open(const char *path) {
     void *res = dlopen(path, RTLD_LAZY);
     if (res == NULL) {
         printf("Failed to load DLL: %s.\n", dlerror());
@@ -12,7 +12,7 @@ void* LibOpen(const char *path) {
     return res;
 }
 
-void* LibLoad(void *lib, const char *name) {
+void* fan_lib_load(void *lib, const char *name) {
     void *res = dlsym(lib, name);
     if (res == NULL) {
         printf("Failed to load function: '%s'.\n", dlerror());
@@ -20,7 +20,7 @@ void* LibLoad(void *lib, const char *name) {
     return res;
 }
 
-void LibClose(void *lib) {
+void fan_lib_close(void *lib) {
     dlclose(lib);
 }
 

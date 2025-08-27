@@ -4,16 +4,16 @@
 #include "game.h"
 
 typedef struct {
-    void (GAME_API *init)(Allocator *a, World *world, GameState *state);
-    void (GAME_API *update_and_render)(Allocator *a, World *world, GameState *state, float32 dt);
-    void (GAME_API *close)(Allocator *a, World *world, GameState *state);
+    void (*init)(Allocator *a, World *world, GameState *state);
+    void (*update_and_render)(Allocator *a, World *world, GameState *state, float32 dt);
+    void (*close)(Allocator *a, World *world, GameState *state);
 } GameAPI;
 GameAPI game = {};
 
 Allocator heap_allocator = {
-    .make   = heap_make,
-    .free   = heap_free,
-    .resize = heap_resize,
+    .make   = fan_heap_make,
+    .free   = fan_heap_free,
+    .resize = fan_heap_resize,
     .ctx    = null
 };
 
@@ -30,9 +30,9 @@ int main(void) {
         .capacity = megabytes(1)
     };
     Allocator arena_allocator = {
-        .make   = arena_make,
-        .free   = arena_free,
-        .resize = arena_resize,
+        .make   = fan_arena_make,
+        .free   = fan_arena_free,
+        .resize = fan_arena_resize,
         .ctx    = &world.arena
     };
 
@@ -47,10 +47,10 @@ int main(void) {
     camera.zoom = 0.8f;
     PlayerInput *p_input = &state.p_input;
 
-    void *lib = LibOpen(GAME_LIB_PATH);
-    game.init = LibLoad(lib, "GameInit");
-    game.update_and_render = LibLoad(lib, "GameUpdateAndRender");
-    game.close = LibLoad(lib, "GameClose");
+    void *lib = fan_lib_open(GAME_LIB_PATH);
+    game.init = fan_lib_load(lib, "GameInit");
+    game.update_and_render = fan_lib_load(lib, "GameUpdateAndRender");
+    game.close = fan_lib_load(lib, "GameClose");
 
     game.init(&arena_allocator, &world, &state);
     while (running) {
@@ -161,7 +161,7 @@ int main(void) {
 
     FanAudioDevClose();
     FanWindowClose();
-    LibClose(lib);
+    fan_lib_close(lib);
     game.close(&arena_allocator, &world, &state);
     heap_allocator.free(null, world.arena.data, world.arena.capacity);
     return 0;
