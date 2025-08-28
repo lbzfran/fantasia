@@ -24,7 +24,12 @@ void fan_lib_close(void *lib) {
     lib = NULL;
 }
 
-bool32 fan_os_write(void *ctx, void *data, ssize length) {
-    HANDLE *ctx_handle = (HANDLE *)ctx;
-    return (bool32)WriteFile(ctx, data, length, null, null);
+HANDLE *fan_os_pipe_get(fan_pipe pipe) {
+    HANDLE *h = GetStdHandle((DWORD)pipe);
+    return h;
+}
+
+bool32 fan_os_write(fan_pipe pipe, void *data, ssize length) {
+    HANDLE *ctx_handle = fan_os_pipe_get(pipe);
+    return (bool32)WriteFile(ctx_handle, data, length, null, null);
 }

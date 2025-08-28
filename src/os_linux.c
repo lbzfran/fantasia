@@ -25,7 +25,6 @@ void fan_lib_close(void *lib) {
     dlclose(lib);
 }
 
-bool32 fan_os_write(void *ctx, void *data, ssize length) {
-    int *ctx_intptr = (int *)ctx;
-    return (bool32)write(*ctx_intptr, data, length);
+bool32 fan_os_write(fan_pipe pipe, void *data, ssize length) {
+    return (bool32)write(pipe, data, length);
 }

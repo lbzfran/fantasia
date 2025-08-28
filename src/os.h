@@ -70,6 +70,8 @@ typedef uintptr_t     uintptr;
 #define local   static
 #define global  static
 
+#define optional_
+
 #define null            0
 #define kilobytes(x)    ((x)*1024LL)
 #define megabytes(x)    (kilobytes(x)*1024LL)
@@ -96,11 +98,17 @@ typedef struct Arena {
 } Arena;
 #define ARENA_ALIGNMENT 16
 
+typedef enum {
+    fan_pipe_stdout = 0,
+    fan_pipe_stdin,
+    fan_pipe_stderr,
+} fan_pipe;
+
 typedef struct {
-    uchar8 *buf;
+    uchar8        *buf;
     ssize          length;
     ssize          capacity;
-    int32          fd;
+    fan_pipe       pipe;
     int32          error;
 } fan_fbuf8;
 
@@ -176,7 +184,7 @@ void *fan_lib_open(const char* path);
 void *fan_lib_load(void *lib, const char *name);
 void  fan_lib_close(void *lib);
 
-bool32 fan_os_write(void *ctx, void *data, ssize length);
+bool32 fan_os_write(fan_pipe pipe, void *data, ssize length);
 
 // char* LibGetError(void);
 
