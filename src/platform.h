@@ -1,6 +1,8 @@
 #ifndef FAN_PLATFORM_H
 #define FAN_PLATFORM_H
 
+#include "os.h"
+
 #if defined(PLATFORM_BUILD_SHARED)
     #if defined(OS_WINDOWS)
         #define FAN_API __declspec(dllexport)
@@ -22,73 +24,73 @@
 # endif
 
 typedef struct {
-    float x;
-    float y;
-} FanVector2;
+    float32 x;
+    float32 y;
+} fan_vec2, fan_vec2_f32;
 
 typedef struct {
-    int r;
-    int g;
-    int b;
-    int a;
-} FanColor;
+    int32 r;
+    int32 g;
+    int32 b;
+    int32 a;
+} fan_color;
 
 typedef struct {
-    int x;
-    int y;
-    int width;
-    int height;
-} FanRectInt32;
+    int32 x;
+    int32 y;
+    int32 width;
+    int32 height;
+} fan_rect_int32, fan_rect_i32;
 
 typedef struct {
-    float x;
-    float y;
-    float width;
-    float height;
-} FanRectFloat32;
+    float32 x;
+    float32 y;
+    float32 width;
+    float32 height;
+} fan_rect_float32, fan_rect_f32;
 
 typedef struct {
-    unsigned int id;
-    int width;
-    int height;
-    int mipmaps;
-    int format;
-} FanTexture;
+    uint32 id;
+    int32  width;
+    int32  height;
+    int32  mipmaps;
+    int32  format;
+} fan_texture;
 
 typedef struct {
-    unsigned int id;
-    FanTexture   texture;
-    FanTexture   depth;
-} FanRTexture;
+    int32       id;
+    fan_texture texture;
+    fan_texture depth;
+} fan_rtexture;
 
 typedef struct {
-    FanVector2 target;
-    FanVector2 offset;
-    float rotation;
-    float zoom;
-} FanCamera2D;
+    fan_vec2 target;
+    fan_vec2 offset;
+    float32  rotation;
+    float32  zoom;
+} fan_camera2D;
 
 typedef struct {
     void *buffer;
     void *processor;
 
-    unsigned int sample_rate;
-    unsigned int sample_size;
-    unsigned int channels;
-} FanAudioStream;
+    uint32 sample_rate;
+    uint32 sample_size;
+    uint32 channels;
+} fan_audio_stream;
 
 typedef struct {
-    FanAudioStream stream;
-    unsigned int frame_count;
-} FanSound;
+    fan_audio_stream stream;
+    uint32           frame_count;
+} fan_sound;
 
 typedef struct {
-    FanAudioStream stream;
-    unsigned int frame_count;
-    int loop;
-    int ctx_type;
-    void *ctx_data;
-} FanMusic;
+    fan_audio_stream  stream;
+    uint32            frame_count;
+    int32             loop;
+    int32             ctx_type;
+    void             *ctx_data;
+} fan_music;
 
 typedef enum {
     FanKey_NULL            = 0,        // Key: NULL, used for no key pressed
@@ -200,7 +202,7 @@ typedef enum {
     FanKey_KP_ADD          = 334,      // Key: Keypad +
     FanKey_KP_ENTER        = 335,      // Key: Keypad Enter
     FanKey_KP_EQUAL        = 336,      // Key: Keypad =
-} FanKey;
+} fan_key;
 
 typedef enum {
     FanLog_ALL     = 0,
@@ -211,7 +213,7 @@ typedef enum {
     FanLog_ERROR   = 5,
     FanLog_FATAL   = 6,
     FanLog_NONE    = 7
-} FanLogLevel;
+} fan_loglevel;
 
 typedef enum {
     FanWindow_VSYNC_HINT         = 0x00000040,   // Set to try enabling V-Sync on GPU
@@ -230,7 +232,8 @@ typedef enum {
     FanWindow_BORDERLESS_WINDOWED_MODE = 0x00008000, // Set to run program in borderless windowed mode
     FanWindow_MSAA_4X_HINT       = 0x00000020,   // Set to try enabling MSAA 4X
     FanWindow_INTERLACED_HINT    = 0x00010000    // Set to try enabling interlaced video format (for V3D)
-} FanWindowFlag;
+} fan_flag_window;
+
 typedef enum {
     FanBlend_ALPHA = 0,                // Blend textures considering alpha (default)
     FanBlend_ADDITIVE,                 // Blend textures adding colors
@@ -240,154 +243,154 @@ typedef enum {
     FanBlend_ALPHA_PREMULTIPLY,        // Blend premultiplied textures considering alpha
     FanBlend_CUSTOM,                   // Blend textures using custom src/dst factors (use rlSetBlendFactors())
     FanBlend_CUSTOM_SEPARATE           // Blend textures using custom rgb/alpha separate src/dst factors (use rlSetBlendFactorsSeparate())
-} FanBlendFlag;
+} fan_flag_blend;
 
-#define FanColor_WHITE   (FanColor){ 210, 210, 210, 255 }
-#define FanColor_GRAY    (FanColor){  80,  80,  80, 255 }
-#define FanColor_BLACK   (FanColor){   0,   0,   0, 255 }
-#define FanColor_RED     (FanColor){ 255,   0,   0, 255 }
-#define FanColor_ORANGE  (FanColor){ 255, 165,   0, 255 }
-#define FanColor_YELLOW  (FanColor){ 255, 255,   0, 255 }
-#define FanColor_GREEN   (FanColor){   0, 255,   0, 255 }
-#define FanColor_CYAN    (FanColor){   0, 255, 255, 255 }
-#define FanColor_BLUE    (FanColor){   0,   0, 255, 255 }
-#define FanColor_MAGENTA (FanColor){ 255,   0, 255, 255 }
+#define fan_color_WHITE   (fan_color){ 210, 210, 210, 255 }
+#define fan_color_GRAY    (fan_color){  80,  80,  80, 255 }
+#define fan_color_BLACK   (fan_color){   0,   0,   0, 255 }
+#define fan_color_RED     (fan_color){ 255,   0,   0, 255 }
+#define fan_color_ORANGE  (fan_color){ 255, 165,   0, 255 }
+#define fan_color_YELLOW  (fan_color){ 255, 255,   0, 255 }
+#define fan_color_GREEN   (fan_color){   0, 255,   0, 255 }
+#define fan_color_CYAN    (fan_color){   0, 255, 255, 255 }
+#define fan_color_BLUE    (fan_color){   0,   0, 255, 255 }
+#define fan_color_MAGENTA (fan_color){ 255,   0, 255, 255 }
 
 #define PI 3.14159265358979323846f
 
-FAN_API void FanWindowCreate(int width, int height, const char *title);
-FAN_API void FanWindowClose(void);
-FAN_API int  FanWindowShouldClose(void);
+FAN_API void  fan_window_create(int32 width, int32 height, const char8 *title);
+FAN_API void  fan_window_close(void);
+FAN_API int32 fan_window_shouldclose(void);
 
-FAN_API void FanWindowConfig(int);
-FAN_API void FanSetLogLevel(int);
+FAN_API void fan_window_config(int32);
+FAN_API void fan_log_set(int32);
 
-FAN_API int FanWindowWidth(void);
-FAN_API int FanWindowHeight(void);
+FAN_API int32 fan_window_width(void);
+FAN_API int32 fan_window_height(void);
 
-FAN_API void FanAudioDevCreate(void);
-FAN_API void FanAudioDevClose(void);
+FAN_API void fan_dev_audio_create(void);
+FAN_API void fan_dev_audio_close(void);
 
-FAN_API FanSound FanSoundLoad(const char *filepath);
-FAN_API void     FanSoundUnload(FanSound);
-FAN_API void     FanSoundPlay(FanSound);
-FAN_API void     FanSoundStop(FanSound);
-FAN_API void     FanSoundPause(FanSound sound);
-FAN_API void     FanSoundResume(FanSound sound);
+FAN_API fan_sound fan_sound_load(const char8 *filepath);
+FAN_API void      fan_sound_unload(fan_sound);
+FAN_API void      fan_sound_play(fan_sound);
+FAN_API void      fan_sound_stop(fan_sound);
+FAN_API void      fan_sound_pause(fan_sound sound);
+FAN_API void      fan_sound_resume(fan_sound sound);
 
-FAN_API void     FanSoundSetVolume(FanSound, float);
-FAN_API void     FanSoundSetPitch(FanSound, float);
-FAN_API void     FanSoundSetPan(FanSound, float);
+FAN_API void     fan_sound_volume_set(fan_sound, float32);
+FAN_API void     fan_sound_pitch_set(fan_sound, float32);
+FAN_API void     fan_sound_pan_set(fan_sound, float32);
 
-FAN_API FanMusic FanMusicLoad(const char *filepath);
-FAN_API void     FanMusicUnload(FanMusic);
-FAN_API void     FanMusicUpdate(FanMusic);
-FAN_API void     FanMusicPlay(FanMusic);
-FAN_API void     FanMusicStop(FanMusic);
-FAN_API void     FanMusicPause(FanMusic music);
-FAN_API void     FanMusicResume(FanMusic music);
-FAN_API void     FanMusicSeek(FanMusic, float);
-FAN_API void     FanMusicSetVolume(FanMusic, float);
-FAN_API void     FanMusicSetPitch(FanMusic, float);
-FAN_API void     FanMusicSetPan(FanMusic, float);
+FAN_API fan_music fan_music_load(const char8 *filepath);
+FAN_API void      fan_music_unload(fan_music);
+FAN_API void      fan_music_update(fan_music);
+FAN_API void      fan_music_play(fan_music);
+FAN_API void      fan_music_stop(fan_music);
+FAN_API void      fan_music_pause(fan_music music);
+FAN_API void      fan_music_resume(fan_music music);
+FAN_API void      fan_music_seek(fan_music, float32);
+FAN_API void      fan_music_volume_set(fan_music, float32);
+FAN_API void      fan_music_pitch_set(fan_music, float32);
+FAN_API void      fan_music_pan_set(fan_music, float32);
 
-FAN_API float    FanMusicTimePlayed(FanMusic music);
-FAN_API float    FanMusicTimeLength(FanMusic music);
+FAN_API float32  fan_music_time_played(fan_music music);
+FAN_API float32  fan_music_time_length(fan_music music);
 
-FAN_API float FanGetFrameTime(void);
-FAN_API float FanGetTime(void);
-FAN_API int   FanGetFPS(void);
+FAN_API float32 fan_frametime_get(void);
+FAN_API float32 fan_time_get(void);
+FAN_API int32   fan_fps_get(void);
 
-FAN_API void FanRandomSeed(int seed);
-FAN_API int  FanRandomInt(int min, int max);
+FAN_API void fan_random_seed(int32 seed);
+FAN_API int32  fan_random_int(int32 min, int32 max);
 
-FAN_API int FanKeyPressed(FanKey key);
-FAN_API int FanKeyDown(FanKey key);
+FAN_API int32 fan_key_pressed(fan_key key);
+FAN_API int32 fan_key_down(fan_key key);
 
-FAN_API FanTexture FanTextureLoad(const char *filepath);
-FAN_API void       FanTextureUnload(FanTexture texture);
+FAN_API fan_texture fan_texture_load(const char8 *filepath);
+FAN_API void        fan_texture_unload(fan_texture texture);
 
-FAN_API void FanDrawBegin(void);
-FAN_API void FanDrawClear(FanColor color);
-FAN_API void FanDrawFPS(int x, int y);
-FAN_API void FanDrawEnd(void);
+FAN_API void fan_draw_begin(void);
+FAN_API void fan_draw_clear(fan_color color);
+FAN_API void fan_draw_fps(int32 x, int32 y);
+FAN_API void fan_draw_end(void);
 
-FAN_API void FanDrawRect(int x, int y, int w, int h, FanColor color);
-FAN_API void FanDrawRectV(FanVector2 pos, FanVector2 scale, FanColor color);
-FAN_API void FanDrawRectR(FanRectInt32 rect, FanColor color);
+FAN_API void fan_draw_line(int32, int32, int32, int32, fan_color color);
+FAN_API void fan_draw_linev(fan_vec2 start, fan_vec2 end, fan_color color);
+FAN_API void fan_draw_rect(int32 x, int32 y, int32 w, int32 h, fan_color color);
+FAN_API void fan_draw_rectv(fan_vec2 pos, fan_vec2 scale, fan_color color);
+FAN_API void fan_draw_rectr(fan_rect_int32 rect, fan_color color);
+FAN_API void fan_draw_circle_grad(int32 x, int32 y, float32 r, fan_color in, fan_color out);
 
-FAN_API void FanDrawLine(int, int, int, int, FanColor color);
-FAN_API void FanDrawLineV(FanVector2 start, FanVector2 end, FanColor color);
-FAN_API void FanDrawTexture(FanTexture texture, FanRectInt32 src, FanRectInt32 dst, FanVector2 origin, float angle, FanColor);
+FAN_API void fan_draw_texture(fan_texture texture, fan_rect_int32 src, fan_rect_int32 dst, fan_vec2 origin, float32 angle, fan_color);
 
-FAN_API void FanCameraBegin(FanCamera2D);
-FAN_API void FanCameraEnd(void);
+FAN_API void fan_camera_begin(fan_camera2D);
+FAN_API void fan_camera_end(void);
 
-FAN_API FanRTexture FanRTextureLoad(int, int);
-FAN_API void FanRTextureUnload(FanRTexture);
-FAN_API void FanModeTextureBegin(FanRTexture);
-FAN_API void FanModeTextureEnd(void);
-FAN_API void FanModeBlendBegin(int);
-FAN_API void FanModeBlendEnd(void);
-FAN_API void FanDrawCircleGradient(int x, int y, float r, FanColor in, FanColor out);
+FAN_API fan_rtexture fan_rtexture_load(int32, int32);
+FAN_API void fan_rtexture_unload(fan_rtexture);
+FAN_API void fan_mode_texture_begin(fan_rtexture);
+FAN_API void fan_mode_texture_end(void);
+FAN_API void fan_mode_blend_begin(int32);
+FAN_API void fan_mode_blend_end(void);
 
 // quick maths
 
-FAN_API float FanClamp(float value, float min, float max);
-FAN_API float FanLerp(float a, float x, float b);
-FAN_API int   FanFloat32Equals(float x, float y);
-FAN_API float FanFloat32Inf(void);
-FAN_API float FanFloat32NegativeInf(void);
-FAN_API float FanFloat32Exp(float);
+FAN_API float32 fan_f32_clamp(float32 value, float32 min, float32 max);
+FAN_API float32 fan_f32_lerp(float32 a, float32 x, float32 b);
+FAN_API int32   fan_f32_equals(float32 x, float32 y);
+FAN_API float32 fan_inf(void);
+FAN_API float32 fan_neg_inf(void);
+FAN_API float32 fan_f32_exp(float32);
 
-FAN_API float FanFloat32Round(float);
-FAN_API int   FanFloat32Truncate(float);
+FAN_API float32 fan_f32_round(float32);
+FAN_API int32   fan_f32_truncate(float32);
 
-FAN_API float FanFloat32Sin(float);
-FAN_API float FanFloat32Cos(float);
-FAN_API float FanFloat32Sqrt(float);
+FAN_API float32 fan_f32_sin(float32);
+FAN_API float32 fan_f32_cos(float32);
+FAN_API float32 fan_f32_sqrt(float32);
 
-FAN_API float FanFloat32Rad(float);
-FAN_API float FanFloat32Deg(float);
+FAN_API float32 fan_f32_rad(float32);
+FAN_API float32 fan_f32_deg(float32);
 
-FAN_API void FanVector2Print_(FanVector2, const char *);
-FAN_API void FanColorPrint_(FanColor, const char *);
-FAN_API void FanRectInt32Print_(FanRectInt32, const char *);
-FAN_API void FanRectFloat32Print_(FanRectFloat32, const char *);
-#define FanVector2Print(v) FanVector2Print_(v, #v)
-#define FanColorPrint(c) FanColorPrint_(c, #c)
-#define FanRectPrint(r) _Generic((r),           \
-    FanRectInt32:   FanRectInt32Print_,         \
-    FanRectFloat32: FanRectFloat32Print_)(r, #r)
+FAN_API void fan_vec2_print_(fan_vec2, const char8 *);
+FAN_API void fan_color_print_(fan_color, const char8 *);
+FAN_API void fan_rect_i32_print_(fan_rect_i32, const char8 *);
+FAN_API void fan_rect_f32_print_(fan_rect_f32, const char8 *);
+#define fan_vec2_print(v) fan_vec2_print_(v, #v)
+#define fan_color_print(c) fan_color_print_(c, #c)
+#define fan_rect_print(r) _Generic((r),           \
+    fan_rect_i32: fan_rect_i32_print_,         \
+    fan_rect_f32: fan_rect_f32_print_)(r, #r)
 
 
-FAN_API FanVector2 FanVector2Zero(void);
-FAN_API FanVector2 FanVector2One(void);
+FAN_API fan_vec2 fan_vec2_zero(void);
+FAN_API fan_vec2 fan_vec2_one(void);
 
-FAN_API FanVector2 FanVector2Add(FanVector2 v1, FanVector2 v2);
-FAN_API FanVector2 FanVector2AddValue(FanVector2 v, float x);
+FAN_API fan_vec2 fan_vec2_add(fan_vec2 v1, fan_vec2 v2);
+FAN_API fan_vec2 fan_vec2_addv(fan_vec2 v, float32 x);
 
-FAN_API FanVector2 FanVector2Sub(FanVector2 v1, FanVector2 v2);
-FAN_API FanVector2 FanVector2SubValue(FanVector2 v, float x);
+FAN_API fan_vec2 fan_vec2_sub(fan_vec2 v1, fan_vec2 v2);
+FAN_API fan_vec2 fan_vec2_subv(fan_vec2 v, float32 x);
 
-FAN_API FanVector2 FanVector2Normalize(FanVector2 v);
+FAN_API fan_vec2 fan_vec2_normalize(fan_vec2 v);
 
-FAN_API float FanVector2Length(FanVector2 v);
-FAN_API float FanVector2LengthSqr(FanVector2 v);
+FAN_API float32 fan_vec2_length(fan_vec2 v);
+FAN_API float32 fan_vec2_lengthsqr(fan_vec2 v);
 
-FAN_API FanVector2 FanVector2Scale(FanVector2 v, float scale);
-FAN_API FanVector2 FanVector2Negate(FanVector2 v);
+FAN_API fan_vec2 fan_vec2_scale(fan_vec2 v, float32 scale);
+FAN_API fan_vec2 fan_vec2_negate(fan_vec2 v);
 
-FAN_API float      FanVector2Dot(FanVector2 v1, FanVector2 v2);
-FAN_API float      FanVector2Cross(FanVector2 v1, FanVector2 v2);
-FAN_API FanVector2 FanVector2Hadamard(FanVector2 v1, FanVector2 v2);
+FAN_API float32    fan_vec2_dot(fan_vec2 v1, fan_vec2 v2);
+FAN_API float32    fan_vec2_cross(fan_vec2 v1, fan_vec2 v2);
+FAN_API fan_vec2 fan_vec2_hadamard(fan_vec2 v1, fan_vec2 v2);
 
-FAN_API FanVector2 FanVector2Round(FanVector2 v);
-FAN_API FanVector2 FanVector2Rotate(FanVector2 v, float angle);
+FAN_API fan_vec2 fan_vec2_round(fan_vec2 v);
+FAN_API fan_vec2 fan_vec2_rotate(fan_vec2 v, float32 angle);
 
-FAN_API FanVector2 FanVector2Lerp(FanVector2 v1, float t, FanVector2 v2);
+FAN_API fan_vec2 fan_vec2_lerp(fan_vec2 v1, float32 t, fan_vec2 v2);
 
-FAN_API int FanRectIsEmpty(FanRectInt32 rect);
+FAN_API int32 fan_rect_i32_isempty(fan_rect_int32 rect);
 
 // threading
 

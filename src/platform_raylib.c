@@ -5,7 +5,7 @@
 #include <raylib.h>
 #include <math.h>
 
-Color FanColorToRL(FanColor color) {
+Color fan_color_rl(fan_color color) {
     Color rl_color = (Color){
         .r = color.r,
         .g = color.g,
@@ -16,7 +16,7 @@ Color FanColorToRL(FanColor color) {
     return rl_color;
 }
 
-Sound FanSoundToRL(FanSound sound) {
+Sound fan_sound_rl(fan_sound sound) {
     Sound rl_sound = (Sound) {
         .frameCount = sound.frame_count,
         .stream = (AudioStream) {
@@ -30,7 +30,7 @@ Sound FanSoundToRL(FanSound sound) {
     return rl_sound;
 }
 
-Music FanMusicToRL(FanMusic music) {
+Music FanMusicToRL(fan_music music) {
     Music rl_music = (Music) {
         .frameCount = music.frame_count,
         .stream = (AudioStream) {
@@ -46,7 +46,7 @@ Music FanMusicToRL(FanMusic music) {
     return rl_music;
 }
 
-Texture2D FanTextureToRL(FanTexture tx) {
+Texture2D FanTextureToRL(fan_texture tx) {
     Texture2D rl_texture = (Texture2D){
         .id      = tx.id,
         .width   = tx.width,
@@ -57,7 +57,7 @@ Texture2D FanTextureToRL(FanTexture tx) {
     return rl_texture;
 }
 
-RenderTexture FanRTextureToRL(FanRTexture rtx) {
+RenderTexture FanRTextureToRL(fan_rtexture rtx) {
     Texture2D rl_texture = FanTextureToRL(rtx.texture);
     Texture2D rl_depth = FanTextureToRL(rtx.depth);
 
@@ -68,46 +68,46 @@ RenderTexture FanRTextureToRL(FanRTexture rtx) {
     };
 }
 
-void FanWindowCreate(int width, int height, const char *title) {
+void fan_window_create(int width, int height, const char *title) {
     InitWindow(width, height, title);
 }
 
-void FanWindowClose(void) {
+void fan_window_close(void) {
     CloseWindow();
 }
 
-int FanWindowShouldClose(void) {
+int fan_window_shouldclose(void) {
     int result = WindowShouldClose();
     return result;
 }
 
-void FanSetLogLevel(int level) {
+void fan_log_set(int level) {
     SetTraceLogLevel(level);
 }
 
-int FanWindowWidth(void) {
+int fan_window_width(void) {
     int result = GetScreenWidth();
     return result;
 }
-int FanWindowHeight(void) {
+int fan_window_height(void) {
     int result = GetScreenHeight();
     return result;
 }
 
-void FanAudioDevCreate(void) {
+void fan_dev_audio_create(void) {
     InitAudioDevice();
 }
 
-void FanAudioDevClose(void) {
+void fan_dev_audio_close(void) {
     CloseAudioDevice();
 }
 
-FanSound FanSoundLoad(const char *filepath) {
+fan_sound fan_sound_load(const char *filepath) {
     Sound rl_sound = LoadSound(filepath);
 
-    FanSound sound = (FanSound) {
+    fan_sound sound = (fan_sound) {
         .frame_count = rl_sound.frameCount,
-        .stream = (FanAudioStream) {
+        .stream = (fan_audio_stream) {
             rl_sound.stream.buffer,
             rl_sound.stream.processor,
             rl_sound.stream.sampleRate,
@@ -119,60 +119,60 @@ FanSound FanSoundLoad(const char *filepath) {
     return sound;
 }
 
-void FanSoundUnload(FanSound sound) {
-    Sound rl_sound = FanSoundToRL(sound);
+void fan_sound_unload(fan_sound sound) {
+    Sound rl_sound = fan_sound_rl(sound);
 
     UnloadSound(rl_sound);
 }
 
-void FanSoundPlay(FanSound sound) {
-    Sound rl_sound = FanSoundToRL(sound);
+void fan_sound_play(fan_sound sound) {
+    Sound rl_sound = fan_sound_rl(sound);
 
     PlaySound(rl_sound);
 }
 
-void FanSoundStop(FanSound sound) {
-    Sound rl_sound = FanSoundToRL(sound);
+void fan_sound_stop(fan_sound sound) {
+    Sound rl_sound = fan_sound_rl(sound);
 
     StopSound(rl_sound);
 }
 
-void FanSoundPause(FanSound sound) {
-    Sound rl_sound = FanSoundToRL(sound);
+void fan_sound_pause(fan_sound sound) {
+    Sound rl_sound = fan_sound_rl(sound);
 
     PauseSound(rl_sound);
 }
 
-void FanSoundResume(FanSound sound) {
-    Sound rl_sound = FanSoundToRL(sound);
+void fan_sound_resume(fan_sound sound) {
+    Sound rl_sound = fan_sound_rl(sound);
 
     ResumeSound(rl_sound);
 }
 
-void FanSoundSetVolume(FanSound sound, float volume) {
-    Sound rl_sound = FanSoundToRL(sound);
+void fan_sound_volume_set(fan_sound sound, float volume) {
+    Sound rl_sound = fan_sound_rl(sound);
 
     SetSoundVolume(rl_sound, volume);
 }
 
-void FanSoundSetPitch(FanSound sound, float pitch) {
-    Sound rl_sound = FanSoundToRL(sound);
+void fan_sound_pitch_set(fan_sound sound, float pitch) {
+    Sound rl_sound = fan_sound_rl(sound);
 
     SetSoundPitch(rl_sound, pitch);
 }
 
-void FanSoundSetPan(FanSound sound, float pan) {
-    Sound rl_sound = FanSoundToRL(sound);
+void fan_sound_pan_set(fan_sound sound, float pan) {
+    Sound rl_sound = fan_sound_rl(sound);
 
     SetSoundPan(rl_sound, pan);
 }
 
-FanMusic FanMusicLoad(const char *filepath) {
+fan_music fan_music_load(const char *filepath) {
     Music rl_music = LoadMusicStream(filepath);
 
-    FanMusic music = (FanMusic) {
+    fan_music music = (fan_music) {
         .frame_count = rl_music.frameCount,
-        .stream = (FanAudioStream) {
+        .stream = (fan_audio_stream) {
             rl_music.stream.buffer,
             rl_music.stream.processor,
             rl_music.stream.sampleRate,
@@ -186,115 +186,115 @@ FanMusic FanMusicLoad(const char *filepath) {
     return music;
 }
 
-void FanMusicUnload(FanMusic music) {
+void fan_music_unload(fan_music music) {
     Music rl_music = FanMusicToRL(music);
 
     UnloadMusicStream(rl_music);
 }
 
-void FanMusicUpdate(FanMusic music) {
+void fan_music_update(fan_music music) {
     Music rl_music = FanMusicToRL(music);
 
     UpdateMusicStream(rl_music);
 }
 
-void FanMusicPlay(FanMusic music) {
+void fan_music_play(fan_music music) {
     Music rl_music = FanMusicToRL(music);
 
     PlayMusicStream(rl_music);
 }
 
-void FanMusicStop(FanMusic music) {
+void fan_music_stop(fan_music music) {
     Music rl_music = FanMusicToRL(music);
 
     StopMusicStream(rl_music);
 }
 
-void FanMusicPause(FanMusic music) {
+void fan_music_pause(fan_music music) {
     Music rl_music = FanMusicToRL(music);
 
     PauseMusicStream(rl_music);
 }
 
-void FanMusicResume(FanMusic music) {
+void fan_music_resume(fan_music music) {
     Music rl_music = FanMusicToRL(music);
 
     ResumeMusicStream(rl_music);
 }
 
-void FanMusicSeek(FanMusic music, float pos) {
+void fan_music_seek(fan_music music, float pos) {
     Music rl_music = FanMusicToRL(music);
 
     SeekMusicStream(rl_music, pos);
 }
 
-void FanMusicSetVolume(FanMusic music, float volume) {
+void fan_music_volume_set(fan_music music, float volume) {
     Music rl_music = FanMusicToRL(music);
 
     SetMusicVolume(rl_music, volume);
 }
 
-void FanMusicSetPitch(FanMusic music, float pitch) {
+void fan_music_pitch_set(fan_music music, float pitch) {
     Music rl_music = FanMusicToRL(music);
 
     SetMusicPitch(rl_music, pitch);
 }
 
-void FanMusicSetPan(FanMusic music, float pan) {
+void fan_music_pan_set(fan_music music, float pan) {
     Music rl_music = FanMusicToRL(music);
 
     SetMusicPan(rl_music, pan);
 }
 
-float FanMusicTimePlayed(FanMusic music) {
+float fan_music_time_played(fan_music music) {
     Music rl_music = FanMusicToRL(music);
 
     return GetMusicTimePlayed(rl_music);
 }
 
-float FanMusicTimeLength(FanMusic music) {
+float fan_music_time_length(fan_music music) {
     Music rl_music = FanMusicToRL(music);
 
     return GetMusicTimeLength(rl_music);
 }
 
-float FanGetFrameTime(void) {
+float fan_frametime_get(void) {
     float result = GetFrameTime();
     return result;
 }
 
-float FanGetTime(void) {
+float fan_time_get(void) {
     float result = GetTime();
     return result;
 }
 
-int FanGetFPS(void) {
+int fan_fps_get(void) {
     float result = GetFPS();
     return result;
 }
 
-void FanRandomSeed(int seed) {
+void fan_random_seed(int seed) {
     SetRandomSeed(seed);
 }
 
-int FanRandomInt(int min, int max) {
+int fan_random_int(int min, int max) {
     int result = GetRandomValue(min, max);
     return result;
 }
 
-int FanKeyPressed(FanKey key) {
+int fan_key_pressed(fan_key key) {
     int result = IsKeyPressed(key);
     return result;
 }
 
-int FanKeyDown(FanKey key) {
+int fan_key_down(fan_key key) {
     int result = IsKeyDown(key);
     return result;
 }
 
-FanTexture FanTextureLoad(const char *filepath) {
+fan_texture fan_texture_load(const char *filepath) {
     Texture2D rl_texture = LoadTexture(filepath);
-    FanTexture texture = (FanTexture){
+    fan_texture texture = (fan_texture){
         .id      = rl_texture.id,
         .width   = rl_texture.width,
         .height  = rl_texture.height,
@@ -303,53 +303,53 @@ FanTexture FanTextureLoad(const char *filepath) {
     };
     return texture;
 }
-void FanTextureUnload(FanTexture texture) {
+void fan_texture_unload(fan_texture texture) {
     Texture2D rl_texture = FanTextureToRL(texture);
     UnloadTexture(rl_texture);
 }
 
-void FanDrawBegin(void) {
+void fan_draw_begin(void) {
     BeginDrawing();
 }
 
-void FanDrawClear(FanColor color) {
-    Color rl_color = FanColorToRL(color);
+void fan_draw_clear(fan_color color) {
+    Color rl_color = fan_color_rl(color);
     ClearBackground(rl_color);
 }
 
-void FanDrawFPS(int x, int y) {
+void fan_draw_fps(int x, int y) {
     DrawFPS(x, y);
 }
 
-void FanDrawEnd(void) {
+void fan_draw_end(void) {
     EndDrawing();
 }
 
-void FanDrawRect(int x, int y, int w, int h, FanColor color) {
-    Color rl_color = FanColorToRL(color);
+void fan_draw_rect(int x, int y, int w, int h, fan_color color) {
+    Color rl_color = fan_color_rl(color);
 
     DrawRectangle(x, y, w, h, rl_color);
 }
 
-void FanDrawRectV(FanVector2 pos, FanVector2 scale, FanColor color) {
-    FanDrawRect(pos.x, pos.y, scale.x, scale.y, color);
+void fan_draw_rectv(fan_vec2 pos, fan_vec2 scale, fan_color color) {
+    fan_draw_rect(pos.x, pos.y, scale.x, scale.y, color);
 }
 
-void FanDrawRectR(FanRectInt32 rect, FanColor color) {
-    FanDrawRect(rect.x, rect.y, rect.width, rect.height, color);
+void fan_draw_rectr(fan_rect_i32 rect, fan_color color) {
+    fan_draw_rect(rect.x, rect.y, rect.width, rect.height, color);
 }
 
-void FanDrawLine(int sx, int sy, int ex, int ey, FanColor color) {
-    Color rl_color = FanColorToRL(color);
+void fan_draw_line(int sx, int sy, int ex, int ey, fan_color color) {
+    Color rl_color = fan_color_rl(color);
 
     DrawLine(sx, sy, ex, ey, rl_color);
 }
 
-void FanDrawLineV(FanVector2 start, FanVector2 end, FanColor color) {
-    FanDrawLine(start.x, start.y, end.x, end.y, color);
+void fan_draw_linev(fan_vec2 start, fan_vec2 end, fan_color color) {
+    fan_draw_line(start.x, start.y, end.x, end.y, color);
 }
 
-void FanDrawTexture(FanTexture texture, FanRectInt32 src, FanRectInt32 dst, FanVector2 origin, float angle, FanColor color) {
+void fan_draw_texture(fan_texture texture, fan_rect_i32 src, fan_rect_i32 dst, fan_vec2 origin, float angle, fan_color color) {
     Texture2D rl_texture = (Texture2D){
         .id      = texture.id,
         .width   = texture.width,
@@ -373,11 +373,11 @@ void FanDrawTexture(FanTexture texture, FanRectInt32 src, FanRectInt32 dst, FanV
         .x = origin.x,
         .y = origin.y
     };
-    Color rl_color = FanColorToRL(color);
+    Color rl_color = fan_color_rl(color);
     DrawTexturePro(rl_texture, rl_src, rl_dst, rl_origin, angle, rl_color);
 }
 
-void FanCameraBegin(FanCamera2D camera) {
+void fan_camera_begin(fan_camera2D camera) {
     Camera2D rl_camera = (Camera2D){
         .target = (Vector2){ camera.target.x, camera.target.y },
         .offset = (Vector2){ camera.offset.x, camera.offset.y },
@@ -388,14 +388,14 @@ void FanCameraBegin(FanCamera2D camera) {
     BeginMode2D(rl_camera);
 };
 
-void FanCameraEnd(void) {
+void fan_camera_end(void) {
     EndMode2D();
 }
 
-FanRTexture FanRTextureLoad(int width, int height) {
+fan_rtexture fan_rtexture_load(int width, int height) {
     RenderTexture rl_rtx = LoadRenderTexture(width, height);
 
-    FanTexture texture = (FanTexture){
+    fan_texture texture = (fan_texture){
         .id      = rl_rtx.texture.id,
         .width   = rl_rtx.texture.width,
         .height  = rl_rtx.texture.height,
@@ -403,7 +403,7 @@ FanRTexture FanRTextureLoad(int width, int height) {
         .format  = rl_rtx.texture.format
     };
 
-    FanTexture depth = (FanTexture){
+    fan_texture depth = (fan_texture){
         .id      = rl_rtx.depth.id,
         .width   = rl_rtx.depth.width,
         .height  = rl_rtx.depth.height,
@@ -411,7 +411,7 @@ FanRTexture FanRTextureLoad(int width, int height) {
         .format  = rl_rtx.depth.format
     };
 
-    FanRTexture rtx = (FanRTexture) {
+    fan_rtexture rtx = (fan_rtexture) {
         .id      = rl_rtx.id,
         .texture = texture,
         .depth   = depth
@@ -420,31 +420,31 @@ FanRTexture FanRTextureLoad(int width, int height) {
     return rtx;
 }
 
-void FanRTextureUnload(FanRTexture rtx) {
+void fan_rtexture_unload(fan_rtexture rtx) {
     RenderTexture rl_rtx = FanRTextureToRL(rtx);
 
     UnloadRenderTexture(rl_rtx);
 }
 
-void FanModeTextureBegin(FanRTexture rtx) {
+void fan_mode_texture_begin(fan_rtexture rtx) {
     RenderTexture rl_rtx = FanRTextureToRL(rtx);
 
     BeginTextureMode(rl_rtx);
 }
-void FanModeTextureEnd(void) {
+void fan_mode_texture_end(void) {
     EndTextureMode();
 }
 
-void FanModeBlendBegin(int mode) {
+void fan_mode_blend_begin(int mode) {
     BeginBlendMode(mode);
 }
 
-void FanModeBlendEnd(void) {
+void fan_mode_blend_end(void) {
     EndBlendMode();
 }
-void FanDrawCircleGradient(int x, int y, float r, FanColor in, FanColor out) {
-    Color rl_in = FanColorToRL(in);
-    Color rl_out = FanColorToRL(out);
+void fan_draw_circle_grad(int x, int y, float r, fan_color in, fan_color out) {
+    Color rl_in = fan_color_rl(in);
+    Color rl_out = fan_color_rl(out);
 
     DrawCircleGradient(x, y, r, rl_in, rl_out);
 }

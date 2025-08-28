@@ -21,8 +21,8 @@ GameState state = {};
 World world = {};
 
 int main(void) {
-    FanWindowCreate(800, 600, "Fantasia");
-    FanAudioDevCreate();
+    fan_window_create(800, 600, "Fantasia");
+    fan_dev_audio_create();
 
     world.arena = (Arena){
         .data     = heap_allocator.make(null, megabytes(1)),
@@ -38,12 +38,12 @@ int main(void) {
 
     bool32 running             = true;
     world.update_entity_split  = true;
-    FanVector2 player_offset   = FanVector2Zero();
-    FanVector2 player_index    = FanVector2Zero();
+    fan_vec2 player_offset   = fan_vec2_zero();
+    fan_vec2 player_index    = fan_vec2_zero();
 
-    FanRandomSeed(12398);
+    fan_random_seed(12398);
 
-    FanCamera2D camera = { 0 };
+    fan_camera2D camera = { 0 };
     camera.zoom = 0.8f;
     PlayerInput *p_input = &state.p_input;
 
@@ -54,87 +54,87 @@ int main(void) {
 
     game.init(&arena_allocator, &world, &state);
     while (running) {
-        float dt = FanGetFrameTime();
-        if (FanWindowShouldClose() || FanKeyPressed(FanKey_ESCAPE)) {
+        float dt = fan_frametime_get();
+        if (fan_window_shouldclose() || fan_key_pressed(FanKey_ESCAPE)) {
             running = false;
         }
 
-        p_input->direction = (FanVector2){ 0 };
-        if (FanKeyDown(FanKey_W)) {
+        p_input->direction = (fan_vec2){ 0 };
+        if (fan_key_down(FanKey_W)) {
             p_input->direction.y += 1;
         }
-        if (FanKeyDown(FanKey_S)) {
+        if (fan_key_down(FanKey_S)) {
             p_input->direction.y -= 1;
         }
-        if (FanKeyDown(FanKey_A)) {
+        if (fan_key_down(FanKey_A)) {
             p_input->direction.x -= 1;
         }
-        if (FanKeyDown(FanKey_D)) {
+        if (fan_key_down(FanKey_D)) {
             p_input->direction.x += 1;
         }
 
-        if (FanKeyDown(FanKey_K)) {
+        if (fan_key_down(FanKey_K)) {
             player_offset.y += 500.0f * dt;
             if (player_offset.y >= 200.0f) {
                 player_offset.y = 200.0f;
             }
         }
-        if (FanKeyDown(FanKey_I)) {
+        if (fan_key_down(FanKey_I)) {
             player_offset.y -= 500.0f * dt;
             if (player_offset.y <= -200.0f) {
                 player_offset.y = -200.0f;
             }
         }
-        if (FanKeyDown(FanKey_L)) {
+        if (fan_key_down(FanKey_L)) {
             player_offset.x += 500.0f * dt;
             if (player_offset.x >= 200.0f) {
                 player_offset.x = 200.0f;
             }
         }
-        if (FanKeyDown(FanKey_J)) {
+        if (fan_key_down(FanKey_J)) {
             player_offset.x -= 500.0f * dt;
             if (player_offset.x <= -200.0f) {
                 player_offset.x = -200.0f;
             }
         }
 
-        if (FanKeyPressed(FanKey_E)) {
+        if (fan_key_pressed(FanKey_E)) {
             p_input->actions[0] = true;
         }
         else {
             p_input->actions[0] = false;
         }
-        if (FanKeyPressed(FanKey_R)) {
+        if (fan_key_pressed(FanKey_R)) {
             p_input->actions[1] = not p_input->actions[1];
         }
 
-        if (FanKeyDown(FanKey_O)) {
-            player_offset = FanVector2Zero();
+        if (fan_key_down(FanKey_O)) {
+            player_offset = fan_vec2_zero();
         }
 
-        if (FanKeyPressed(FanKey_V)) {
+        if (fan_key_pressed(FanKey_V)) {
             player_index.x -= 1;
         }
-        if (FanKeyPressed(FanKey_B)) {
+        if (fan_key_pressed(FanKey_B)) {
             player_index.x += 1;
         }
-        if (FanKeyPressed(FanKey_N)) {
+        if (fan_key_pressed(FanKey_N)) {
             player_index.y -= 1;
         }
-        if (FanKeyPressed(FanKey_M)) {
+        if (fan_key_pressed(FanKey_M)) {
             player_index.y += 1;
         }
 
-        if (FanKeyPressed(FanKey_P)) {
+        if (fan_key_pressed(FanKey_P)) {
             state.called_object_dump = true;
             printf("[[DEBUG INFO]]\n");
         }
 
-        state.current_time = FanGetTime();
+        state.current_time = fan_time_get();
         int32 cam_move_idx = world.c_transform.sparse[world.spec_id.camera];
         CTransform *cam_transform = &world.c_transform.data[cam_move_idx];
-        camera.target = FanVector2Add(cam_transform->position, FanVector2Scale(cam_transform->scale, 0.5f));
-        // camera.offset = (FanVector2){ FanWindowWidth() / 2.0f, FanWindowHeight() / 2.0f };
+        camera.target = fan_vec2_add(cam_transform->position, fan_vec2_scale(cam_transform->scale, 0.5f));
+        // camera.offset = (fan_vec2){ FanWindowWidth() / 2.0f, FanWindowHeight() / 2.0f };
 
         if (state.called_object_dump) {
             printf("Total Allocations: %.2f / %.2f KB\n", (double)world.arena.size / 1000.0f, (double)world.arena.capacity / 1000.0f);
@@ -148,19 +148,19 @@ int main(void) {
             printf("Total Component 'Animation' size/capacity: \t%zu/%zu\n", world.c_animation.size, world.c_animation.capacity);
         }
 
-        FanDrawBegin();
-            FanDrawClear(FanColor_WHITE);
-            FanCameraBegin(camera);
+        fan_draw_begin();
+            fan_draw_clear(fan_color_WHITE);
+            fan_camera_begin(camera);
             game.update_and_render(&arena_allocator, &world, &state, dt);
-            FanCameraEnd();
-            FanDrawFPS(2, 2);
-        FanDrawEnd();
+            fan_camera_end();
+            fan_draw_fps(2, 2);
+        fan_draw_end();
         state.called_object_dump = false;
         world.update_entity_split = false;
     }
 
-    FanAudioDevClose();
-    FanWindowClose();
+    fan_dev_audio_close();
+    fan_window_close();
     fan_lib_close(lib);
     game.close(&arena_allocator, &world, &state);
     heap_allocator.free(null, world.arena.data, world.arena.capacity);

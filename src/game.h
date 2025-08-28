@@ -61,16 +61,16 @@ typedef enum {
 } MovementFlags;
 
 typedef struct {
-    FanVector2 position;
-    FanVector2 scale;
+    fan_vec2 position;
+    fan_vec2 scale;
     float32    rotation;
 
     bool32     initialized;
 } CTransform;
 
 typedef struct {
-    FanColor   color;
-    FanVector2 offset;
+    fan_color   color;
+    fan_vec2 offset;
     int32      layer;
 
     bool32     visible;
@@ -78,10 +78,10 @@ typedef struct {
 } CShape;
 
 typedef struct {
-    FanVector2 velocity_input;
-    FanVector2 velocity_force;
+    fan_vec2 velocity_input;
+    fan_vec2 velocity_force;
 
-    FanVector2 direction;
+    fan_vec2 direction;
 
     float32    speed;
     float32    max_speed;
@@ -94,7 +94,7 @@ typedef struct {
 } CMovement;
 
 typedef struct {
-    FanVector2 last_position;
+    fan_vec2 last_position;
 
     float32    speed;
     float32    friction;
@@ -106,8 +106,8 @@ typedef struct {
 } CPhysics;
 
 typedef struct {
-    FanTexture texture;
-    FanRectInt32    rect;
+    fan_texture texture;
+    fan_rect_i32    rect;
 } CTexture;
 
 typedef struct CBehavior {
@@ -128,7 +128,7 @@ typedef struct {
 
 typedef struct {
     const char8      *name;
-    FanRectInt32     *frames;
+    fan_rect_i32     *frames;
     float32           frame_time;
     int32             frame_count;
     bool32            loop;
@@ -148,7 +148,7 @@ typedef struct {
 } CAnimation;
 
 typedef struct {
-    FanSound sound;
+    fan_sound sound;
     bool32   playing;
     bool32   looping;
     float32  volume;
@@ -162,10 +162,10 @@ typedef struct {
  */
 
 typedef struct {
-    FanVector2 direction;
+    fan_vec2 direction;
     float32    radius;
 
-    FanColor   color;
+    fan_color   color;
     float32    intensity;
 } CLight;
 
@@ -211,21 +211,21 @@ typedef enum {
 } SystemMode;
 
 typedef struct {
-    FanVector2 direction;
+    fan_vec2 direction;
     int32      actions[4];
 } PlayerInput;
 
 typedef struct {
     SystemMode   mode;
-    FanMusic     music;
+    fan_music     music;
 
     PlayerInput  p_input;
 
-    FanRectInt32 bound_zone;
+    fan_rect_i32 bound_zone;
     float64      current_time;
     float32      camera_zoom;
 
-    FanRTexture  lightmap;
+    fan_rtexture  lightmap;
 
     bool32       called_object_dump;
 } GameState;
@@ -249,7 +249,7 @@ typedef struct {
 typedef struct {
     MatrixInt32 tiles; // 1D repr 2D plane
 
-    FanVector2 origin; // top-left, relative to screen
+    fan_vec2 origin; // top-left, relative to screen
     int32 tile_size;
 } TileMap;
 
@@ -266,7 +266,7 @@ ComponentDeclare(CLight,     CLight);
 
 ComponentDeclare(CInteraction,  bool32);
 ComponentDeclare(CInteractable, bool32);
-ComponentDeclare(CZone,         FanRectFloat32);
+ComponentDeclare(CZone,         fan_rect_f32);
 ComponentDeclare(CAttack,       CAttack);
 
 ComponentDeclare(CEnemyTag,      uint8);

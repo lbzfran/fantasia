@@ -23,3 +23,7 @@ void fan_lib_close(void *lib) {
     FreeLibrary((HMODULE)lib);
     lib = NULL;
 }
+
+bool32 fan_os_write(void *ctx, void *data, ssize length) {
+    return (bool32)WriteFile(ctx, data, length, null, null);
+}

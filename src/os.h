@@ -28,22 +28,23 @@
     #define GAME_API
 #endif
 
-typedef char       char8;
-typedef char16_t   char16;
+typedef unsigned char uchar8;
+typedef char          char8;
+typedef char16_t      char16;
 
-typedef uint8_t    uint8;
-typedef uint32_t   uint32;
-typedef uint64_t   uint64;
+typedef uint8_t       uint8;
+typedef uint32_t      uint32;
+typedef uint64_t      uint64;
 
-typedef int32_t    bool32;
-typedef int32_t    int32;
+typedef int32_t       bool32;
+typedef int32_t       int32;
 
-typedef float      float32;
-typedef double     float64;
+typedef float         float32;
+typedef double        float64;
 
-typedef size_t     usize;
-typedef ptrdiff_t  ssize;
-typedef uintptr_t  uintptr;
+typedef size_t        usize;
+typedef ptrdiff_t     ssize;
+typedef uintptr_t     uintptr;
 
 #define assert(c)           while (!(c)) __builtin_unreachable()
 
@@ -95,6 +96,68 @@ typedef struct Arena {
 } Arena;
 #define ARENA_ALIGNMENT 16
 
+typedef struct {
+    uchar8 *buf;
+    ssize          length;
+    ssize          capacity;
+    int32          fd;
+    int32          error;
+} fan_fbuf8;
+
+typedef struct {
+    uchar8 *data;
+    ssize         length;
+} fan_str8;
+
+typedef struct {
+    fan_str8 head;
+    fan_str8 tail;
+    int32    ok;
+} cutstr8;
+
+#define fan_fbuf8_mem(buf, cap)    { buf, 0, cap, -1, 0 }
+#define fan_fbuf8_fd(fd, buf, cap) { buf, 0, cap, fd, 0 }
+
+#define fan_str8_cstr(s)    (fan_str8){ (uchar8 *)s, sizeof(s) - 1 }
+
+void fan_fbuf8_flush(fan_fbuf8 *);
+void fan_fbuf8_append(fan_fbuf8 *, uchar8 *, ssize);
+
+void fan_fbuf8_append_char(fan_fbuf8 *, uchar8);
+void fan_fbuf8_append_cstr(fan_fbuf8 *, const char8 *);
+void fan_fbuf8_append_str8(fan_fbuf8 *, fan_str8);
+void fan_fbuf8_append_ptr(fan_fbuf8  *, void *);
+
+void fan_fbuf8_append_long(fan_fbuf8   *, long);
+void fan_fbuf8_append_double(fan_fbuf8 *, double);
+
+#define fan_fbuf8_append_derive_(b, x) _Generic((x),  \
+        int32:              fan_fbuf8_append_long,    \
+        int64:              fan_fbuf8_append_long,    \
+        float32:            fan_fbuf8_append_double,  \
+        float64:            fan_fbuf8_append_double,  \
+        char8:              fan_fbuf8_append_char,    \
+        uchar8:             fan_fbuf8_append_char,    \
+        char8 *:            fan_fbuf8_append_cstr,    \
+        const char8 *:      fan_fbuf8_append_cstr,    \
+        fan_str8:           fan_fbuf8_append_str8,    \
+        default:            (void)0                   \
+)(b, x)
+
+void fan_str8_print(fan_fbuf8 *, fan_str8);
+void fan_str8_printn(fan_fbuf8 *, fan_str8, uchar8);
+void fan_str8_println(fan_fbuf8 *, fan_str8);
+
+fan_str8 fan_str8_span(uchar8 *, uchar8 *);
+int32 fan_str8_equals(fan_str8, fan_str8);
+// trims spaces
+fan_str8 fan_str8_triml(fan_str8);
+fan_str8 fan_str8_trimr(fan_str8);
+fan_str8 fan_str8_substr(fan_str8, ssize);
+
+cutstr8 fan_str8_cut(fan_str8, uchar8);
+
+
 inline uintptr fan_align_forward(uintptr ptr, ssize alignment) {
     return (ptr + (alignment - 1)) & ~(alignment - 1);
 }
@@ -112,6 +175,8 @@ void  fan_arena_clear(Arena *a);
 void *fan_lib_open(const char* path);
 void *fan_lib_load(void *lib, const char *name);
 void  fan_lib_close(void *lib);
+
+bool32 fan_os_write(void *ctx, void *data, ssize length);
 
 // char* LibGetError(void);
 
