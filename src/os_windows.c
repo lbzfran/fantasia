@@ -25,5 +25,6 @@ void fan_lib_close(void *lib) {
 }
 
 bool32 fan_os_write(void *ctx, void *data, ssize length) {
+    HANDLE *ctx_handle = (HANDLE *)ctx;
     return (bool32)WriteFile(ctx, data, length, null, null);
 }
