@@ -3,7 +3,6 @@
 
 #define RAYLIB_IMPLEMENTATION
 #include <raylib.h>
-#include <math.h>
 
 Color fan_color_rl(fan_color color) {
     Color rl_color = (Color){
@@ -30,7 +29,7 @@ Sound fan_sound_rl(fan_sound sound) {
     return rl_sound;
 }
 
-Music FanMusicToRL(fan_music music) {
+Music fan_music_rl(fan_music music) {
     Music rl_music = (Music) {
         .frameCount = music.frame_count,
         .stream = (AudioStream) {
@@ -46,7 +45,7 @@ Music FanMusicToRL(fan_music music) {
     return rl_music;
 }
 
-Texture2D FanTextureToRL(fan_texture tx) {
+Texture2D fan_texture_rl(fan_texture tx) {
     Texture2D rl_texture = (Texture2D){
         .id      = tx.id,
         .width   = tx.width,
@@ -57,9 +56,9 @@ Texture2D FanTextureToRL(fan_texture tx) {
     return rl_texture;
 }
 
-RenderTexture FanRTextureToRL(fan_rtexture rtx) {
-    Texture2D rl_texture = FanTextureToRL(rtx.texture);
-    Texture2D rl_depth = FanTextureToRL(rtx.depth);
+RenderTexture fan_rtexture_rl(fan_rtexture rtx) {
+    Texture2D rl_texture = fan_texture_rl(rtx.texture);
+    Texture2D rl_depth = fan_texture_rl(rtx.depth);
 
     return (RenderTexture) {
         .texture = rl_texture,
@@ -187,73 +186,73 @@ fan_music fan_music_load(const char *filepath) {
 }
 
 void fan_music_unload(fan_music music) {
-    Music rl_music = FanMusicToRL(music);
+    Music rl_music = fan_music_rl(music);
 
     UnloadMusicStream(rl_music);
 }
 
 void fan_music_update(fan_music music) {
-    Music rl_music = FanMusicToRL(music);
+    Music rl_music = fan_music_rl(music);
 
     UpdateMusicStream(rl_music);
 }
 
 void fan_music_play(fan_music music) {
-    Music rl_music = FanMusicToRL(music);
+    Music rl_music = fan_music_rl(music);
 
     PlayMusicStream(rl_music);
 }
 
 void fan_music_stop(fan_music music) {
-    Music rl_music = FanMusicToRL(music);
+    Music rl_music = fan_music_rl(music);
 
     StopMusicStream(rl_music);
 }
 
 void fan_music_pause(fan_music music) {
-    Music rl_music = FanMusicToRL(music);
+    Music rl_music = fan_music_rl(music);
 
     PauseMusicStream(rl_music);
 }
 
 void fan_music_resume(fan_music music) {
-    Music rl_music = FanMusicToRL(music);
+    Music rl_music = fan_music_rl(music);
 
     ResumeMusicStream(rl_music);
 }
 
 void fan_music_seek(fan_music music, float pos) {
-    Music rl_music = FanMusicToRL(music);
+    Music rl_music = fan_music_rl(music);
 
     SeekMusicStream(rl_music, pos);
 }
 
 void fan_music_volume_set(fan_music music, float volume) {
-    Music rl_music = FanMusicToRL(music);
+    Music rl_music = fan_music_rl(music);
 
     SetMusicVolume(rl_music, volume);
 }
 
 void fan_music_pitch_set(fan_music music, float pitch) {
-    Music rl_music = FanMusicToRL(music);
+    Music rl_music = fan_music_rl(music);
 
     SetMusicPitch(rl_music, pitch);
 }
 
 void fan_music_pan_set(fan_music music, float pan) {
-    Music rl_music = FanMusicToRL(music);
+    Music rl_music = fan_music_rl(music);
 
     SetMusicPan(rl_music, pan);
 }
 
 float fan_music_time_played(fan_music music) {
-    Music rl_music = FanMusicToRL(music);
+    Music rl_music = fan_music_rl(music);
 
     return GetMusicTimePlayed(rl_music);
 }
 
 float fan_music_time_length(fan_music music) {
-    Music rl_music = FanMusicToRL(music);
+    Music rl_music = fan_music_rl(music);
 
     return GetMusicTimeLength(rl_music);
 }
@@ -304,7 +303,7 @@ fan_texture fan_texture_load(const char *filepath) {
     return texture;
 }
 void fan_texture_unload(fan_texture texture) {
-    Texture2D rl_texture = FanTextureToRL(texture);
+    Texture2D rl_texture = fan_texture_rl(texture);
     UnloadTexture(rl_texture);
 }
 
@@ -421,13 +420,13 @@ fan_rtexture fan_rtexture_load(int width, int height) {
 }
 
 void fan_rtexture_unload(fan_rtexture rtx) {
-    RenderTexture rl_rtx = FanRTextureToRL(rtx);
+    RenderTexture rl_rtx = fan_rtexture_rl(rtx);
 
     UnloadRenderTexture(rl_rtx);
 }
 
 void fan_mode_texture_begin(fan_rtexture rtx) {
-    RenderTexture rl_rtx = FanRTextureToRL(rtx);
+    RenderTexture rl_rtx = fan_rtexture_rl(rtx);
 
     BeginTextureMode(rl_rtx);
 }
@@ -442,6 +441,13 @@ void fan_mode_blend_begin(int mode) {
 void fan_mode_blend_end(void) {
     EndBlendMode();
 }
+
+void fan_draw_circle(int x, int y, float r, fan_color color) {
+    Color rl_color = fan_color_rl(color);
+
+    DrawCircle(x, y, r, rl_color);
+}
+
 void fan_draw_circle_grad(int x, int y, float r, fan_color in, fan_color out) {
     Color rl_in = fan_color_rl(in);
     Color rl_out = fan_color_rl(out);

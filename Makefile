@@ -12,11 +12,14 @@ BIN_DIR := bin
 
 CC := gcc
 
-CFLAGS := -Wall -Wextra -I include -L lib -g -O1
+CFLAGS := -Wall -Wextra -I include -L lib -g3 -O1
 LDFLAGS := -L bin -lplatform
 MAIN_FLAGS := -Wl,-rpath,'$$ORIGIN'
 PLATFORM_FLAGS :=
 
+ifeq ($(DEBUG),1)
+	CFLAGS += -fsanitize=address,undefined -fsanitize-trap
+endif
 
 ifeq ($(PLATFORM),linux)
 	CFLAGS += -DOS_LINUX

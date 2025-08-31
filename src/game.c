@@ -426,12 +426,11 @@ void LightSystem(
         pixels_per_unit
     );
 
-    fan_draw_circle_grad(
+    fan_draw_circle(
         (int32)screen_pos.x,
         (int32)screen_pos.y,
         l->radius,
-        l->color,
-        (fan_color){ 0, 0, 0, 0 }
+        l->color
     );
 }
 
@@ -1477,5 +1476,11 @@ void GameClose(Allocator *a, World *world, GameState *state) {
         }
         fan_texture_unload(world->c_texture.data[i].texture);
     }
+    for (ssize i = 0; i < world->c_sound.size; i++) {
+        if (world->c_texture.dense[i] == -1)
+            continue;
+        fan_sound_unload(world->c_sound.data[i].sound);
+    }
     fan_rtexture_unload(state->lightmap);
+    fan_music_unload(state->music);
 }

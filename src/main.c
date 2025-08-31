@@ -21,6 +21,15 @@ GameState state = {};
 World world = {};
 
 int main(void) {
+    void *lib = fan_lib_open("bin/libgame.so");
+    if ((uintptr)lib == null) {
+        printf("ERROR: Failed to load game library!\n");
+        return 1;
+    }
+    game.init = fan_lib_load(lib, "GameInit");
+    game.update_and_render = fan_lib_load(lib, "GameUpdateAndRender");
+    game.close = fan_lib_load(lib, "GameClose");
+
     fan_window_create(800, 600, "Fantasia");
     fan_dev_audio_create();
 
@@ -46,11 +55,6 @@ int main(void) {
     fan_camera2D camera = { 0 };
     camera.zoom = 0.8f;
     PlayerInput *p_input = &state.p_input;
-
-    void *lib = fan_lib_open(GAME_LIB_PATH);
-    game.init = fan_lib_load(lib, "GameInit");
-    game.update_and_render = fan_lib_load(lib, "GameUpdateAndRender");
-    game.close = fan_lib_load(lib, "GameClose");
 
     game.init(&arena_allocator, &world, &state);
     while (running) {
@@ -159,10 +163,10 @@ int main(void) {
         world.update_entity_split = false;
     }
 
+    game.close(&arena_allocator, &world, &state);
+    heap_allocator.free(null, world.arena.data, world.arena.capacity);
     fan_dev_audio_close();
     fan_window_close();
     fan_lib_close(lib);
-    game.close(&arena_allocator, &world, &state);
-    heap_allocator.free(null, world.arena.data, world.arena.capacity);
     return 0;
 }
