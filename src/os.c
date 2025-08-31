@@ -105,9 +105,9 @@ void *fan_arena_resize(void *ctx, void *ptr, ssize old, ssize new) {
 
 
 void fan_fbuf8_flush(fan_fbuf8 *b) {
-    b->error |= b->fd < 0;
+    b->error |= b->pipe < 0;
     if (!b->error && b->length) {
-        b->error |= !fan_os_write(&b->fd, b->buf, b->length);
+        b->error |= !fan_os_write(b->pipe, b->buf, b->length);
         b->length = 0;
     }
 }

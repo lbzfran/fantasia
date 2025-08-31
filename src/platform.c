@@ -7,6 +7,7 @@
 # include "platform_raylib.c"
 #endif
 
+#include <math.h>
 
 bool32 fan_rect_i32_isempty(fan_rect_i32 rect) {
     int result = 1;

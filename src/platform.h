@@ -320,6 +320,7 @@ FAN_API void fan_draw_linev(fan_vec2 start, fan_vec2 end, fan_color color);
 FAN_API void fan_draw_rect(int32 x, int32 y, int32 w, int32 h, fan_color color);
 FAN_API void fan_draw_rectv(fan_vec2 pos, fan_vec2 scale, fan_color color);
 FAN_API void fan_draw_rectr(fan_rect_int32 rect, fan_color color);
+FAN_API void fan_draw_circle(int32 x, int32 y, float32 r, fan_color color);
 FAN_API void fan_draw_circle_grad(int32 x, int32 y, float32 r, fan_color in, fan_color out);
 
 FAN_API void fan_draw_texture(fan_texture texture, fan_rect_int32 src, fan_rect_int32 dst, fan_vec2 origin, float32 angle, fan_color);
