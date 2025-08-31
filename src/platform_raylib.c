@@ -6,10 +6,10 @@
 
 Color fan_color_rl(fan_color color) {
     Color rl_color = (Color){
-        .r = color.r,
-        .g = color.g,
-        .b = color.b,
-        .a = color.a
+        .r = (unsigned char)max(min(color.r, 0), 255),
+        .g = (unsigned char)max(min(color.g, 0), 255),
+        .b = (unsigned char)max(min(color.b, 0), 255),
+        .a = (unsigned char)max(min(color.a, 0), 255)
     };
 
     return rl_color;
@@ -67,7 +67,7 @@ RenderTexture fan_rtexture_rl(fan_rtexture rtx) {
     };
 }
 
-void fan_window_create(int width, int height, const char *title) {
+void fan_window_create(int32 width, int32 height, const char *title) {
     InitWindow(width, height, title);
 }
 
@@ -75,21 +75,21 @@ void fan_window_close(void) {
     CloseWindow();
 }
 
-int fan_window_shouldclose(void) {
-    int result = WindowShouldClose();
+int32 fan_window_shouldclose(void) {
+    int32 result = WindowShouldClose();
     return result;
 }
 
-void fan_log_set(int level) {
+void fan_log_set(int32 level) {
     SetTraceLogLevel(level);
 }
 
-int fan_window_width(void) {
-    int result = GetScreenWidth();
+int32 fan_window_width(void) {
+    int32 result = GetScreenWidth();
     return result;
 }
-int fan_window_height(void) {
-    int result = GetScreenHeight();
+int32 fan_window_height(void) {
+    int32 result = GetScreenHeight();
     return result;
 }
 
@@ -148,19 +148,19 @@ void fan_sound_resume(fan_sound sound) {
     ResumeSound(rl_sound);
 }
 
-void fan_sound_volume_set(fan_sound sound, float volume) {
+void fan_sound_volume_set(fan_sound sound, float32 volume) {
     Sound rl_sound = fan_sound_rl(sound);
 
     SetSoundVolume(rl_sound, volume);
 }
 
-void fan_sound_pitch_set(fan_sound sound, float pitch) {
+void fan_sound_pitch_set(fan_sound sound, float32 pitch) {
     Sound rl_sound = fan_sound_rl(sound);
 
     SetSoundPitch(rl_sound, pitch);
 }
 
-void fan_sound_pan_set(fan_sound sound, float pan) {
+void fan_sound_pan_set(fan_sound sound, float32 pan) {
     Sound rl_sound = fan_sound_rl(sound);
 
     SetSoundPan(rl_sound, pan);
@@ -221,73 +221,73 @@ void fan_music_resume(fan_music music) {
     ResumeMusicStream(rl_music);
 }
 
-void fan_music_seek(fan_music music, float pos) {
+void fan_music_seek(fan_music music, float32 pos) {
     Music rl_music = fan_music_rl(music);
 
     SeekMusicStream(rl_music, pos);
 }
 
-void fan_music_volume_set(fan_music music, float volume) {
+void fan_music_volume_set(fan_music music, float32 volume) {
     Music rl_music = fan_music_rl(music);
 
     SetMusicVolume(rl_music, volume);
 }
 
-void fan_music_pitch_set(fan_music music, float pitch) {
+void fan_music_pitch_set(fan_music music, float32 pitch) {
     Music rl_music = fan_music_rl(music);
 
     SetMusicPitch(rl_music, pitch);
 }
 
-void fan_music_pan_set(fan_music music, float pan) {
+void fan_music_pan_set(fan_music music, float32 pan) {
     Music rl_music = fan_music_rl(music);
 
     SetMusicPan(rl_music, pan);
 }
 
-float fan_music_time_played(fan_music music) {
+float32 fan_music_time_played(fan_music music) {
     Music rl_music = fan_music_rl(music);
 
     return GetMusicTimePlayed(rl_music);
 }
 
-float fan_music_time_length(fan_music music) {
+float32 fan_music_time_length(fan_music music) {
     Music rl_music = fan_music_rl(music);
 
     return GetMusicTimeLength(rl_music);
 }
 
-float fan_frametime_get(void) {
-    float result = GetFrameTime();
+float32 fan_frametime_get(void) {
+    float32 result = GetFrameTime();
     return result;
 }
 
-float fan_time_get(void) {
-    float result = GetTime();
+float32 fan_time_get(void) {
+    float32 result = (float32)GetTime();
     return result;
 }
 
-int fan_fps_get(void) {
-    float result = GetFPS();
+int32 fan_fps_get(void) {
+    int32 result = GetFPS();
     return result;
 }
 
-void fan_random_seed(int seed) {
+void fan_random_seed(int32 seed) {
     SetRandomSeed(seed);
 }
 
-int fan_random_int(int min, int max) {
-    int result = GetRandomValue(min, max);
+int32 fan_random_int(int32 min, int32 max) {
+    int32 result = GetRandomValue(min, max);
     return result;
 }
 
-int fan_key_pressed(fan_key key) {
-    int result = IsKeyPressed(key);
+int32 fan_key_pressed(fan_key key) {
+    int32 result = IsKeyPressed(key);
     return result;
 }
 
-int fan_key_down(fan_key key) {
-    int result = IsKeyDown(key);
+int32 fan_key_down(fan_key key) {
+    int32 result = IsKeyDown(key);
     return result;
 }
 
@@ -316,7 +316,7 @@ void fan_draw_clear(fan_color color) {
     ClearBackground(rl_color);
 }
 
-void fan_draw_fps(int x, int y) {
+void fan_draw_fps(int32 x, int32 y) {
     DrawFPS(x, y);
 }
 
@@ -324,31 +324,31 @@ void fan_draw_end(void) {
     EndDrawing();
 }
 
-void fan_draw_rect(int x, int y, int w, int h, fan_color color) {
+void fan_draw_rect(int32 x, int32 y, int32 w, int32 h, fan_color color) {
     Color rl_color = fan_color_rl(color);
 
     DrawRectangle(x, y, w, h, rl_color);
 }
 
 void fan_draw_rectv(fan_vec2 pos, fan_vec2 scale, fan_color color) {
-    fan_draw_rect(pos.x, pos.y, scale.x, scale.y, color);
+    fan_draw_rect((int32)pos.x, (int32)pos.y, (int32)scale.x, (int32)scale.y, color);
 }
 
 void fan_draw_rectr(fan_rect_i32 rect, fan_color color) {
-    fan_draw_rect(rect.x, rect.y, rect.width, rect.height, color);
+    fan_draw_rect((int32)rect.x, (int32)rect.y, (int32)rect.width, (int32)rect.height, color);
 }
 
-void fan_draw_line(int sx, int sy, int ex, int ey, fan_color color) {
+void fan_draw_line(int32 sx, int32 sy, int32 ex, int32 ey, fan_color color) {
     Color rl_color = fan_color_rl(color);
 
     DrawLine(sx, sy, ex, ey, rl_color);
 }
 
 void fan_draw_linev(fan_vec2 start, fan_vec2 end, fan_color color) {
-    fan_draw_line(start.x, start.y, end.x, end.y, color);
+    fan_draw_line((int32)start.x, (int32)start.y, (int32)end.x, (int32)end.y, color);
 }
 
-void fan_draw_texture(fan_texture texture, fan_rect_i32 src, fan_rect_i32 dst, fan_vec2 origin, float angle, fan_color color) {
+void fan_draw_texture(fan_texture texture, fan_rect_i32 src, fan_rect_i32 dst, fan_vec2 origin, float32 angle, fan_color color) {
     Texture2D rl_texture = (Texture2D){
         .id      = texture.id,
         .width   = texture.width,
@@ -357,16 +357,16 @@ void fan_draw_texture(fan_texture texture, fan_rect_i32 src, fan_rect_i32 dst, f
         .format  = texture.format
     };
     Rectangle rl_src = (Rectangle){
-        .x      = src.x,
-        .y      = src.y,
-        .width  = src.width,
-        .height = src.height
+        .x      = (float32)src.x,
+        .y      = (float32)src.y,
+        .width  = (float32)src.width,
+        .height = (float32)src.height
     };
     Rectangle rl_dst = (Rectangle){
-        .x      = dst.x,
-        .y      = dst.y,
-        .width  = dst.width,
-        .height = dst.height
+        .x      = (float32)dst.x,
+        .y      = (float32)dst.y,
+        .width  = (float32)dst.width,
+        .height = (float32)dst.height
     };
     Vector2 rl_origin = (Vector2){
         .x = origin.x,
@@ -391,7 +391,7 @@ void fan_camera_end(void) {
     EndMode2D();
 }
 
-fan_rtexture fan_rtexture_load(int width, int height) {
+fan_rtexture fan_rtexture_load(int32 width, int32 height) {
     RenderTexture rl_rtx = LoadRenderTexture(width, height);
 
     fan_texture texture = (fan_texture){
@@ -434,7 +434,7 @@ void fan_mode_texture_end(void) {
     EndTextureMode();
 }
 
-void fan_mode_blend_begin(int mode) {
+void fan_mode_blend_begin(int32 mode) {
     BeginBlendMode(mode);
 }
 
@@ -442,13 +442,13 @@ void fan_mode_blend_end(void) {
     EndBlendMode();
 }
 
-void fan_draw_circle(int x, int y, float r, fan_color color) {
+void fan_draw_circle(int32 x, int32 y, float32 r, fan_color color) {
     Color rl_color = fan_color_rl(color);
 
     DrawCircle(x, y, r, rl_color);
 }
 
-void fan_draw_circle_grad(int x, int y, float r, fan_color in, fan_color out) {
+void fan_draw_circle_grad(int32 x, int32 y, float32 r, fan_color in, fan_color out) {
     Color rl_in = fan_color_rl(in);
     Color rl_out = fan_color_rl(out);
 

@@ -167,12 +167,12 @@ void fan_fbuf8_append_double(fan_fbuf8 *b, double x) {
         x = -x;
     }
 
-    x += 0.5 / prec;
+    x += 0.5 / (double)prec;
     if (x >= (double)(-1UL>>1)) {
         fan_fbuf8_append_cstr(b, "inf");
     } else {
         long integral = (long)x;
-        long fractional = (long)((x - integral) * prec);
+        long fractional = (long)((long)(x - (double)integral) * prec);
         fan_fbuf8_append_long(b, integral);
         fan_fbuf8_append_char(b, '.');
         for (long i = prec/10; i > 1; i /= 10) {

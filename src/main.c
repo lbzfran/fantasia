@@ -141,15 +141,15 @@ int main(void) {
         // camera.offset = (fan_vec2){ FanWindowWidth() / 2.0f, FanWindowHeight() / 2.0f };
 
         if (state.called_object_dump) {
-            printf("Total Allocations: %.2f / %.2f KB\n", (double)world.arena.size / 1000.0f, (double)world.arena.capacity / 1000.0f);
+            printf("Total Allocations: %.2f / %.2f KB\n", (float64)world.arena.size / 1000.0, (float64)world.arena.capacity / 1000.0);
             printf("current_time: %.3f\n", state.current_time);
 
-            printf("Total Component 'Transform' size/capacity: \t%zu/%zu\n", world.c_transform.size, world.c_transform.capacity);
-            printf("Total Component 'Shape' size/capacity:     \t%zu/%zu\n", world.c_shape.size,     world.c_shape.capacity);
-            printf("Total Component 'Physics' size/capacity:   \t%zu/%zu\n", world.c_physics.size,   world.c_physics.capacity);
-            printf("Total Component 'Texture' size/capacity:   \t%zu/%zu\n", world.c_texture.size,   world.c_texture.capacity);
-            printf("Total Component 'Behavior' size/capacity:  \t%zu/%zu\n", world.c_behavior.size,  world.c_behavior.capacity);
-            printf("Total Component 'Animation' size/capacity: \t%zu/%zu\n", world.c_animation.size, world.c_animation.capacity);
+            printf("Total Component 'Transform' size/capacity: \t%td/%td\n", world.c_transform.size, world.c_transform.capacity);
+            printf("Total Component 'Shape' size/capacity:     \t%td/%td\n", world.c_shape.size,     world.c_shape.capacity);
+            printf("Total Component 'Physics' size/capacity:   \t%td/%td\n", world.c_physics.size,   world.c_physics.capacity);
+            printf("Total Component 'Texture' size/capacity:   \t%td/%td\n", world.c_texture.size,   world.c_texture.capacity);
+            printf("Total Component 'Behavior' size/capacity:  \t%td/%td\n", world.c_behavior.size,  world.c_behavior.capacity);
+            printf("Total Component 'Animation' size/capacity: \t%td/%td\n", world.c_animation.size, world.c_animation.capacity);
         }
 
         fan_draw_begin();

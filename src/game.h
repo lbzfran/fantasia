@@ -27,7 +27,7 @@
 
 // WARN: assert on fail
 #define ComponentAdd(storage, id) do{                                   \
-        (storage)->sparse[id] = (storage)->size;                        \
+        (storage)->sparse[id] = (int32)(storage)->size;                 \
         (storage)->dense[(storage)->size % (storage)->capacity] = (id); \
         (storage)->size++;                                              \
         if ((storage)->size >= (storage)->capacity)                     \

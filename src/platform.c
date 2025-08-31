@@ -61,7 +61,7 @@ fan_vec2 fan_vec2_normalize(fan_vec2 v) {
 }
 
 float32 fan_vec2_length(fan_vec2 v) {
-    return sqrt(v.x * v.x + v.y * v.y);
+    return sqrtf(v.x * v.x + v.y * v.y);
 }
 float32 fan_vec2_lengthsqr(fan_vec2 v) {
     return v.x * v.x + v.y * v.y;
@@ -101,7 +101,7 @@ float32 fan_neg_inf(void) {
 }
 
 float32 fan_f32_round(float32 x) {
-    return round(x);
+    return roundf(x);
 }
 
 int32 fan_f32_truncate(float32 x) {
@@ -123,7 +123,7 @@ float32 fan_f32_cos(float32 x) {
 }
 
 float32 fan_f32_sqrt(float32 x) {
-    return sqrt(x);
+    return sqrtf(x);
 }
 
 float32 fan_f32_rad(float32 deg) {
@@ -151,7 +151,7 @@ fan_vec2 fan_vec2_lerp(fan_vec2 v1, float32 t, fan_vec2 v2) {
 }
 
 void fan_vec2_print_(fan_vec2 v, const char8 *name) {
-    printf("%s: (%f, %f)\n", name, v.x, v.y);
+    printf("%s: (%f, %f)\n", name, (float64)v.x, (float64)v.y);
 }
 
 void fan_color_print_(fan_color c, const char8 *name) {
@@ -163,5 +163,5 @@ void fan_rect_i32_print_(fan_rect_i32 r, const char8 *name) {
 }
 
 void fan_rect_f32_print_(fan_rect_f32 r, const char8 *name) {
-    printf("%s: (%f, %f, %f, %f)\n", name, r.x, r.y, r.width, r.height);
+    printf("%s: (%f, %f, %f, %f)\n", name, (float64)r.x, (float64)r.y, (float64)r.width, (float64)r.height);
 }

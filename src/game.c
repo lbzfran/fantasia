@@ -8,11 +8,11 @@ fan_vec2 WorldToScreen(fan_vec2 world_coord, fan_vec2 camera_position, float32 c
     int32 screen_height = fan_window_height();
 
     fan_vec2 camera_coord = fan_vec2_sub(world_coord, camera_position);
-    fan_vec2 px_coord     = fan_vec2_scale(camera_coord, pixels_per_unit * camera_zoom);
+    fan_vec2 px_coord     = fan_vec2_scale(camera_coord, (float32)pixels_per_unit * camera_zoom);
 
     fan_vec2 screen_coord = (fan_vec2) {
-        (screen_width  / 2.0f) + px_coord.x,
-        (screen_height / 2.0f) - px_coord.y,
+        ((float32)screen_width  / 2.0f) + px_coord.x,
+        ((float32)screen_height / 2.0f) - px_coord.y,
     };
 
     return screen_coord;
@@ -23,11 +23,11 @@ fan_vec2 ScreenToWorld(fan_vec2 screen_coord, fan_vec2 camera_position, float32 
     int32 screen_height = fan_window_height();
 
     fan_vec2 centered_coord = (fan_vec2) {
-        screen_coord.x - (screen_width / 2.0f),
-        (screen_height / 2.0f) - screen_coord.y
+        screen_coord.x - ((float32)screen_width / 2.0f),
+        ((float32)screen_height / 2.0f) - screen_coord.y
     };
 
-    fan_vec2 local_coord = fan_vec2_scale(centered_coord, 1.0f / (pixels_per_unit * camera_zoom));
+    fan_vec2 local_coord = fan_vec2_scale(centered_coord, 1.0f / ((float32)pixels_per_unit * camera_zoom));
     fan_vec2 world_coord = fan_vec2_add(camera_position, local_coord);
 
     return world_coord;
@@ -73,27 +73,27 @@ void MovementSystem(CMovement *m, CTransform *t, fan_vec2 direction, fan_rect_i3
 
     if (not (m->flags & MovementFlag_NoCollision)) {
         if (fan_vec2_length(t->scale) > 0.0f) {
-            bound_zone.width  -= t->scale.x;
-            bound_zone.height -= t->scale.y;
+            bound_zone.width  = (int32)((float32)bound_zone.width  - t->scale.x);
+            bound_zone.height = (int32)((float32)bound_zone.height - t->scale.y);
         }
 
         float32 overlap;
         float32 softness = 0.005f;
         if (t->position.x < bound_zone.x) {
-            overlap = bound_zone.x - t->position.x;
+            overlap = (float32)bound_zone.x - t->position.x;
             t->position.x += overlap * softness;
         }
         else if (t->position.x > bound_zone.width) {
-            overlap = t->position.x - bound_zone.width;
+            overlap = t->position.x - (float32)bound_zone.width;
             t->position.x -= overlap * softness;
         }
 
         if (t->position.y < bound_zone.y) {
-            overlap = bound_zone.y - t->position.y;
+            overlap = (float32)bound_zone.y - t->position.y;
             t->position.y += overlap * softness;
         }
         else if (t->position.y > bound_zone.height) {
-            overlap = t->position.y - bound_zone.height;
+            overlap = t->position.y - (float32)bound_zone.height;
             t->position.y -= overlap * softness;
         }
     }
@@ -116,8 +116,8 @@ void PhysicsSystem(CPhysics *p, CTransform *t, fan_vec2 force, float32 dt) {
     fan_vec2 acceleration = fan_vec2_zero();
 
     fan_vec2 screen_size = {
-        fan_window_width(),
-        fan_window_height()
+        (float32)fan_window_width(),
+        (float32)fan_window_height()
     };
     if (fan_vec2_length(t->scale) > 0.0f) {
         screen_size.x -= t->scale.x;
@@ -176,11 +176,11 @@ bool32 CollisionCheckV(fan_vec2 aPos, fan_vec2 aSize, fan_vec2 bPos, fan_vec2 bS
 /*
  * MATRIX
  */
-int32 MatrixInt32Get_(MatrixInt32 m, int32 i, int32 j) {
-    int32 idx = i * m.cols + j;
+int32 MatrixInt32Get_(MatrixInt32 m, ssize i, ssize j) {
+    ssize idx = i * m.cols + j;
     return m.V[idx];
 }
-#define MatrixInt32Get(m, i, j) MatrixInt32Get_(m, max(i, m.rows - 1), max(j, m.cols - 1))
+#define MatrixInt32Get(m, i, j) MatrixInt32Get_(m, max((ssize)i, (ssize)(m.rows - 1)), max((ssize)j, (ssize)(m.cols - 1)))
 
 MatrixInt32 MatrixInt32Create(Allocator *a, ssize rows, ssize cols, int32 default_value) {
     ssize size = rows * cols;
@@ -195,12 +195,12 @@ MatrixInt32 MatrixInt32Create(Allocator *a, ssize rows, ssize cols, int32 defaul
 }
 
 fan_vec2 TileMapGetPosition(TileMap map, fan_vec2 position) {
-    int32 mapX = fan_f32_truncate((position.x - map.origin.x) / map.tile_size);
-    int32 mapY = fan_f32_truncate((position.y - map.origin.y) / map.tile_size);
+    int32 mapX = fan_f32_truncate((position.x - map.origin.x) / (float32)map.tile_size);
+    int32 mapY = fan_f32_truncate((position.y - map.origin.y) / (float32)map.tile_size);
 
     fan_vec2 tile_pos = (fan_vec2) {
-        mapX,
-        mapY
+        (float32)mapX,
+        (float32)mapY
     };
     return tile_pos;
 }
@@ -322,7 +322,7 @@ void AttackSystem(CAttack *a, CMovement *m, CTransform *t, CMovement *o_m, CTran
     if (dist_squared <= a->attack_range * a->attack_range) {
         if (AttackInArc(target_dist, m->direction, a->arc_angle, progress)) {
             float32 knockback_base_factor = 1.0f;
-            fan_vec2 knockback_dir  = fan_vec2_scale(target_dist, 1.0 / fan_f32_sqrt(dist_squared));
+            fan_vec2 knockback_dir  = fan_vec2_scale(target_dist, 1.0f / fan_f32_sqrt(dist_squared));
             fan_vec2 knockback_dist = fan_vec2_scale(knockback_dir, a->knockback * knockback_base_factor);
             o_m->velocity_force = fan_vec2_add(o_m->velocity_force, knockback_dist);
         }
@@ -399,23 +399,23 @@ void AnimationSystem(CAnimation *a, CTexture *t, AnimationData *table, float dt)
     fan_rect_i32 current = data->frames[a->current_frame];
     TextureUpdate(
         t,
-        (fan_vec2){ current.x,     current.y },
+        (fan_vec2){ (float32)current.x, (float32)current.y },
         (fan_vec2){
-            coalesce(current.width,  t->rect.width),
-            coalesce(current.height, t->rect.height)
+            coalesce((float32)current.width,  (float32)t->rect.width),
+            coalesce((float32)current.height, (float32)t->rect.height)
         },
         dt
     );
 }
 
 void LightSystem(
-        CLight     *l,
-        CTransform *t,
-        fan_rtexture lightmap,
-        fan_vec2  camera_pos,
-        float32     camera_zoom,
-        int32       pixels_per_unit,
-        float32     dt
+        CLight       *l,
+        CTransform   *t,
+        fan_rtexture  lightmap,
+        fan_vec2      camera_pos,
+        float32       camera_zoom,
+        int32         pixels_per_unit,
+        float32       dt
     ) {
     (void)dt;
 
@@ -471,8 +471,8 @@ void RenderSystem(
 	    int32 flags
     ) {
     fan_vec2 screen_pos    = WorldToScreen(t->position, camera_position, camera_zoom, pixels_per_unit);
-    fan_vec2 screen_offset = fan_vec2_scale(s->offset, pixels_per_unit * camera_zoom);
-    fan_vec2 screen_scale  = fan_vec2_scale(t->scale,  pixels_per_unit * camera_zoom);
+    fan_vec2 screen_offset = fan_vec2_scale(s->offset, (float32)pixels_per_unit * camera_zoom);
+    fan_vec2 screen_scale  = fan_vec2_scale(t->scale,  (float32)pixels_per_unit * camera_zoom);
     if (tx is null) {
         if (fan_vec2_length(s->offset) > 0.0f) {
             fan_draw_rectv(fan_vec2_add(screen_pos, screen_offset), screen_scale, (fan_color){ 50, 50, 50, 255 });
@@ -480,8 +480,8 @@ void RenderSystem(
         fan_draw_rectv(screen_pos, screen_scale, s->color);
     }
     else {
-        float width  = (tx->rect.width)  ? tx->rect.width  : tx->texture.width;
-        float height = (tx->rect.height) ? tx->rect.height : tx->texture.height;
+        float32 width  = (tx->rect.width)  ? (float32)tx->rect.width  : (float32)tx->texture.width;
+        float32 height = (tx->rect.height) ? (float32)tx->rect.height : (float32)tx->texture.height;
 
         if (m) {
             if (flags & RenderFlag_FlipX) {
@@ -496,24 +496,24 @@ void RenderSystem(
         fan_rect_i32 src = (fan_rect_i32) {
             tx->rect.x,
             tx->rect.y,
-            width,
-            height
+            (int32)width,
+            (int32)height
         };
 
         fan_rect_i32 dst = (fan_rect_i32) {
-            screen_pos.x + screen_offset.x,
-            screen_pos.y + screen_offset.y,
-            screen_scale.x,
-            screen_scale.y
+            (int32)(screen_pos.x + screen_offset.x),
+            (int32)(screen_pos.y + screen_offset.y),
+            (int32)screen_scale.x,
+            (int32)screen_scale.y
         };
 
         if (flags & RenderFlag_ShowInteract) {
             fan_vec2 screen_zone_pos = WorldToScreen((fan_vec2){ zone.x, zone.y }, camera_position, camera_zoom, pixels_per_unit);
             fan_rect_i32 screen_zone = (fan_rect_i32) {
-                screen_zone_pos.x,
-                screen_zone_pos.y,
-                zone.width  * pixels_per_unit * camera_zoom,
-                zone.height * pixels_per_unit * camera_zoom
+                (int32)screen_zone_pos.x,
+                (int32)screen_zone_pos.y,
+                (int32)((float32)zone.width  * (float32)pixels_per_unit * camera_zoom),
+                (int32)((float32)zone.height * (float32)pixels_per_unit * camera_zoom)
             };
             fan_color zone_color = interacting ?
                 (fan_color){ 255, 0, 0, 75 } : (fan_color){ 0, 255, 0, 75 };
@@ -538,13 +538,13 @@ typedef struct RenderEntry {
     int32   layer;
 } RenderEntry;
 
-int32 SortRenderPartition_(RenderEntry *entries, int32 low, int32 high) {
+ssize SortRenderPartition_(RenderEntry *entries, ssize low, ssize high) {
     RenderEntry pivot = entries[high];
     RenderEntry temp;
 
-    int32 i = low - 1;
+    ssize i = low - 1;
 
-    for (int32 j = low; j <= high - 1; j++) {
+    for (ssize j = low; j <= high - 1; j++) {
         if ((entries[j].layer < pivot.layer) or \
             (entries[j].layer == pivot.layer and entries[j].height < pivot.height)) {
             i++;
@@ -561,10 +561,10 @@ int32 SortRenderPartition_(RenderEntry *entries, int32 low, int32 high) {
     return i + 1;
 }
 
-void SortRender(RenderEntry *entries, int32 low, int32 high) {
+void SortRender(RenderEntry *entries, ssize low, ssize high) {
     // qsort in-place
     if (low < high) {
-        int32 pi = SortRenderPartition_(entries, low, high);
+        ssize pi = SortRenderPartition_(entries, low, high);
 
         SortRender(entries, low, pi - 1);
         SortRender(entries, pi + 1, high);
@@ -581,12 +581,12 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
     int32 pixels_per_unit = world->pixels_per_unit;
 
     for (ssize i = 0; i < world->c_shape.size; i++) {
-        int32 id = world->c_shape.dense[i];
+        ssize id = world->c_shape.dense[i];
         if (id == -1)
             continue;
         CShape *shape = &world->c_shape.data[i];
 
-        int32 transform_idx = world->c_transform.sparse[id];
+        ssize transform_idx = world->c_transform.sparse[id];
         if (transform_idx == -1)
             continue;
         CTransform *transform = &world->c_transform.data[transform_idx];
@@ -602,7 +602,7 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
         }
 
         render_array[render_entry_count++] = (RenderEntry) {
-            id,
+            (int32)id,
             transform->position.y + transform->scale.y,
             shape->layer
         };
@@ -611,23 +611,23 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
     SortRender(render_array, 0, world->c_shape.size - 1);
 
     for (ssize i = 0; i < render_entry_count; i++) {
-        int32 id = render_array[i].id;
+        ssize id = render_array[i].id;
         if (id == -1)
             continue;
 
-        int32 shape_idx        = world->c_shape.sparse[id];
-        int32 transform_idx    = world->c_transform.sparse[id];
-        int32 move_idx         = world->c_movement.sparse[id];
-        int32 animation_idx    = world->c_animation.sparse[id];
-        int32 texture_idx      = world->c_texture.sparse[id];
-        int32 attack_idx       = world->c_attack.sparse[id];
+        ssize shape_idx        = world->c_shape.sparse[id];
+        ssize transform_idx    = world->c_transform.sparse[id];
+        ssize move_idx         = world->c_movement.sparse[id];
+        ssize animation_idx    = world->c_animation.sparse[id];
+        ssize texture_idx      = world->c_texture.sparse[id];
+        ssize attack_idx       = world->c_attack.sparse[id];
 
-        int32 tag_bg           = world->c_tag_background.sparse[id];
+        ssize tag_bg           = world->c_tag_background.sparse[id];
         (void)tag_bg;
 
-        int32 interaction_idx  = world->c_interaction.sparse[id];
-        int32 interactable_idx = world->c_interactable.sparse[id];
-        int32 zone_idx         = world->c_zone.sparse[id];
+        ssize interaction_idx  = world->c_interaction.sparse[id];
+        ssize interactable_idx = world->c_interactable.sparse[id];
+        ssize zone_idx         = world->c_zone.sparse[id];
 
         CShape         *shape       = &world->c_shape.data[shape_idx];
         CTransform     *transform   = &world->c_transform.data[transform_idx];
@@ -777,7 +777,7 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
         }
 
         if (state->called_object_dump) {
-            printf("id: %d\n", id);
+            printf("id: %td\n", id);
             printf("interacting: %s\n", interacting ? "true" : "false");
             printf("interacted: %s\n",  interacted  ? "true" : "false");
             fan_rect_print(zone);
@@ -792,9 +792,9 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
     fan_mode_texture_begin(state->lightmap);
         fan_draw_clear(ambient);
         for (ssize i = 0; i < world->c_light.size; i++) {
-            int32 id = world->c_light.dense[i];
+            ssize id = world->c_light.dense[i];
 
-            int32 transform_idx   =  world->c_transform.sparse[id];
+            ssize transform_idx   =  world->c_transform.sparse[id];
 
             CLight     *light     = &world->c_light.data[i];
             CTransform *transform = &world->c_transform.data[transform_idx];
@@ -813,11 +813,11 @@ global void UpdateEntitySplit(World *world) {
     split->dynamic_count = 0;
     split->static_count  = 0;
     for (ssize i = 0; i < world->c_transform.size; i++) {
-        int32 id = world->c_transform.dense[i];
+        ssize id = world->c_transform.dense[i];
         if (id == -1) continue;
 
-        int32 move_index = world->c_movement.sparse[id];
-        int32 bg_tag = world->c_tag_background.sparse[id];
+        ssize move_index = world->c_movement.sparse[id];
+        ssize bg_tag = world->c_tag_background.sparse[id];
 
         bool32 is_static = true;
         if (bg_tag < 0 or move_index != -1) {
@@ -830,9 +830,9 @@ global void UpdateEntitySplit(World *world) {
         }
 
         if (is_static)
-            split->static_entities[split->static_count++]   = id;
+            split->static_entities[split->static_count++]   = (int32)id;
         else
-            split->dynamic_entities[split->dynamic_count++] = id;
+            split->dynamic_entities[split->dynamic_count++] = (int32)id;
     }
 }
 
@@ -847,7 +847,7 @@ void UpdateEntities(
     }
 
     for (ssize i = 0; i < world->c_transform.size; i++) {
-        int32 id = world->c_transform.dense[i];
+        ssize id = world->c_transform.dense[i];
         if (id == -1)
             continue;
 
@@ -861,16 +861,16 @@ void UpdateEntities(
     }
 
     for (ssize i = 0; i < world->c_movement.size; i++) {
-        int32 id = world->c_movement.dense[i];
+        ssize id = world->c_movement.dense[i];
         if (id == -1)
             continue;
 
-        int32 transform_idx   = world->c_transform.sparse[id];
-        int32 behavior_idx    = world->c_behavior.sparse[id];
-        int32 interact_idx    = world->c_interaction.sparse[id];
-        int32 interacted_idx  = world->c_interactable.sparse[id];
-        int32 animation_idx   = world->c_animation.sparse[id];
-        int32 attack_idx      = world->c_attack.sparse[id];
+        ssize transform_idx   = world->c_transform.sparse[id];
+        ssize behavior_idx    = world->c_behavior.sparse[id];
+        ssize interact_idx    = world->c_interaction.sparse[id];
+        ssize interacted_idx  = world->c_interactable.sparse[id];
+        ssize animation_idx   = world->c_animation.sparse[id];
+        ssize attack_idx      = world->c_attack.sparse[id];
         // int32 zone_idx        = world->c_zone.sparse[id];
 
         CMovement       *move      = &world->c_movement.data[i];
@@ -935,8 +935,8 @@ void UpdateEntities(
                 case BehaviorType_Random: {
                     if (behavior->updating) {
                         direction = (fan_vec2) {
-                            fan_random_int(-1, 1),
-                            fan_random_int(-1, 1)
+                            (float32)fan_random_int(-1, 1),
+                            (float32)fan_random_int(-1, 1)
                         };
                     }
                     else {
@@ -968,7 +968,7 @@ void UpdateEntities(
         MovementSystem(move, transform, direction, state->bound_zone, dt);
 
         if (state->called_object_dump) {
-            printf("\tid: %d\n", id);
+            printf("\tid: %td\n", id);
 
             if (id == world->spec_id.player) {
                 printf("\t");
@@ -981,29 +981,30 @@ void UpdateEntities(
                     fan_vec2_print(move->velocity_input);
                     printf("\t");
                     fan_vec2_print(move->direction);
-                    printf("\tmove->speed: %f\n", move->speed);
+                    printf("\tmove->speed: %f\n", (float64)move->speed);
                 }
             }
         }
     }
 
     for (ssize i = 0; i < world->c_animation.size; i++) {
-        int32 id = world->c_animation.dense[i];
+        ssize id = world->c_animation.dense[i];
         if (id == -1)
             continue;
 
-        int32 texture_idx = world->c_texture.sparse[id];
-        int32 move_idx    = world->c_movement.sparse[id];
+        ssize texture_idx = world->c_texture.sparse[id];
+        ssize move_idx    = world->c_movement.sparse[id];
 
         CAnimation *anim    = &world->c_animation.data[i];
         CTexture   *texture = &world->c_texture.data[texture_idx];
         CMovement  *move    = &world->c_movement.data[move_idx];
+        (void)move;
 
         AnimationSystem(anim, texture, world->anim_table, dt);
     }
 
     for (ssize i = 0; i < world->c_sound.size; i++) {
-        int32 id = world->c_sound.dense[i];
+        ssize id = world->c_sound.dense[i];
         if (id == -1)
             continue;
 
@@ -1016,15 +1017,15 @@ void UpdateEntities(
     }
 
     for (ssize i = 0; i < split->dynamic_count; i++) {
-        int32 id = split->dynamic_entities[i];
+        ssize id = split->dynamic_entities[i];
 
-        int32 move_idx        = world->c_movement.sparse[id];
-        int32 transform_idx   = world->c_transform.sparse[id];
-        int32 interact_idx    = world->c_interaction.sparse[id];
-        int32 zone_idx        = world->c_zone.sparse[id];
-        int32 attack_idx      = world->c_attack.sparse[id];
+        ssize move_idx        = world->c_movement.sparse[id];
+        ssize transform_idx   = world->c_transform.sparse[id];
+        ssize interact_idx    = world->c_interaction.sparse[id];
+        ssize zone_idx        = world->c_zone.sparse[id];
+        ssize attack_idx      = world->c_attack.sparse[id];
 
-        int32 tag_enemy       = world->c_tag_enemy.sparse[id];
+        ssize tag_enemy       = world->c_tag_enemy.sparse[id];
 
         CMovement      *move      = &world->c_movement.data[move_idx];
         CTransform     *transform = &world->c_transform.data[transform_idx];
@@ -1052,15 +1053,15 @@ void UpdateEntities(
 
         if (move->active and not (move->flags & MovementFlag_NoCollision)) {
             for (ssize j = i + 1; j < split->dynamic_count; j++) {
-                int32 other_id = split->dynamic_entities[j];
+                ssize other_id = split->dynamic_entities[j];
 
-                int32 other_transform_idx    = world->c_transform.sparse[other_id];
-                int32 other_move_idx         = world->c_movement.sparse[other_id];
+                ssize other_transform_idx    = world->c_transform.sparse[other_id];
+                ssize other_move_idx         = world->c_movement.sparse[other_id];
                 assert(other_move_idx != -1);
-                int32 other_interacted_idx   = world->c_interactable.sparse[other_id];
-                int32 other_zone_idx         = world->c_zone.sparse[other_id];
+                ssize other_interacted_idx   = world->c_interactable.sparse[other_id];
+                ssize other_zone_idx         = world->c_zone.sparse[other_id];
 
-                int32 other_tag_enemy        = world->c_tag_enemy.sparse[other_id];
+                ssize other_tag_enemy        = world->c_tag_enemy.sparse[other_id];
 
                 CTransform     *other_transform  = &world->c_transform.data[other_transform_idx];
                 CMovement      *other_move       = &world->c_movement.data[other_move_idx];
@@ -1110,15 +1111,15 @@ void UpdateEntities(
                 }
             }
             for (ssize i = 0; i < split->static_count; i++) {
-                int32 other_id = split->static_entities[i];
+                ssize other_id = split->static_entities[i];
 
-                int32 other_transform_idx    = world->c_transform.sparse[other_id];
-                int32 other_move_idx         = world->c_movement.sparse[other_id];
+                ssize other_transform_idx    = world->c_transform.sparse[other_id];
+                ssize other_move_idx         = world->c_movement.sparse[other_id];
                 assert(other_move_idx != -1);
-                int32 other_interacted_idx   = world->c_interactable.sparse[other_id];
-                int32 other_zone_idx         = world->c_zone.sparse[other_id];
+                ssize other_interacted_idx   = world->c_interactable.sparse[other_id];
+                ssize other_zone_idx         = world->c_zone.sparse[other_id];
 
-                int32 other_tag_enemy        = world->c_tag_enemy.sparse[other_id];
+                ssize other_tag_enemy        = world->c_tag_enemy.sparse[other_id];
 
                 CTransform     *other_transform  = &world->c_transform.data[other_transform_idx];
                 CMovement      *other_move       = &world->c_movement.data[other_move_idx];
@@ -1167,7 +1168,7 @@ void UpdateEntities(
         }
 
         if (state->called_object_dump) {
-            printf("\tid: %d\n", id);
+            printf("\tid: %td\n", id);
 
             // if (id == world->spec_id.player) {
                 printf("\t");
@@ -1180,7 +1181,7 @@ void UpdateEntities(
                     fan_vec2_print(move->velocity_input);
                     printf("\t");
                     fan_vec2_print(move->direction);
-                    printf("\tmove->speed: %f\n", move->speed);
+                    printf("\tmove->speed: %f\n", (float64)move->speed);
                 }
                 printf("\t");
                 fan_rect_print(zone);
@@ -1214,14 +1215,14 @@ void SceneSolo(World *world) {
     );
     ComponentAddArgs(&world->c_texture,   world->entity_count,
         .texture = tex_link,
-        .rect = (fan_rect_i32){ 0, 0, tex_link.width / 10.0f, tex_link.height / 8.0f }
+        .rect = (fan_rect_i32){ 0, 0, (int32)((float32)tex_link.width / 10.0f), (int32)((float32)tex_link.height / 8.0f) }
     );
     // ComponentAddArgs(&world->c_animation, world->entity_count);
     world->spec_id.player = world->entity_count;
     world->entity_count++;
 
     ComponentAddArgs(&world->c_transform,  world->entity_count,
-        .scale = (fan_vec2){ fan_window_width(), fan_window_height() },
+        .scale = (fan_vec2){ (float32)fan_window_width(), (float32)fan_window_height() },
     );
     ComponentAddArgs(&world->c_shape,      world->entity_count,
         .layer = 1,
@@ -1253,24 +1254,44 @@ global void SceneMain(World *world) {
     // };
 
     fan_texture tex_link = fan_texture_load("./resources/link.png");
-    fan_vec2 sprite_link_size = (fan_vec2){ tex_link.width / 10.0f, tex_link.height / 8.0f };
+    fan_vec2 sprite_link_size = (fan_vec2){ (float32)tex_link.width / 10.0f, (float32)tex_link.height / 8.0f };
     global fan_rect_i32 player_idle_down_frames[3]  = { 0 };
     global fan_rect_i32 player_idle_up_frames[1]    = { 0 };
     global fan_rect_i32 player_idle_left_frames[3]  = { 0 };
     global fan_rect_i32 player_idle_right_frames[3] = { 0 };
-    player_idle_down_frames[0]  = (fan_rect_i32){ 0,                         0,                         sprite_link_size.x, sprite_link_size.y };
-    player_idle_down_frames[1]  = (fan_rect_i32){ sprite_link_size.x,        0,                         sprite_link_size.x, sprite_link_size.y };
-    player_idle_down_frames[2]  = (fan_rect_i32){ 2.0f * sprite_link_size.x, 0,                         sprite_link_size.x, sprite_link_size.y };
+    player_idle_down_frames[0]  = (fan_rect_i32){
+        0,                                  0, (int32)sprite_link_size.x, (int32)sprite_link_size.y
+    };
+    player_idle_down_frames[1]  = (fan_rect_i32){
+        (int32)sprite_link_size.x,          0, (int32)sprite_link_size.x, (int32)sprite_link_size.y
+    };
+    player_idle_down_frames[2]  = (fan_rect_i32){
+        (int32)(2.0f * sprite_link_size.x), 0, (int32)sprite_link_size.x, (int32)sprite_link_size.y
+    };
 
-    player_idle_up_frames[0]    = (fan_rect_i32){ 0,                         2.0f * sprite_link_size.y, sprite_link_size.x, sprite_link_size.y };
+    player_idle_up_frames[0]    = (fan_rect_i32){
+        0, (int32)(2.0f * sprite_link_size.y), (int32)sprite_link_size.x, (int32)sprite_link_size.y
+    };
 
-    player_idle_left_frames[0]  = (fan_rect_i32){ 0,                         sprite_link_size.y,        sprite_link_size.x, sprite_link_size.y };
-    player_idle_left_frames[1]  = (fan_rect_i32){ sprite_link_size.x,        sprite_link_size.y,        sprite_link_size.x, sprite_link_size.y };
-    player_idle_left_frames[2]  = (fan_rect_i32){ 2.0f * sprite_link_size.x, sprite_link_size.y,        sprite_link_size.x, sprite_link_size.y };
+    player_idle_left_frames[0]  = (fan_rect_i32){
+        0,                                  (int32)sprite_link_size.y, (int32)sprite_link_size.x, (int32)sprite_link_size.y
+    };
+    player_idle_left_frames[1]  = (fan_rect_i32){
+        (int32)sprite_link_size.x,          (int32)sprite_link_size.y, (int32)sprite_link_size.x, (int32)sprite_link_size.y
+    };
+    player_idle_left_frames[2]  = (fan_rect_i32){
+        (int32)(2.0f * sprite_link_size.x), (int32)sprite_link_size.y, (int32)sprite_link_size.x, (int32)sprite_link_size.y
+    };
 
-    player_idle_right_frames[0] = (fan_rect_i32){ 0,                         3.0f * sprite_link_size.y, sprite_link_size.x, sprite_link_size.y };
-    player_idle_right_frames[1] = (fan_rect_i32){ sprite_link_size.x,        3.0f * sprite_link_size.y, sprite_link_size.x, sprite_link_size.y };
-    player_idle_right_frames[2] = (fan_rect_i32){ 2.0f * sprite_link_size.x, 3.0f * sprite_link_size.y, sprite_link_size.x, sprite_link_size.y };
+    player_idle_right_frames[0] = (fan_rect_i32){
+        0,                                  (int32)(3.0f * sprite_link_size.y), (int32)sprite_link_size.x, (int32)sprite_link_size.y
+    };
+    player_idle_right_frames[1] = (fan_rect_i32){
+        (int32)sprite_link_size.x,          (int32)(3.0f * sprite_link_size.y), (int32)sprite_link_size.x, (int32)sprite_link_size.y
+    };
+    player_idle_right_frames[2] = (fan_rect_i32){
+        (int32)(2.0f * sprite_link_size.x), (int32)(3.0f * sprite_link_size.y), (int32)sprite_link_size.x, (int32)sprite_link_size.y
+    };
 
     global AnimationData anim_table[] = {
         { "player_idle_down",  player_idle_down_frames,  .frame_time = 0.5f, .frame_count = 3, true,  -1 },
@@ -1302,7 +1323,7 @@ global void SceneMain(World *world) {
     );
     ComponentAddArgs(&world->c_animation, world->entity_count);
     ComponentAddArgs(&world->c_light,     world->entity_count,
-        .color  = fan_color_YELLOW,
+        .color  = (fan_color){ 170, 170, 170, 170 },
         .radius = 100.0f,
     );
     world->spec_id.player = world->entity_count;
@@ -1410,7 +1431,7 @@ global void SceneMain(World *world) {
 
 void GameInit(Allocator *a, World *world, GameState *state) {
 
-    int32 split_size      = kilobytes(1);
+    ssize split_size      = kilobytes(1);
     ssize component_size  = kilobytes(1);
 
     ComponentCreate(&world->c_transform,      a, component_size);
