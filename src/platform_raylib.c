@@ -6,10 +6,10 @@
 
 Color fan_color_rl(fan_color color) {
     Color rl_color = (Color){
-        .r = (unsigned char)max(min(color.r, 0), 255),
-        .g = (unsigned char)max(min(color.g, 0), 255),
-        .b = (unsigned char)max(min(color.b, 0), 255),
-        .a = (unsigned char)max(min(color.a, 0), 255)
+        .r = (unsigned char)color.r,
+        .g = (unsigned char)color.g,
+        .b = (unsigned char)color.b,
+        .a = (unsigned char)color.a
     };
 
     return rl_color;
@@ -334,7 +334,7 @@ void fan_draw_rectv(fan_vec2 pos, fan_vec2 scale, fan_color color) {
     fan_draw_rect((int32)pos.x, (int32)pos.y, (int32)scale.x, (int32)scale.y, color);
 }
 
-void fan_draw_rectr(fan_rect_i32 rect, fan_color color) {
+void fan_draw_rectr(fan_rect rect, fan_color color) {
     fan_draw_rect((int32)rect.x, (int32)rect.y, (int32)rect.width, (int32)rect.height, color);
 }
 
@@ -348,7 +348,7 @@ void fan_draw_linev(fan_vec2 start, fan_vec2 end, fan_color color) {
     fan_draw_line((int32)start.x, (int32)start.y, (int32)end.x, (int32)end.y, color);
 }
 
-void fan_draw_texture(fan_texture texture, fan_rect_i32 src, fan_rect_i32 dst, fan_vec2 origin, float32 angle, fan_color color) {
+void fan_draw_texture(fan_texture texture, fan_rect src, fan_rect dst, fan_vec2 origin, float32 angle, fan_color color) {
     Texture2D rl_texture = (Texture2D){
         .id      = texture.id,
         .width   = texture.width,
@@ -357,16 +357,16 @@ void fan_draw_texture(fan_texture texture, fan_rect_i32 src, fan_rect_i32 dst, f
         .format  = texture.format
     };
     Rectangle rl_src = (Rectangle){
-        .x      = (float32)src.x,
-        .y      = (float32)src.y,
-        .width  = (float32)src.width,
-        .height = (float32)src.height
+        .x      = src.x,
+        .y      = src.y,
+        .width  = src.width,
+        .height = src.height
     };
     Rectangle rl_dst = (Rectangle){
-        .x      = (float32)dst.x,
-        .y      = (float32)dst.y,
-        .width  = (float32)dst.width,
-        .height = (float32)dst.height
+        .x      = dst.x,
+        .y      = dst.y,
+        .width  = dst.width,
+        .height = dst.height
     };
     Vector2 rl_origin = (Vector2){
         .x = origin.x,
@@ -378,10 +378,10 @@ void fan_draw_texture(fan_texture texture, fan_rect_i32 src, fan_rect_i32 dst, f
 
 void fan_camera_begin(fan_camera2D camera) {
     Camera2D rl_camera = (Camera2D){
-        .target = (Vector2){ camera.target.x, camera.target.y },
-        .offset = (Vector2){ camera.offset.x, camera.offset.y },
+        .target   = (Vector2){ camera.target.x, camera.target.y },
+        .offset   = (Vector2){ camera.offset.x, camera.offset.y },
         .rotation = camera.rotation,
-        .zoom = camera.zoom
+        .zoom     = camera.zoom
     };
 
     BeginMode2D(rl_camera);
@@ -442,6 +442,12 @@ void fan_mode_blend_end(void) {
     EndBlendMode();
 }
 
+void fan_draw_pixel(int32 x, int32 y, fan_color color) {
+    Color rl_color = fan_color_rl(color);
+
+    DrawPixel(x, y, rl_color);
+}
+
 void fan_draw_circle(int32 x, int32 y, float32 r, fan_color color) {
     Color rl_color = fan_color_rl(color);
 
@@ -453,4 +459,8 @@ void fan_draw_circle_grad(int32 x, int32 y, float32 r, fan_color in, fan_color o
     Color rl_out = fan_color_rl(out);
 
     DrawCircleGradient(x, y, r, rl_in, rl_out);
+}
+
+void fan_fps_target(int32 fps) {
+    SetTargetFPS(fps);
 }

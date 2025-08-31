@@ -21,7 +21,7 @@ GameState state = {};
 World world = {};
 
 int main(void) {
-    void *lib = fan_lib_open("bin/libgame.so");
+    void *lib = fan_lib_open(GAME_LIB_PATH);
     if ((uintptr)lib == null) {
         printf("ERROR: Failed to load game library!\n");
         return 1;

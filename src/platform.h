@@ -47,7 +47,7 @@ typedef struct {
     float32 y;
     float32 width;
     float32 height;
-} fan_rect_float32, fan_rect_f32;
+} fan_rect, fan_rect_f32;
 
 typedef struct {
     uint32 id;
@@ -268,6 +268,8 @@ FAN_API void fan_log_set(int32);
 FAN_API int32 fan_window_width(void);
 FAN_API int32 fan_window_height(void);
 
+FAN_API void fan_fps_target(int32 fps);
+
 FAN_API void fan_dev_audio_create(void);
 FAN_API void fan_dev_audio_close(void);
 
@@ -315,15 +317,16 @@ FAN_API void fan_draw_clear(fan_color color);
 FAN_API void fan_draw_fps(int32 x, int32 y);
 FAN_API void fan_draw_end(void);
 
+FAN_API void fan_draw_pixel(int32, int32, fan_color color);
 FAN_API void fan_draw_line(int32, int32, int32, int32, fan_color color);
 FAN_API void fan_draw_linev(fan_vec2 start, fan_vec2 end, fan_color color);
 FAN_API void fan_draw_rect(int32 x, int32 y, int32 w, int32 h, fan_color color);
 FAN_API void fan_draw_rectv(fan_vec2 pos, fan_vec2 scale, fan_color color);
-FAN_API void fan_draw_rectr(fan_rect_int32 rect, fan_color color);
+FAN_API void fan_draw_rectr(fan_rect rect, fan_color color);
 FAN_API void fan_draw_circle(int32 x, int32 y, float32 r, fan_color color);
 FAN_API void fan_draw_circle_grad(int32 x, int32 y, float32 r, fan_color in, fan_color out);
 
-FAN_API void fan_draw_texture(fan_texture texture, fan_rect_int32 src, fan_rect_int32 dst, fan_vec2 origin, float32 angle, fan_color);
+FAN_API void fan_draw_texture(fan_texture texture, fan_rect src, fan_rect dst, fan_vec2 origin, float32 angle, fan_color);
 
 FAN_API void fan_camera_begin(fan_camera2D);
 FAN_API void fan_camera_end(void);
@@ -360,7 +363,7 @@ FAN_API void fan_rect_i32_print_(fan_rect_i32, const char8 *);
 FAN_API void fan_rect_f32_print_(fan_rect_f32, const char8 *);
 #define fan_vec2_print(v) fan_vec2_print_(v, #v)
 #define fan_color_print(c) fan_color_print_(c, #c)
-#define fan_rect_print(r) _Generic((r),           \
+#define fan_rect_print(r) _Generic((r),        \
     fan_rect_i32: fan_rect_i32_print_,         \
     fan_rect_f32: fan_rect_f32_print_)(r, #r)
 
@@ -391,7 +394,8 @@ FAN_API fan_vec2 fan_vec2_rotate(fan_vec2 v, float32 angle);
 
 FAN_API fan_vec2 fan_vec2_lerp(fan_vec2 v1, float32 t, fan_vec2 v2);
 
-FAN_API int32 fan_rect_i32_isempty(fan_rect_int32 rect);
+FAN_API int32 fan_rect_i32_isempty(fan_rect_i32 rect);
+FAN_API int32 fan_rect_f32_isempty(fan_rect_f32 rect);
 
 // threading
 

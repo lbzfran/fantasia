@@ -31,5 +31,5 @@ HANDLE *fan_os_pipe_get(fan_pipe pipe) {
 
 bool32 fan_os_write(fan_pipe pipe, void *data, ssize length) {
     HANDLE *ctx_handle = fan_os_pipe_get(pipe);
-    return (bool32)WriteFile(ctx_handle, data, length, null, null);
+    return (bool32)WriteFile(ctx_handle, data, (DWORD)length, null, null);
 }

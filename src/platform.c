@@ -17,6 +17,17 @@ bool32 fan_rect_i32_isempty(fan_rect_i32 rect) {
     return result;
 }
 
+bool32 fan_rect_f32_isempty(fan_rect_f32 rect) {
+    int result = 1;
+    if (fan_f32_equals(rect.x,      0.0f) &&
+        fan_f32_equals(rect.y,      0.0f) &&
+        fan_f32_equals(rect.width,  0.0f) &&
+        fan_f32_equals(rect.height, 0.0f)) {
+        result = 0;
+    }
+    return result;
+}
+
 float32 fan_f32_lerp(float32 a, float32 t, float32 b) {
     return  a + (b - a) * t;
 }

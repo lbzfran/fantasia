@@ -107,7 +107,7 @@ typedef struct {
 
 typedef struct {
     fan_texture texture;
-    fan_rect_i32    rect;
+    fan_rect    rect;
 } CTexture;
 
 typedef struct CBehavior {
@@ -128,7 +128,7 @@ typedef struct {
 
 typedef struct {
     const char8      *name;
-    fan_rect_i32     *frames;
+    fan_rect         *frames;
     float32           frame_time;
     int32             frame_count;
     bool32            loop;
