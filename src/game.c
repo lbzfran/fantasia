@@ -1446,7 +1446,7 @@ global void SceneMain(World *world) {
 }
 
 void GameInit(Allocator *a, World *world, GameState *state) {
-    // fan_fps_target(60);
+    fan_fps_target(60);
 
     ssize split_size      = kilobytes(1);
     ssize component_size  = kilobytes(1);

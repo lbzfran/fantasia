@@ -52,3 +52,11 @@ Valid values: `linux`, `windows`
 
 Additionally, the setup script will ask for input on certain behavior(s).
 Simply answer as necessary.
+
+# References
+
+Occassionally, I will find brilliant solutions to specific problems that
+I simply have to credit the original from. Below is that list.
+
+Helped with separation of physics timestep to the rendering timestep (framestep).
+- https://gafferongames.com/post/fix_your_timestep/
