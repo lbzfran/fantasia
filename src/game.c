@@ -420,9 +420,9 @@ void LightSystem(
     ) {
     (void)dt;
 
-    fan_vec2 center_pos = fan_vec2_sub(t->position, (fan_vec2){
-       t->scale.x *  0.5f,
-       t->scale.y *  0.0f
+    fan_vec2 center_pos = fan_vec2_add(t->position, (fan_vec2){
+        t->scale.x *   0.5f,
+        t->scale.y *  -0.5f
     });
     fan_vec2 screen_pos = WorldToScreen(
         center_pos,
@@ -434,9 +434,20 @@ void LightSystem(
     fan_draw_circle(
         (int32)(screen_pos.x),
         (int32)(screen_pos.y),
-        1.0f,
+        l->radius,
         l->color
     );
+}
+
+void RenderProcessPost(fan_rtexture map) {
+        fan_draw_texture(
+            map.texture,
+            (fan_rect){ 0, 0, (float32)map.texture.width,  (float32)-map.texture.height },
+            (fan_rect){ 0, 0, (float32)map.texture.width, (float32)map.texture.height },
+            fan_vec2_zero(),
+            0.0f,
+            fan_color_WHITE
+        );
 }
 
 void LightingProcessPost(fan_rtexture lightmap) {
@@ -444,8 +455,8 @@ void LightingProcessPost(fan_rtexture lightmap) {
 
         fan_draw_texture(
             lightmap.texture,
+            (fan_rect){ 0, 0, (float32)lightmap.texture.width, (float32)-lightmap.texture.height },
             (fan_rect){ 0, 0, (float32)lightmap.texture.width, (float32)lightmap.texture.height },
-            (fan_rect){ 0, 0, (float32)fan_window_width(),     (float32)fan_window_height() },
             fan_vec2_zero(),
             0.0f,
             fan_color_WHITE
@@ -615,202 +626,226 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
 
     SortRender(render_array, 0, world->c_shape.size - 1);
 
-    for (ssize i = 0; i < render_entry_count; i++) {
-        ssize id = render_array[i].id;
-        if (id == -1)
-            continue;
+    fan_mode_texture_begin(state->rendermap);
+        fan_draw_clear(fan_color_WHITE);
+        for (ssize i = 0; i < render_entry_count; i++) {
+            ssize id = render_array[i].id;
+            if (id == -1)
+                continue;
 
-        ssize shape_idx        = world->c_shape.sparse[id];
-        ssize transform_idx    = world->c_transform.sparse[id];
-        ssize move_idx         = world->c_movement.sparse[id];
-        ssize animation_idx    = world->c_animation.sparse[id];
-        ssize texture_idx      = world->c_texture.sparse[id];
-        ssize attack_idx       = world->c_attack.sparse[id];
+            ssize shape_idx        = world->c_shape.sparse[id];
+            ssize transform_idx    = world->c_transform.sparse[id];
+            ssize move_idx         = world->c_movement.sparse[id];
+            ssize animation_idx    = world->c_animation.sparse[id];
+            ssize texture_idx      = world->c_texture.sparse[id];
+            ssize attack_idx       = world->c_attack.sparse[id];
 
-        ssize tag_bg           = world->c_tag_background.sparse[id];
-        (void)tag_bg;
+            ssize tag_bg           = world->c_tag_background.sparse[id];
+            (void)tag_bg;
 
-        ssize interaction_idx  = world->c_interaction.sparse[id];
-        ssize interactable_idx = world->c_interactable.sparse[id];
-        ssize zone_idx         = world->c_zone.sparse[id];
+            ssize interaction_idx  = world->c_interaction.sparse[id];
+            ssize interactable_idx = world->c_interactable.sparse[id];
+            ssize zone_idx         = world->c_zone.sparse[id];
 
-        CShape         *shape       = &world->c_shape.data[shape_idx];
-        CTransform     *transform   = &world->c_transform.data[transform_idx];
-        CMovement      *move        = &world->c_movement.data[move_idx];
-        CTexture       *texture     = null;
-        // CAnimation     *animation   = null;
-        CAttack        *attack      = &world->c_attack.data[attack_idx];
-        bool32          interacting = false;
-        bool32          interacted  = false;
-        fan_rect        zone        = { 0 };
+            CShape         *shape       = &world->c_shape.data[shape_idx];
+            CTransform     *transform   = &world->c_transform.data[transform_idx];
+            CMovement      *move        = &world->c_movement.data[move_idx];
+            CTexture       *texture     = null;
+            // CAnimation     *animation   = null;
+            CAttack        *attack      = &world->c_attack.data[attack_idx];
+            bool32          interacting = false;
+            bool32          interacted  = false;
+            fan_rect        zone        = { 0 };
 
-        if (not shape->visible) {
-            continue;
-        }
-
-        int32 render_flags = 0;
-
-        if (zone_idx != -1) {
-            zone = world->c_zone.data[zone_idx];
-            zone.x += transform->position.x;
-            zone.y += transform->position.y;
-        }
-        else {
-            zone = (fan_rect) {
-                .x      = transform->position.x,
-                .y      = transform->position.y,
-                .width  = transform->scale.x,
-                .height = transform->scale.y,
-            };
-        }
-
-        if (interaction_idx != -1) {
-            interacting = world->c_interaction.data[interaction_idx];
-        }
-
-        if (interactable_idx != -1) {
-            interacted  = world->c_interactable.data[interactable_idx];
-        }
-
-        if (texture_idx != -1) {
-            texture       = &world->c_texture.data[texture_idx];
-            // if (animation_idx != -1) {
-            //     animation = &world->c_animation.data[animation_idx];
-            // }
-        }
-
-        if (move_idx != -1) {
-            move = &world->c_movement.data[move_idx];
-        }
-
-        fan_vec2 center_pos = fan_vec2_add(
-            transform->position,
-            (fan_vec2) {
-                transform->scale.x * 0.5f,
-                transform->scale.y * 0.5f,
+            if (not shape->visible) {
+                continue;
             }
-        );
 
-        fan_vec2 map_pos = TileMapGetPosition(world->map, center_pos);
-        int32 tile_data = MatrixInt32Get(world->map.tiles, map_pos.x, map_pos.y);
+            int32 render_flags = 0;
 
-        if (id == world->spec_id.player) {
-            // fan_vec2 tile_world_pos = (fan_vec2) {
-            //     map_pos.x * world->map.tile_size,
-            //     map_pos.y * world->map.tile_size
-            // };
-            //
-            // fan_vec2 screen_pos = WorldToScreen(tile_world_pos, camera_position, pixels_per_unit);
-            // int32 screen_size     = world->map.tile_size * pixels_per_unit;
-
-            if (tile_data == 1) {
-                // fan_draw_rectr(
-                //     (fan_rect_i32) {
-                //         screen_pos.x,
-                //         screen_pos.y,
-                //         screen_size,
-                //         screen_size,
-                //     },
-                //     FanColor_BLUE
-                // );
+            if (zone_idx != -1) {
+                zone = world->c_zone.data[zone_idx];
+                zone.x += transform->position.x;
+                zone.y += transform->position.y;
             }
-        }
-
-        if (animation_idx == -1)
-            render_flags |= RenderFlag_FlipX;
-
-        if (state->p_input.actions[1])
-            render_flags |= RenderFlag_ShowInteract;
-
-        RenderSystem(
-            shape,
-            transform,
-            texture,
-            move,
-            interacting,
-            zone,
-            camera_position,
-            camera_zoom,
-            pixels_per_unit,
-            render_flags
-        );
-
-
-        if (attack_idx != -1 and attack->attacking and attack->cast_timer <= 0.0f) {
-            fan_vec2 center = fan_vec2_add(transform->position, (fan_vec2){ transform->scale.x * 0.5f, transform->scale.y * -0.5f });
-            fan_vec2 facing = move->direction;
-            float32 length    = attack->attack_range;
-            float32 angle     = attack->arc_angle;
-
-            fan_vec2 prev = WorldToScreen(center, camera_position, camera_zoom, pixels_per_unit);
-
-            // Compute start and end angles
-            float32 progress = attack->timer / attack->swing_time;
-            int32 segments = 20;
-
-            // Precompute start and end directions by rotating facing
-            fan_vec2 start_dir = fan_vec2_rotate(facing, -angle * 0.5f);
-            fan_vec2 end_dir   = fan_vec2_rotate(facing,  angle * 0.5f);
-
-            for (int32 i = 0; i <= segments; i++) {
-                float32 t_seg = (float32)i / (float32)segments;
-
-                // Interpolate between start and end directions
-                fan_vec2 sweep_dir = fan_vec2_normalize(fan_vec2_lerp(start_dir, t_seg, end_dir));
-
-                fan_vec2 world_point = {
-                    center.x + sweep_dir.x * length,
-                    center.y + sweep_dir.y * length
+            else {
+                zone = (fan_rect) {
+                    .x      = transform->position.x,
+                    .y      = transform->position.y,
+                    .width  = transform->scale.x,
+                    .height = transform->scale.y,
                 };
-                fan_vec2 screen_point = WorldToScreen(world_point, camera_position, camera_zoom, pixels_per_unit);
-
-                // fan_vec2_print(sweep_dir);
-                // fan_vec2_print(screen_point);
-
-                fan_draw_linev(prev, screen_point, fan_color_RED);
-                prev = screen_point;
             }
 
-            // Draw line from center to current sweep tip
-            fan_vec2 sweep_tip = fan_vec2_normalize(fan_vec2_lerp(start_dir, progress, end_dir));
-            fan_vec2 world_sweep_tip = {
-                center.x + sweep_tip.x * length,
-                center.y + sweep_tip.y * length
-            };
-            fan_vec2 screen_sweep_tip = WorldToScreen(world_sweep_tip, camera_position, camera_zoom, pixels_per_unit);
-            fan_draw_linev(WorldToScreen(center, camera_position, camera_zoom, pixels_per_unit), screen_sweep_tip, fan_color_RED);
-        }
+            if (interaction_idx != -1) {
+                interacting = world->c_interaction.data[interaction_idx];
+            }
 
-        if (state->called_object_dump) {
-            printf("id: %td\n", id);
-            printf("interacting: %s\n", interacting ? "true" : "false");
-            printf("interacted: %s\n",  interacted  ? "true" : "false");
-            fan_rect_print(zone);
-            printf("\t");
-            fan_vec2_print(transform->position);
-            printf("\t");
-            fan_vec2_print(transform->scale);
-        }
-    }
+            if (interactable_idx != -1) {
+                interacted  = world->c_interactable.data[interactable_idx];
+            }
 
-    // fan_color ambient = { 30, 30, 30, 255 };
-    // fan_mode_texture_begin(state->lightmap);
-    //     fan_draw_clear(ambient);
-    //     for (ssize i = 0; i < world->c_light.size; i++) {
-    //         ssize id = world->c_light.dense[i];
-    //
-    //         ssize transform_idx   = world->c_transform.sparse[id];
-    //         ssize shape_idx       = world->c_shape.sparse[id];
-    //
-    //         CLight       *light     = &world->c_light.data[i];
-    //         CTransform   *transform = &world->c_transform.data[transform_idx];
-    //         CShape       *shape     = &world->c_shape.data[shape_idx];
-    //
-    //         LightSystem(light, transform, shape, state->lightmap, camera_position, camera_zoom, pixels_per_unit, dt);
-    //     }
-    // fan_mode_texture_end();
-    //
-    // LightingProcessPost(state->lightmap);
+            if (texture_idx != -1) {
+                texture       = &world->c_texture.data[texture_idx];
+                // if (animation_idx != -1) {
+                //     animation = &world->c_animation.data[animation_idx];
+                // }
+            }
+
+            if (move_idx != -1) {
+                move = &world->c_movement.data[move_idx];
+            }
+
+            fan_vec2 center_pos = fan_vec2_add(
+                transform->position,
+                (fan_vec2) {
+                    transform->scale.x * 0.5f,
+                    transform->scale.y * 0.5f,
+                }
+            );
+
+            fan_vec2 map_pos = TileMapGetPosition(world->map, center_pos);
+            int32 tile_data = MatrixInt32Get(world->map.tiles, map_pos.x, map_pos.y);
+
+            if (id == world->spec_id.player) {
+                // fan_vec2 tile_world_pos = (fan_vec2) {
+                //     map_pos.x * world->map.tile_size,
+                //     map_pos.y * world->map.tile_size
+                // };
+                //
+                // fan_vec2 screen_pos = WorldToScreen(tile_world_pos, camera_position, pixels_per_unit);
+                // int32 screen_size     = world->map.tile_size * pixels_per_unit;
+
+                if (tile_data == 1) {
+                    // fan_draw_rectr(
+                    //     (fan_rect_i32) {
+                    //         screen_pos.x,
+                    //         screen_pos.y,
+                    //         screen_size,
+                    //         screen_size,
+                    //     },
+                    //     FanColor_BLUE
+                    // );
+                }
+            }
+
+            if (animation_idx == -1)
+                render_flags |= RenderFlag_FlipX;
+
+            if (state->p_input.actions[1])
+                render_flags |= RenderFlag_ShowInteract;
+
+            RenderSystem(
+                shape,
+                transform,
+                texture,
+                move,
+                interacting,
+                zone,
+                camera_position,
+                camera_zoom,
+                pixels_per_unit,
+                render_flags
+            );
+
+
+            if (attack_idx != -1 and attack->attacking and attack->cast_timer <= 0.0f) {
+                fan_vec2 center = fan_vec2_add(transform->position,
+                        (fan_vec2){ transform->scale.x * 0.5f, transform->scale.y * -0.5f });
+                fan_vec2 facing = move->direction;
+                float32 length    = attack->attack_range;
+                float32 angle     = attack->arc_angle;
+
+                fan_vec2 prev = WorldToScreen(center, camera_position, camera_zoom, pixels_per_unit);
+
+                // Compute start and end angles
+                float32 progress = attack->timer / attack->swing_time;
+                int32 segments = 20;
+
+                // Precompute start and end directions by rotating facing
+                fan_vec2 start_dir = fan_vec2_rotate(facing, -angle * 0.5f);
+                fan_vec2 end_dir   = fan_vec2_rotate(facing,  angle * 0.5f);
+
+                for (int32 i = 0; i <= segments; i++) {
+                    float32 t_seg = (float32)i / (float32)segments;
+
+                    // Interpolate between start and end directions
+                    fan_vec2 sweep_dir = fan_vec2_normalize(fan_vec2_lerp(start_dir, t_seg, end_dir));
+
+                    fan_vec2 world_point = {
+                        center.x + sweep_dir.x * length,
+                        center.y + sweep_dir.y * length
+                    };
+                    fan_vec2 screen_point = WorldToScreen(
+                        world_point,
+                        camera_position,
+                        camera_zoom,
+                        pixels_per_unit
+                    );
+
+                    // fan_vec2_print(sweep_dir);
+                    // fan_vec2_print(screen_point);
+
+                    fan_draw_linev(prev, screen_point, fan_color_RED);
+                    prev = screen_point;
+                }
+
+                // Draw line from center to current sweep tip
+                fan_vec2 sweep_tip = fan_vec2_normalize(fan_vec2_lerp(start_dir, progress, end_dir));
+                fan_vec2 world_sweep_tip = {
+                    center.x + sweep_tip.x * length,
+                    center.y + sweep_tip.y * length
+                };
+                fan_vec2 screen_sweep_tip = WorldToScreen(
+                    world_sweep_tip,
+                    camera_position,
+                    camera_zoom,
+                    pixels_per_unit
+                );
+                fan_draw_linev(
+                    WorldToScreen(
+                        center,
+                        camera_position,
+                        camera_zoom,
+                        pixels_per_unit
+                    ),
+                    screen_sweep_tip,
+                    fan_color_RED
+                );
+            }
+
+            if (state->called_object_dump) {
+                printf("id: %td\n", id);
+                printf("interacting: %s\n", interacting ? "true" : "false");
+                printf("interacted: %s\n",  interacted  ? "true" : "false");
+                fan_rect_print(zone);
+                printf("\t");
+                fan_vec2_print(transform->position);
+                printf("\t");
+                fan_vec2_print(transform->scale);
+            }
+        }
+    fan_mode_texture_end();
+
+    RenderProcessPost(state->rendermap);
+    fan_color ambient = { 30, 30, 30, 255 };
+    fan_mode_texture_begin(state->lightmap);
+        fan_draw_clear(ambient);
+        for (ssize i = 0; i < world->c_light.size; i++) {
+            ssize id = world->c_light.dense[i];
+
+            ssize transform_idx   = world->c_transform.sparse[id];
+            ssize shape_idx       = world->c_shape.sparse[id];
+
+            CLight       *light     = &world->c_light.data[i];
+            CTransform   *transform = &world->c_transform.data[transform_idx];
+            CShape       *shape     = &world->c_shape.data[shape_idx];
+
+            LightSystem(light, transform, shape, state->lightmap, camera_position, camera_zoom, pixels_per_unit, dt);
+        }
+    fan_mode_texture_end();
+
+    LightingProcessPost(state->lightmap);
 }
 
 // NOTE(liam): must call whenever entities are added/removed
@@ -848,27 +883,27 @@ void UpdateEntities(
         GameState *state,
         float32 dt
     ) {
+    static const float32 fixed_dt = 0.00025f;
+    static float32 accumulator = 0.0f;
+
     EntitySplit *split = &world->split;
     if (world->update_entity_split) {
         UpdateEntitySplit(world);
-    }
 
-    for (ssize i = 0; i < world->c_transform.size; i++) {
-        ssize id = world->c_transform.dense[i];
-        if (id == -1)
-            continue;
+        for (ssize i = 0; i < world->c_transform.size; i++) {
+            ssize id = world->c_transform.dense[i];
+            if (id == -1)
+                continue;
 
-        CTransform *transform = &world->c_transform.data[i];
-        if (not transform->initialized) {
-            init_if_null(transform->scale.x, 1.0f);
-            init_if_null(transform->scale.y, 1.0f);
+            CTransform *transform = &world->c_transform.data[i];
+            if (not transform->initialized) {
+                init_if_null(transform->scale.x, 1.0f);
+                init_if_null(transform->scale.y, 1.0f);
 
-            transform->initialized = true;
+                transform->initialized = true;
+            }
         }
     }
-
-    static const float32 fixed_dt = 0.0005f;
-    static float32 accumulator = 0.0f;
 
     accumulator += dt;
     while (accumulator >= fixed_dt) {
@@ -1075,11 +1110,11 @@ void UpdateEntities(
                             attack->cast_timer = 0.5f;
                         }
                         if (move->lock_time <= 0.0f) {
-                            AttackSystem(attack, move, transform, other_move, other_transform, dt);
+                            AttackSystem(attack, move, transform, other_move, other_transform, fixed_dt);
                         }
                     }
 
-                    CollisionSystem(transform, move, other_transform, other_move, dt);
+                    CollisionSystem(transform, move, other_transform, other_move, fixed_dt);
                     if (
                             interact and
                             other_interacted and
@@ -1131,10 +1166,10 @@ void UpdateEntities(
                         if (id == world->spec_id.player and state->p_input.actions[0]) {
                             attack->attacking = true;
                         }
-                        AttackSystem(attack, move, transform, other_move, other_transform, dt);
+                        AttackSystem(attack, move, transform, other_move, other_transform, fixed_dt);
                     }
 
-                    CollisionSystem(transform, move, other_transform, other_move, dt);
+                    CollisionSystem(transform, move, other_transform, other_move, fixed_dt);
                     if (
                             interact and
                             other_interacted and
@@ -1153,7 +1188,7 @@ void UpdateEntities(
             if (state->called_object_dump) {
                 printf("\tid: %td\n", id);
 
-                // if (id == world->spec_id.player) {
+                if (id == world->spec_id.player) {
                     printf("\t");
                     fan_vec2_print(transform->position);
                     printf("\t");
@@ -1168,7 +1203,7 @@ void UpdateEntities(
                     }
                     printf("\t");
                     fan_rect_print(zone);
-                // }
+                }
             }
         }
         accumulator -= fixed_dt;
@@ -1480,6 +1515,7 @@ void GameInit(Allocator *a, World *world, GameState *state) {
     state->bound_zone = (fan_rect_i32){ .width = 10, .height = 6 };
     state->camera_zoom = 1.0f;
 
+    state->rendermap = fan_rtexture_load(fan_window_width(), fan_window_height());
     state->lightmap = fan_rtexture_load(fan_window_width(), fan_window_height());
 
     state->music = fan_music_load("./resources/My Uncles Last Voyage.mp3");
@@ -1519,6 +1555,7 @@ void GameClose(Allocator *a, World *world, GameState *state) {
             continue;
         fan_sound_unload(world->c_sound.data[i].sound);
     }
+    fan_rtexture_unload(state->rendermap);
     fan_rtexture_unload(state->lightmap);
     fan_music_unload(state->music);
 }

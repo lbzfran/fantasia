@@ -93,6 +93,10 @@ int32 fan_window_height(void) {
     return result;
 }
 
+void fan_window_config(int32 flags) {
+    SetConfigFlags(flags);
+}
+
 void fan_dev_audio_create(void) {
     InitAudioDevice();
 }

@@ -162,10 +162,10 @@ typedef struct {
  */
 
 typedef struct {
-    fan_vec2 direction;
+    fan_vec2   direction;
     float32    radius;
 
-    fan_color   color;
+    fan_color  color;
     float32    intensity;
 } CLight;
 
@@ -211,13 +211,13 @@ typedef enum {
 } SystemMode;
 
 typedef struct {
-    fan_vec2 direction;
-    int32      actions[4];
+    fan_vec2  direction;
+    int32     actions[4];
 } PlayerInput;
 
 typedef struct {
     SystemMode   mode;
-    fan_music     music;
+    fan_music    music;
 
     PlayerInput  p_input;
 
@@ -225,7 +225,14 @@ typedef struct {
     float64      current_time;
     float32      camera_zoom;
 
-    fan_rtexture  lightmap;
+    fan_rtexture rendermap;
+    fan_rtexture lightmap;
+
+    // TODO(liam): support dynamic window resizing
+    // also support minimum window size in platform layer.
+    bool32       resized;
+    int32        window_width;
+    int32        window_height;
 
     bool32       called_object_dump;
 } GameState;
@@ -241,16 +248,16 @@ typedef struct {
 } EntitySplit;
 
 typedef struct {
-    ssize rows;
-    ssize cols;
+    ssize  rows;
+    ssize  cols;
     int32 *V;
 } MatrixInt32;
 
 typedef struct {
     MatrixInt32 tiles; // 1D repr 2D plane
 
-    fan_vec2 origin; // top-left, relative to screen
-    int32 tile_size;
+    fan_vec2    origin; // top-left, relative to screen
+    int32       tile_size;
 } TileMap;
 
 ComponentDeclare(CTransform, CTransform);

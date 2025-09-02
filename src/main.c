@@ -30,6 +30,7 @@ int main(void) {
     game.update_and_render = fan_lib_load(lib, "GameUpdateAndRender");
     game.close = fan_lib_load(lib, "GameClose");
 
+    fan_window_config(FanWindow_WINDOW_RESIZABLE | FanWindow_VSYNC_HINT);
     fan_window_create(800, 600, "Fantasia");
     fan_dev_audio_create();
 
