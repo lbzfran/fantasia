@@ -432,22 +432,11 @@ void LightSystem(
     );
 
     fan_draw_circle(
-        (int32)(screen_pos.x),
-        (int32)(screen_pos.y),
+        (int32)fan_f32_round(screen_pos.x),
+        (int32)fan_f32_round(screen_pos.y),
         l->radius,
         l->color
     );
-}
-
-void RenderProcessPost(fan_rtexture map) {
-        fan_draw_texture(
-            map.texture,
-            (fan_rect){ 0, 0, (float32)map.texture.width,  (float32)-map.texture.height },
-            (fan_rect){ 0, 0, (float32)map.texture.width, (float32)map.texture.height },
-            fan_vec2_zero(),
-            0.0f,
-            fan_color_WHITE
-        );
 }
 
 void LightingProcessPost(fan_rtexture lightmap) {
@@ -508,7 +497,6 @@ void RenderSystem(
             }
         }
 
-
         fan_rect src = (fan_rect) {
             tx->rect.x,
             tx->rect.y,
@@ -517,8 +505,8 @@ void RenderSystem(
         };
 
         fan_rect dst = (fan_rect) {
-            (screen_pos.x + screen_offset.x),
-            (screen_pos.y + screen_offset.y),
+            fan_f32_round(screen_pos.x + screen_offset.x),
+            fan_f32_round(screen_pos.y + screen_offset.y),
             screen_scale.x,
             screen_scale.y
         };
@@ -546,6 +534,17 @@ void RenderSystem(
             s->color
         );
     }
+}
+
+void RenderProcessPost(fan_rtexture map) {
+        fan_draw_texture(
+            map.texture,
+            (fan_rect){ 0, 0, (float32)map.texture.width,  (float32)-map.texture.height },
+            (fan_rect){ 0, 0, (float32)map.texture.width, (float32)map.texture.height },
+            fan_vec2_zero(),
+            0.0f,
+            fan_color_WHITE
+        );
 }
 
 typedef struct RenderEntry {
@@ -906,7 +905,11 @@ void UpdateEntities(
     }
 
     accumulator += dt;
+    bool32 last_iter = false;
     while (accumulator >= fixed_dt) {
+        accumulator -= fixed_dt;
+        if (accumulator < fixed_dt)
+            last_iter = true;
         for (ssize i = 0; i < world->c_movement.size; i++) {
             ssize id = world->c_movement.dense[i];
             if (id == -1)
@@ -1014,7 +1017,7 @@ void UpdateEntities(
 
             MovementSystem(move, transform, direction, state->bound_zone, fixed_dt);
 
-            if (state->called_object_dump) {
+            if (last_iter and state->called_object_dump) {
                 printf("\tid: %td\n", id);
 
                 if (id == world->spec_id.player) {
@@ -1185,7 +1188,7 @@ void UpdateEntities(
                 }
             }
 
-            if (state->called_object_dump) {
+            if (last_iter and state->called_object_dump) {
                 printf("\tid: %td\n", id);
 
                 if (id == world->spec_id.player) {
@@ -1206,7 +1209,6 @@ void UpdateEntities(
                 }
             }
         }
-        accumulator -= fixed_dt;
     }
 
 
