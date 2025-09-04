@@ -61,16 +61,16 @@ typedef enum {
 } MovementFlags;
 
 typedef struct {
-    fan_vec2 position;
-    fan_vec2 scale;
+    fan_vec2   position;
+    fan_vec2   scale;
     float32    rotation;
 
     bool32     initialized;
 } CTransform;
 
 typedef struct {
-    fan_color   color;
-    fan_vec2 offset;
+    fan_color  color;
+    fan_vec2   offset;
     int32      layer;
 
     bool32     visible;
@@ -78,10 +78,10 @@ typedef struct {
 } CShape;
 
 typedef struct {
-    fan_vec2 velocity_input;
-    fan_vec2 velocity_force;
+    fan_vec2   velocity_input;
+    fan_vec2   velocity_force;
 
-    fan_vec2 direction;
+    fan_vec2   direction;
 
     float32    speed;
     float32    max_speed;
@@ -94,7 +94,7 @@ typedef struct {
 } CMovement;
 
 typedef struct {
-    fan_vec2 last_position;
+    fan_vec2   last_position;
 
     float32    speed;
     float32    friction;
@@ -234,6 +234,10 @@ typedef struct {
     int32        window_width;
     int32        window_height;
 
+    fan_vec2     render_size;
+    fan_vec2     world_offset;
+    int32        world_scale; // pixels_per_unit
+
     bool32       called_object_dump;
 } GameState;
 
@@ -293,7 +297,6 @@ typedef struct {
 	bool32                 update_entity_split;
 
 	TileMap                map;
-    int32                  pixels_per_unit;
 
     CTransformStorage      c_transform;
     CShapeStorage          c_shape;

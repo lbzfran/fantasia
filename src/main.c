@@ -64,6 +64,10 @@ int main(void) {
             running = false;
         }
 
+        if (fan_window_resized()) {
+            state.resized = true;
+        }
+
         p_input->direction = (fan_vec2){ 0 };
         if (fan_key_down(FanKey_W)) {
             p_input->direction.y += 1;

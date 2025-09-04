@@ -97,6 +97,11 @@ void fan_window_config(int32 flags) {
     SetConfigFlags(flags);
 }
 
+bool32 fan_window_resized(void) {
+    bool32 result = (bool32)IsWindowResized();
+    return result;
+}
+
 void fan_dev_audio_create(void) {
     InitAudioDevice();
 }

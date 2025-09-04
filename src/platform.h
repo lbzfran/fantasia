@@ -263,6 +263,7 @@ FAN_API void  fan_window_close(void);
 FAN_API int32 fan_window_shouldclose(void);
 
 FAN_API void fan_window_config(int32);
+FAN_API bool32 fan_window_resized(void);
 FAN_API void fan_log_set(int32);
 
 FAN_API int32 fan_window_width(void);

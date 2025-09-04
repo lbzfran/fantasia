@@ -3,28 +3,34 @@
 #include "os.h"
 #include "platform.h"
 
-fan_vec2 WorldToScreen(fan_vec2 world_coord, fan_vec2 camera_position, float32 camera_zoom, int32 pixels_per_unit) {
-    int32 screen_width = fan_window_width();
-    int32 screen_height = fan_window_height();
-
+fan_vec2 WorldToScreen(
+    fan_vec2 world_coord,
+    fan_vec2 camera_position,
+    float32 camera_zoom,
+    int32 pixels_per_unit,
+    fan_vec2 render_size
+) {
     fan_vec2 camera_coord = fan_vec2_sub(world_coord, camera_position);
     fan_vec2 px_coord     = fan_vec2_scale(camera_coord, (float32)pixels_per_unit * camera_zoom);
 
     fan_vec2 screen_coord = (fan_vec2) {
-        ((float32)screen_width  / 2.0f) + px_coord.x,
-        ((float32)screen_height / 2.0f) - px_coord.y,
+        (render_size.x / 2.0f) + px_coord.x,
+        (render_size.y / 2.0f) - px_coord.y,
     };
 
     return screen_coord;
 }
 
-fan_vec2 ScreenToWorld(fan_vec2 screen_coord, fan_vec2 camera_position, float32 camera_zoom, int32 pixels_per_unit) {
-    int32 screen_width = fan_window_width();
-    int32 screen_height = fan_window_height();
-
+fan_vec2 ScreenToWorld(
+    fan_vec2 screen_coord,
+    fan_vec2 camera_position,
+    float32 camera_zoom,
+    int32 pixels_per_unit,
+    fan_vec2 render_size
+) {
     fan_vec2 centered_coord = (fan_vec2) {
-        screen_coord.x - ((float32)screen_width / 2.0f),
-        ((float32)screen_height / 2.0f) - screen_coord.y
+        screen_coord.x - (render_size.x / 2.0f),
+        (render_size.y / 2.0f) - screen_coord.y
     };
 
     fan_vec2 local_coord = fan_vec2_scale(centered_coord, 1.0f / ((float32)pixels_per_unit * camera_zoom));
@@ -99,7 +105,14 @@ void MovementSystem(CMovement *m, CTransform *t, fan_vec2 direction, fan_rect_i3
     }
 }
 
-void PhysicsSystem(CPhysics *p, CTransform *t, fan_vec2 force, float32 dt) {
+void PhysicsSystem(
+    CPhysics *p,
+    CTransform *t,
+    fan_vec2 force,
+    float32 render_width,
+    float32 render_height,
+    float32 dt
+) {
     if (not p->initialized) {
         init_if_null(p->last_position.x, t->position.x);
         init_if_null(p->last_position.y, t->position.y);
@@ -116,8 +129,8 @@ void PhysicsSystem(CPhysics *p, CTransform *t, fan_vec2 force, float32 dt) {
     fan_vec2 acceleration = fan_vec2_zero();
 
     fan_vec2 screen_size = {
-        (float32)fan_window_width(),
-        (float32)fan_window_height()
+        render_width,
+        render_height
     };
     if (fan_vec2_length(t->scale) > 0.0f) {
         screen_size.x -= t->scale.x;
@@ -416,6 +429,7 @@ void LightSystem(
         fan_vec2      camera_pos,
         float32       camera_zoom,
         int32         pixels_per_unit,
+        fan_vec2      render_size,
         float32       dt
     ) {
     (void)dt;
@@ -428,7 +442,8 @@ void LightSystem(
         center_pos,
         camera_pos,
         camera_zoom,
-        pixels_per_unit
+        pixels_per_unit,
+        render_size
     );
 
     fan_draw_circle(
@@ -439,13 +454,17 @@ void LightSystem(
     );
 }
 
-void LightingProcessPost(fan_rtexture lightmap) {
+void LightingProcessPost(
+    fan_rtexture lightmap,
+    int32 window_width,
+    int32 window_height
+) {
     fan_mode_blend_begin(FanBlend_MULTIPLIED);
 
         fan_draw_texture(
             lightmap.texture,
             (fan_rect){ 0, 0, (float32)lightmap.texture.width, (float32)-lightmap.texture.height },
-            (fan_rect){ 0, 0, (float32)lightmap.texture.width, (float32)lightmap.texture.height },
+            (fan_rect){ 0, 0, (float32)window_width, (float32)window_height },
             fan_vec2_zero(),
             0.0f,
             fan_color_WHITE
@@ -473,9 +492,16 @@ void RenderSystem(
         fan_vec2 camera_position,
         float32 camera_zoom,
         int32 pixels_per_unit,
+        fan_vec2 render_size,
 	    int32 flags
     ) {
-    fan_vec2 screen_pos    = WorldToScreen(t->position, camera_position, camera_zoom, pixels_per_unit);
+    fan_vec2 screen_pos    = WorldToScreen(
+        t->position,
+        camera_position,
+        camera_zoom,
+        pixels_per_unit,
+        render_size
+    );
     fan_vec2 screen_offset = fan_vec2_scale(s->offset, (float32)pixels_per_unit * camera_zoom);
     fan_vec2 screen_scale  = fan_vec2_scale(t->scale,  (float32)pixels_per_unit * camera_zoom);
     if (tx is null) {
@@ -512,7 +538,13 @@ void RenderSystem(
         };
 
         if (flags & RenderFlag_ShowInteract) {
-            fan_vec2 screen_zone_pos = WorldToScreen((fan_vec2){ zone.x, zone.y }, camera_position, camera_zoom, pixels_per_unit);
+            fan_vec2 screen_zone_pos = WorldToScreen(
+                (fan_vec2){ zone.x, zone.y },
+                camera_position,
+                camera_zoom,
+                pixels_per_unit,
+                render_size
+            );
             fan_rect screen_zone = (fan_rect) {
                 screen_zone_pos.x,
                 screen_zone_pos.y,
@@ -536,15 +568,19 @@ void RenderSystem(
     }
 }
 
-void RenderProcessPost(fan_rtexture map) {
-        fan_draw_texture(
-            map.texture,
-            (fan_rect){ 0, 0, (float32)map.texture.width,  (float32)-map.texture.height },
-            (fan_rect){ 0, 0, (float32)map.texture.width, (float32)map.texture.height },
-            fan_vec2_zero(),
-            0.0f,
-            fan_color_WHITE
-        );
+void RenderProcessPost(
+    fan_rtexture map,
+    int32 window_width,
+    int32 window_height
+) {
+    fan_draw_texture(
+        map.texture,
+        (fan_rect){ 0, 0, (float32)map.texture.width, (float32)-map.texture.height },
+        (fan_rect){ 0, 0, (float32)window_width, (float32)window_height },
+        fan_vec2_zero(),
+        0.0f,
+        fan_color_WHITE
+    );
 }
 
 typedef struct RenderEntry {
@@ -593,7 +629,7 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
 
     fan_vec2 camera_position = world->c_transform.data[world->spec_id.camera].position;
     float32 camera_zoom = state->camera_zoom;
-    int32 pixels_per_unit = world->pixels_per_unit;
+    int32 pixels_per_unit = state->world_scale;
 
     for (ssize i = 0; i < world->c_shape.size; i++) {
         ssize id = world->c_shape.dense[i];
@@ -744,6 +780,7 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
                 camera_position,
                 camera_zoom,
                 pixels_per_unit,
+                state->render_size,
                 render_flags
             );
 
@@ -755,7 +792,13 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
                 float32 length    = attack->attack_range;
                 float32 angle     = attack->arc_angle;
 
-                fan_vec2 prev = WorldToScreen(center, camera_position, camera_zoom, pixels_per_unit);
+                fan_vec2 prev = WorldToScreen(
+                    center,
+                    camera_position,
+                    camera_zoom,
+                    pixels_per_unit,
+                    state->render_size
+                );
 
                 // Compute start and end angles
                 float32 progress = attack->timer / attack->swing_time;
@@ -779,7 +822,8 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
                         world_point,
                         camera_position,
                         camera_zoom,
-                        pixels_per_unit
+                        pixels_per_unit,
+                        state->render_size
                     );
 
                     // fan_vec2_print(sweep_dir);
@@ -799,14 +843,16 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
                     world_sweep_tip,
                     camera_position,
                     camera_zoom,
-                    pixels_per_unit
+                    pixels_per_unit,
+                    state->render_size
                 );
                 fan_draw_linev(
                     WorldToScreen(
                         center,
                         camera_position,
                         camera_zoom,
-                        pixels_per_unit
+                        pixels_per_unit,
+                        state->render_size
                     ),
                     screen_sweep_tip,
                     fan_color_RED
@@ -826,7 +872,7 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
         }
     fan_mode_texture_end();
 
-    RenderProcessPost(state->rendermap);
+    RenderProcessPost(state->rendermap, state->window_width, state->window_height);
     fan_color ambient = { 30, 30, 30, 255 };
     fan_mode_texture_begin(state->lightmap);
         fan_draw_clear(ambient);
@@ -840,11 +886,21 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
             CTransform   *transform = &world->c_transform.data[transform_idx];
             CShape       *shape     = &world->c_shape.data[shape_idx];
 
-            LightSystem(light, transform, shape, state->lightmap, camera_position, camera_zoom, pixels_per_unit, dt);
+            LightSystem(
+                light,
+                transform,
+                shape,
+                state->lightmap,
+                camera_position,
+                camera_zoom,
+                pixels_per_unit,
+                state->render_size,
+                dt
+            );
         }
     fan_mode_texture_end();
 
-    LightingProcessPost(state->lightmap);
+    LightingProcessPost(state->lightmap, state->window_width, state->window_height);
 }
 
 // NOTE(liam): must call whenever entities are added/removed
@@ -1242,6 +1298,29 @@ void UpdateEntities(
     }
 }
 
+void StateGetView(GameState *state) {
+    float32 window_width  = (float32)fan_window_width();
+    float32 window_height = (float32)fan_window_height();
+
+    fan_vec2 render_size = (fan_vec2){ 640, 480 };
+    fan_vec2 world_offset = fan_vec2_zero();
+
+    // int32 scale_x = (int32)(window_width  / render_size.x);
+    // int32 scale_y = (int32)(window_height / render_size.y);
+    // int32 world_scale = min(scale_x, scale_y);
+    int32 world_scale = 64;
+
+    // float32 offset_x = ((float32)state->window_width  - render_width)  / 2.0f;
+    // float32 offset_y = ((float32)state->window_height - render_height)  / 2.0f;
+    // render_width  = render_width ;
+    // render_height = render_height;
+
+    state->window_width  = (int32)window_width;
+    state->window_height = (int32)window_height;
+    state->world_scale = world_scale;
+    state->render_size = render_size;
+}
+
 void SceneSolo(World *world) {
     fan_texture tex_link = fan_texture_load("./resources/link.png");
     // fan_vec2 sprite_link_size = (fan_vec2){ tex_link.width / 10.0f, tex_link.height / 8.0f };
@@ -1273,9 +1352,9 @@ void SceneSolo(World *world) {
     world->spec_id.player = world->entity_count;
     world->entity_count++;
 
-    ComponentAddArgs(&world->c_transform,  world->entity_count,
-        .scale = (fan_vec2){ (float32)fan_window_width(), (float32)fan_window_height() },
-    );
+    // ComponentAddArgs(&world->c_transform,  world->entity_count,
+    //     .scale = (fan_vec2){ (float32)render_width, (float32)render_height },
+    // );
     ComponentAddArgs(&world->c_shape,      world->entity_count,
         .layer = 1,
         .color = (fan_color){ 155, 155, 155, 255 },
@@ -1485,6 +1564,8 @@ global void SceneMain(World *world) {
 void GameInit(Allocator *a, World *world, GameState *state) {
     fan_fps_target(60);
 
+    StateGetView(state);
+
     ssize split_size      = kilobytes(1);
     ssize component_size  = kilobytes(1);
 
@@ -1514,11 +1595,11 @@ void GameInit(Allocator *a, World *world, GameState *state) {
 
     SceneMain(world);
 
-    state->bound_zone = (fan_rect_i32){ .width = 10, .height = 6 };
+    state->bound_zone  = (fan_rect_i32){ .width = 10, .height = 6 };
     state->camera_zoom = 1.0f;
 
-    state->rendermap = fan_rtexture_load(fan_window_width(), fan_window_height());
-    state->lightmap = fan_rtexture_load(fan_window_width(), fan_window_height());
+    state->rendermap = fan_rtexture_load((int32)640, (int32)480);
+    state->lightmap  = fan_rtexture_load((int32)640, (int32)480);
 
     state->music = fan_music_load("./resources/My Uncles Last Voyage.mp3");
     fan_music_play(state->music);
@@ -1526,17 +1607,21 @@ void GameInit(Allocator *a, World *world, GameState *state) {
 
     TileMap map = (TileMap) {
         .tile_size = 1,
-		.tiles = MatrixInt32Create(a, 10, 10, 1),
+		.tiles     = MatrixInt32Create(a, 10, 10, 1),
     };
 
 	world->map = map;
-    world->pixels_per_unit = 100;
 
     printf("Successfully passed initialization!\n");
 }
 
 void GameUpdateAndRender(Allocator *a, World *world, GameState *state, float32 dt) {
     (void)a;
+
+    if (state->resized) {
+        StateGetView(state);
+        state->resized = false;
+    }
 
     fan_music_update(state->music);
 
