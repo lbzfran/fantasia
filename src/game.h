@@ -5,6 +5,7 @@
 #include "platform.h"
 
 #define istagged(t) (t >= 0 ? true : false)
+#define TILE_SIZE 64
 
 #define ComponentDeclare(name, T) \
     typedef struct name##Storage {       \

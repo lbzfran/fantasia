@@ -244,7 +244,7 @@ bool32 CollisionSystem(
             min(aMax.y, bMax.y) - max(a->position.y, b->position.y)
         };
 
-        const float32 tolerance = 0.0f;
+        const float32 tolerance = 0.01f;
         if (overlap.x <= tolerance || overlap.y <= tolerance)
             return false;
 
@@ -1305,10 +1305,9 @@ void StateGetView(GameState *state) {
     fan_vec2 render_size = (fan_vec2){ 640, 480 };
     fan_vec2 world_offset = fan_vec2_zero();
 
-    // int32 scale_x = (int32)(window_width  / render_size.x);
-    // int32 scale_y = (int32)(window_height / render_size.y);
-    // int32 world_scale = min(scale_x, scale_y);
-    int32 world_scale = 64;
+    int32 scale_x = (int32)(window_width  / render_size.x);
+    int32 scale_y = (int32)(window_height / render_size.y);
+    int32 world_scale = TILE_SIZE * min(scale_x, scale_y);
 
     // float32 offset_x = ((float32)state->window_width  - render_width)  / 2.0f;
     // float32 offset_y = ((float32)state->window_height - render_height)  / 2.0f;
@@ -1442,7 +1441,8 @@ global void SceneMain(World *world) {
         .texture = tex_sprite,
         // .rect = player_idle_down_frames[0],
         // .rect = (fan_rect_i32){ 0, 0, tex_link.width / 10.0f, tex_link.height / 8.0f }
-        .rect = { .width = 36, .height = 36 },
+        .rect = { .x = 64, .y = 0, .width = 14, .height = 16 },
+        // .rect = { .width = 36, .height = 36 },
     );
     // ComponentAddArgs(&world->c_animation, world->entity_count);
     ComponentAdd(&world->c_interaction,  world->entity_count);
@@ -1456,7 +1456,7 @@ global void SceneMain(World *world) {
     // ComponentAddArgs(&world->c_animation, world->entity_count);
     ComponentAddArgs(&world->c_light,     world->entity_count,
         .color  = (fan_color){ 170, 170, 170, 170 },
-        .radius = 100.0f,
+        .radius = 200.0f,
     );
     world->spec_id.player = world->entity_count;
     world->entity_count++;
