@@ -119,6 +119,11 @@ int32 fan_f32_truncate(float32 x) {
     return (int32)x;
 }
 
+float32 fan_f32_abs(float32 x) {
+    return fabsf(x);
+}
+
+
 float32 fan_f32_exp(float32 x) {
     union { float32 f; int32 i; } u;
     u.i = (int32)(12102203 * x) + 127 * (1 << 23);

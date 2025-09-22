@@ -350,6 +350,7 @@ FAN_API float32 fan_f32_exp(float32);
 
 FAN_API float32 fan_f32_round(float32);
 FAN_API int32   fan_f32_truncate(float32);
+FAN_API float32 fan_f32_abs(float32);
 
 FAN_API float32 fan_f32_sin(float32);
 FAN_API float32 fan_f32_cos(float32);

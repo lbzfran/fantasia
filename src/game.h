@@ -117,6 +117,7 @@ typedef struct CBehavior {
         BehaviorType_Random = 1,
         BehaviorType_Follow = 2,
     } type;
+    ssize   target_id;
     float32 timer;
     float32 update_time;
     bool32  updating;

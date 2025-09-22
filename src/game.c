@@ -1034,7 +1034,7 @@ void UpdateEntities(
                     } break;
                     case BehaviorType_Follow: {
                         if (behavior->updating) {
-                            CTransform *target_transform = &world->c_transform.data[world->spec_id.player];
+                            CTransform *target_transform = &world->c_transform.data[behavior->target_id];
                             fan_vec2 target_face         = target_transform->position;
 
                             if (id == world->spec_id.camera) {
@@ -1048,10 +1048,38 @@ void UpdateEntities(
                                 transform->position = fan_vec2_lerp(transform->position, lerp_factor, target_face);
                             }
                             else {
-                                fan_vec2 face = fan_vec2_normalize(fan_vec2_sub(target_face, transform->position));
+                                // fan_vec2 face = fan_vec2_normalize(fan_vec2_sub(target_face, transform->position));
+                                //
+                                // direction = (fan_vec2){ signof(face.x), signof(face.y) };
 
+                                fan_vec2 to_target = fan_vec2_sub(target_face, transform->position);
+                                float32 dist = fan_vec2_length(to_target);
+                                float32 follow_radius = 1.5f; // entity stops within this radius
 
-                                direction = (fan_vec2){ signof(face.x), signof(face.y) };
+                                if (dist > follow_radius) {
+                                    fan_vec2 to_target = fan_vec2_sub(target_face, transform->position);
+                                    fan_vec2 face = fan_vec2_normalize(to_target);
+
+                                    float ax = fan_f32_abs(face.x);
+                                    float ay = fan_f32_abs(face.y);
+                                    float diagonal_threshold = 0.25f; // tweak: smaller = stricter snapping
+
+                                    if (fan_f32_abs(ax - ay) <= diagonal_threshold) {
+                                        // Close enough → keep both axes (diagonal)
+                                        direction = (fan_vec2){ signof(face.x), signof(face.y) };
+                                    }
+                                    else if (ax > ay) {
+                                        // Horizontal dominates
+                                        direction = (fan_vec2){ signof(face.x), 0 };
+                                    }
+                                    else {
+                                        // Vertical dominates
+                                        direction = (fan_vec2){ 0, signof(face.y) };
+                                    }
+                                }
+                                else {
+                                    direction = (fan_vec2){ 0, 0 }; // stop moving when close enough
+                                }
                             }
                         }
                         else {
@@ -1520,10 +1548,10 @@ global void SceneMain(World *world) {
 
 
     global AnimationData anim_table[] = {
-        { "player_idle_up",    player_idle_up_frames,    .frame_time = 0.2f, .frame_count = 4, true, -1 },
-        { "player_idle_down",  player_idle_down_frames,  .frame_time = 0.2f, .frame_count = 4, true, -1 },
-        { "player_idle_left",  player_idle_left_frames,  .frame_time = 0.2f, .frame_count = 4, true, -1 },
-        { "player_idle_right", player_idle_right_frames, .frame_time = 0.2f, .frame_count = 4, true, -1 },
+        { "player_idle_up",    player_idle_up_frames,    .frame_time = 0.4f, .frame_count = 4, true, -1 },
+        { "player_idle_down",  player_idle_down_frames,  .frame_time = 0.4f, .frame_count = 4, true, -1 },
+        { "player_idle_left",  player_idle_left_frames,  .frame_time = 0.4f, .frame_count = 4, true, -1 },
+        { "player_idle_right", player_idle_right_frames, .frame_time = 0.4f, .frame_count = 4, true, -1 },
         { "player_walk_up",    player_walk_up_frames,    .frame_time = 0.2f, .frame_count = 4, true, -1 },
         { "player_walk_down",  player_walk_down_frames,  .frame_time = 0.2f, .frame_count = 4, true, -1 },
         { "player_walk_left",  player_walk_left_frames,  .frame_time = 0.2f, .frame_count = 4, true, -1 },
@@ -1561,10 +1589,22 @@ global void SceneMain(World *world) {
     world->spec_id.player = world->entity_count;
     world->entity_count++;
 
+    ComponentAdd(&world->c_transform,    world->entity_count);
+    ComponentAddArgs(&world->c_movement, world->entity_count,
+        .speed = 5.0f,
+        .flags = MovementFlag_NoCollision,
+    );
+    ComponentAddArgs(&world->c_behavior, world->entity_count,
+        .type = BehaviorType_Follow,
+        .target_id = world->spec_id.player,
+    );
+    world->spec_id.camera = world->entity_count;
+    world->entity_count++;
+
     // fan_texture tex_mewee = fan_texture_load("./resources/mewee.png");
     ComponentAdd(&world->c_transform,    world->entity_count);
     ComponentAddArgs(&world->c_shape,    world->entity_count,
-        .color = (fan_color){ 50, 255, 255, 255 },
+        // .color = (fan_color){ 50, 255, 255, 255 },
     );
     ComponentAddArgs(&world->c_movement, world->entity_count, .speed = 1.0f);
     ComponentAddArgs(&world->c_texture,  world->entity_count,
@@ -1586,9 +1626,9 @@ global void SceneMain(World *world) {
 
     ComponentAdd(&world->c_transform,    world->entity_count);
     ComponentAddArgs(&world->c_shape,    world->entity_count,
-        .color = (fan_color){ 255, 50, 255, 255 },
+        // .color = (fan_color){ 255, 50, 255, 255 },
     );
-    ComponentAddArgs(&world->c_movement, world->entity_count, .speed = 0.5f);
+    ComponentAddArgs(&world->c_movement, world->entity_count, .speed = 2.0f);
     ComponentAddArgs(&world->c_texture,  world->entity_count,
         .texture = tex_girl_03,
         .rect = { .x = 0, .y = 0, .width = citizen_size.x, .height = citizen_size.y },
@@ -1596,6 +1636,7 @@ global void SceneMain(World *world) {
     ComponentAddArgs(&world->c_animation, world->entity_count);
     ComponentAddArgs(&world->c_behavior, world->entity_count,
         .type = BehaviorType_Follow,
+        .target_id = world->spec_id.player,
     );
     ComponentAdd(&world->c_interaction,  world->entity_count);
     ComponentAdd(&world->c_interactable, world->entity_count);
@@ -1651,16 +1692,6 @@ global void SceneMain(World *world) {
     );
     world->entity_count++;
 
-    ComponentAdd(&world->c_transform,    world->entity_count);
-    ComponentAddArgs(&world->c_movement, world->entity_count,
-        .speed = 5.0f,
-        .flags = MovementFlag_NoCollision,
-    );
-    ComponentAddArgs(&world->c_behavior, world->entity_count,
-        .type = BehaviorType_Follow,
-    );
-    world->spec_id.camera = world->entity_count;
-    world->entity_count++;
 }
 
 void GameInit(Allocator *a, World *world, GameState *state) {
