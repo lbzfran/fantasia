@@ -52,10 +52,10 @@ void MovementSystem(CMovement *m, CTransform *t, fan_vec2 direction, fan_rect_i3
 
     fan_vec2 velocity;
     if (fan_vec2_length(m->velocity_force) > 0.001f) {
-        velocity = m->velocity_force;
+        velocity            = m->velocity_force;
         float32 damp_factor = 0.98f;
-        m->velocity_force = fan_vec2_scale(m->velocity_force, damp_factor);
-        m->lock_time = 0.15f;
+        m->velocity_force   = fan_vec2_scale(m->velocity_force, damp_factor);
+        m->lock_time        = 0.15f;
     }
     else {
         m->velocity_input = fan_vec2_zero();
@@ -63,9 +63,9 @@ void MovementSystem(CMovement *m, CTransform *t, fan_vec2 direction, fan_rect_i3
             m->lock_time = max(m->lock_time - dt, 0.0f);
         }
         else if (fan_vec2_length(direction) > 0.0f) {
-            m->direction       = direction;
-            direction          = fan_vec2_normalize(direction);
-            m->velocity_input  = fan_vec2_scale(direction, m->speed);
+            m->direction      = direction;
+            direction         = fan_vec2_normalize(direction);
+            m->velocity_input = fan_vec2_scale(direction, m->speed);
         }
         velocity = m->velocity_input;
     }
@@ -374,7 +374,7 @@ typedef enum {
 void AnimationSystem(CAnimation *a, CTexture *t, AnimationData *table, float dt) {
     if (table is null or a is null or t is null) return;
     if (a->finished or
-        (not a->finished and a->request.id != -1 and (a->flags & AnimationFlag_NotInterruptible) == false)) {
+        (not a->finished and a->request.id != -1 and a->request.id != a->id and (a->flags & AnimationFlag_NotInterruptible) == false)) {
         *a = AnimationApply_(table, a->request.id, a->request.flags, (AnimationRequest){ -1, 0 });
     }
 
@@ -872,31 +872,31 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
     fan_mode_texture_end();
 
     RenderProcessPost(state->rendermap, state->window_width, state->window_height);
-    fan_color ambient = { 30, 30, 30, 255 };
+    fan_color ambient = { 255, 255, 255, 255 };
     fan_mode_texture_begin(state->lightmap);
         fan_draw_clear(ambient);
-        for (ssize i = 0; i < world->c_light.size; i++) {
-            ssize id = world->c_light.dense[i];
-
-            ssize transform_idx   = world->c_transform.sparse[id];
-            ssize shape_idx       = world->c_shape.sparse[id];
-
-            CLight       *light     = &world->c_light.data[i];
-            CTransform   *transform = &world->c_transform.data[transform_idx];
-            CShape       *shape     = &world->c_shape.data[shape_idx];
-
-            LightSystem(
-                light,
-                transform,
-                shape,
-                state->lightmap,
-                camera_position,
-                camera_zoom,
-                pixels_per_unit,
-                state->render_size,
-                dt
-            );
-        }
+        // for (ssize i = 0; i < world->c_light.size; i++) {
+        //     ssize id = world->c_light.dense[i];
+        //
+        //     ssize transform_idx   = world->c_transform.sparse[id];
+        //     ssize shape_idx       = world->c_shape.sparse[id];
+        //
+        //     CLight       *light     = &world->c_light.data[i];
+        //     CTransform   *transform = &world->c_transform.data[transform_idx];
+        //     CShape       *shape     = &world->c_shape.data[shape_idx];
+        //
+        //     LightSystem(
+        //         light,
+        //         transform,
+        //         shape,
+        //         state->lightmap,
+        //         camera_position,
+        //         camera_zoom,
+        //         pixels_per_unit,
+        //         state->render_size,
+        //         dt
+        //     );
+        // }
     fan_mode_texture_end();
 
     LightingProcessPost(state->lightmap, state->window_width, state->window_height);
@@ -1007,23 +1007,6 @@ void UpdateEntities(
                 if ((attack is null) or (attack and not attack->attacking)) {
                     direction = state->p_input.direction;
 
-                    if (animation_idx != -1) {
-                        anim = &world->c_animation.data[animation_idx];
-
-                        if (direction.x > 0.0f) {
-                            anim->request.id = 1;
-                        }
-                        else if (direction.x < 0.0f) {
-                            anim->request.id = 2;
-                        }
-
-                        if (direction.y > 0.0f) {
-                            anim->request.id = 3;
-                        }
-                        else if (direction.y < 0.0f) {
-                            anim->request.id = 0;
-                        }
-                    }
                 }
             }
             else if (behavior_idx != -1) {
@@ -1066,6 +1049,8 @@ void UpdateEntities(
                             }
                             else {
                                 fan_vec2 face = fan_vec2_normalize(fan_vec2_sub(target_face, transform->position));
+
+
                                 direction = (fan_vec2){ signof(face.x), signof(face.y) };
                             }
                         }
@@ -1289,6 +1274,40 @@ void UpdateEntities(
         CMovement  *move    = &world->c_movement.data[move_idx];
         (void)move;
 
+        fan_vec2 direction = move->direction;
+        // if (id == world->spec_id.player) {
+            if ((fan_vec2_length(move->velocity_input)) > 0.0f) {
+                if (direction.x > 0.0f) { // right
+                    anim->request.id = 6;
+                }
+                else if (direction.x < 0.0f) { // left
+                    anim->request.id = 7;
+                }
+
+                if (direction.y > 0.0f) { // up
+                    anim->request.id = 4;
+                }
+                else if (direction.y < 0.0f) { // down
+                    anim->request.id = 5;
+                }
+            }
+            else {
+                if (direction.x > 0.0f) { // right
+                    anim->request.id = 2;
+                }
+                else if (direction.x < 0.0f) { // left
+                    anim->request.id = 3;
+                }
+
+                if (direction.y > 0.0f) { // up
+                    anim->request.id = 0;
+                }
+                else if (direction.y < 0.0f) { // down
+                    anim->request.id = 1;
+                }
+            }
+        // }
+
         AnimationSystem(anim, texture, world->anim_table, dt);
     }
 
@@ -1377,121 +1396,138 @@ void SceneSolo(World *world) {
 global void SceneMain(World *world) {
     fan_texture tex_sprite = fan_texture_load("./resources/Sprite-0001.png");
 
-    fan_texture tex_girl = fan_texture_load("./resources/Citizens/Female/Nel/Nel.png");
+    fan_texture tex_girl_01 = fan_texture_load("./resources/Citizens/Female/Hana/Hana.png");
+    fan_texture tex_girl_02 = fan_texture_load("./resources/Citizens/Female/Khali/Khali.png");
+    fan_texture tex_girl_03 = fan_texture_load("./resources/Citizens/Female/Nel/Nel.png");
 
-    // fan_rect_i32 player_idle_up_frames[1]    = { 0 };
-    // global fan_rect_i32 player_idle_down_frames[2]  = { 0 };
-    // player_idle_down_frames[0] = (fan_rect_i32){ 0, 0,  .width = 32, .height = 32 };
-    // player_idle_down_frames[1] = (fan_rect_i32){ 32, 0, .width = 32, .height = 32 };
-    // fan_rect_i32 player_idle_left_frames[3]  = { 0 };
-    // fan_rect_i32 player_idle_right_frames[3] = { 0 }tex_sprite.height;
+    global fan_rect player_idle_down_frames[4]  = { 0 };
+    global fan_rect player_idle_up_frames[4]    = { 0 };
+    global fan_rect player_idle_left_frames[4]  = { 0 };
+    global fan_rect player_idle_right_frames[4] = { 0 };
 
-    // global AnimationData anim_table[] = {
-    //     { "player_idle_down",  player_idle_down_frames,  .frame_time = 0.5f, .frame_count = 2, true, -1 },
-        // { "player_idle_up",    player_idle_up_frames,    .frame_time = 1.5f, .frame_count = 1, false,  0 },
-        // { "player_idle_left",  player_idle_left_frames,  .frame_time = 0.5f, .frame_count = 3, false,  0 },
-        // { "player_idle_right", player_idle_right_frames, .frame_time = 0.5f, .frame_count = 3, false,  0 },
-    // };
+    global fan_rect player_walk_down_frames[4]  = { 0 };
+    global fan_rect player_walk_up_frames[4]    = { 0 };
+    global fan_rect player_walk_left_frames[4]  = { 0 };
+    global fan_rect player_walk_right_frames[4] = { 0 };
 
-    // fan_texture tex_link = fan_texture_load("./resources/link.png");
-    // fan_vec2 sprite_link_size = (fan_vec2){ (float32)tex_link.width / 10.0f, (float32)tex_link.height / 8.0f };
-    // global fan_rect player_idle_down_frames[3]  = { 0 };
-    // global fan_rect player_idle_up_frames[1]    = { 0 };
-    // global fan_rect player_idle_left_frames[3]  = { 0 };
-    // global fan_rect player_idle_right_frames[3] = { 0 };
-    // player_idle_down_frames[0]  = (fan_rect){
-    //     0,                           0, sprite_link_size.x, sprite_link_size.y
-    // };
-    // player_idle_down_frames[1]  = (fan_rect){
-    //     sprite_link_size.x,          0, sprite_link_size.x, sprite_link_size.y
-    // };
-    // player_idle_down_frames[2]  = (fan_rect){
-    //     (2.0f * sprite_link_size.x), 0, sprite_link_size.x, sprite_link_size.y
-    // };
-    //
-    // player_idle_up_frames[0]    = (fan_rect){
-    //     0, (2.0f * sprite_link_size.y), sprite_link_size.x, sprite_link_size.y
-    // };
-    //
-    // player_idle_left_frames[0]  = (fan_rect){
-    //     0,                           sprite_link_size.y, sprite_link_size.x, sprite_link_size.y
-    // };
-    // player_idle_left_frames[1]  = (fan_rect){
-    //     sprite_link_size.x,          sprite_link_size.y, sprite_link_size.x, sprite_link_size.y
-    // };
-    // player_idle_left_frames[2]  = (fan_rect){
-    //     (2.0f * sprite_link_size.x), sprite_link_size.y, sprite_link_size.x, sprite_link_size.y
-    // };
-    //
-    // player_idle_right_frames[0] = (fan_rect){
-    //     0,                           (3.0f * sprite_link_size.y), sprite_link_size.x, sprite_link_size.y
-    // };
-    // player_idle_right_frames[1] = (fan_rect){
-    //     sprite_link_size.x,          (3.0f * sprite_link_size.y), sprite_link_size.x, sprite_link_size.y
-    // };
-    // player_idle_right_frames[2] = (fan_rect){
-    //     (2.0f * sprite_link_size.x), (3.0f * sprite_link_size.y), sprite_link_size.x, sprite_link_size.y
-    // };
-    //
-    // global AnimationData anim_table[] = {
-    //     { "player_idle_down",  player_idle_down_frames,  .frame_time = 0.5f, .frame_count = 3, true,  -1 },
-    //     { "player_idle_up",    player_idle_up_frames,    .frame_time = 1.5f, .frame_count = 1, true,  -1 },
-    //     { "player_idle_left",  player_idle_left_frames,  .frame_time = 0.5f, .frame_count = 3, true,  -1 },
-    //     { "player_idle_right", player_idle_right_frames, .frame_time = 0.5f, .frame_count = 3, true,  -1 },
-    // };
-
-    global fan_rect player_idle_down_frames[3]  = { 0 };
-    global fan_rect player_idle_up_frames[3]    = { 0 };
-    global fan_rect player_idle_left_frames[3]  = { 0 };
-    global fan_rect player_idle_right_frames[3] = { 0 };
-
-    fan_vec2 sprite_girl_size = (fan_vec2){ (float32)16.0f, (float32)16.0f };
-
-    player_idle_down_frames[0]  = (fan_rect){
-        0,                           0, sprite_girl_size.x, sprite_girl_size.y
-    };
-    player_idle_down_frames[1]  = (fan_rect){
-        sprite_girl_size.x,          0, sprite_girl_size.x, sprite_girl_size.y
-    };
-    player_idle_down_frames[2]  = (fan_rect){
-        (2.0f * sprite_girl_size.x), 0, sprite_girl_size.x, sprite_girl_size.y
-    };
-
-    player_idle_down_frames[0]  = (fan_rect){
-        0,                           (2.0f * sprite_girl_size.y), sprite_girl_size.x, sprite_girl_size.y
-    };
-    player_idle_down_frames[1]  = (fan_rect){
-        sprite_girl_size.x,          (2.0f * sprite_girl_size.y), sprite_girl_size.x, sprite_girl_size.y
-    };
-    player_idle_down_frames[2]  = (fan_rect){
-        (2.0f * sprite_girl_size.x), (2.0f * sprite_girl_size.y), sprite_girl_size.x, sprite_girl_size.y
-    };
+    fan_vec2 citizen_size = (fan_vec2){ (float32)16.0f, (float32)16.0f };
 
     player_idle_left_frames[0]  = (fan_rect){
-        0,                           sprite_girl_size.y, sprite_girl_size.x, sprite_girl_size.y
+        0,                           0, citizen_size.x, citizen_size.y
     };
     player_idle_left_frames[1]  = (fan_rect){
-        sprite_girl_size.x,          sprite_girl_size.y, sprite_girl_size.x, sprite_girl_size.y
+        citizen_size.x,          0, citizen_size.x, citizen_size.y
     };
     player_idle_left_frames[2]  = (fan_rect){
-        (2.0f * sprite_girl_size.x), sprite_girl_size.y, sprite_girl_size.x, sprite_girl_size.y
+        (2.0f * citizen_size.x), 0, citizen_size.x, citizen_size.y
+    };
+    player_idle_left_frames[3]  = (fan_rect){
+        (3.0f * citizen_size.x), 0, citizen_size.x, citizen_size.y
     };
 
-    player_idle_right_frames[0] = (fan_rect){
-        0,                           (3.0f * sprite_girl_size.y), sprite_girl_size.x, sprite_girl_size.y
+    player_idle_down_frames[0]  = (fan_rect){
+        0,                           (2.0f * citizen_size.y), citizen_size.x, citizen_size.y
     };
-    player_idle_right_frames[1] = (fan_rect){
-        sprite_girl_size.x,          (3.0f * sprite_girl_size.y), sprite_girl_size.x, sprite_girl_size.y
+    player_idle_down_frames[1]  = (fan_rect){
+        citizen_size.x,          (2.0f * citizen_size.y), citizen_size.x, citizen_size.y
     };
-    player_idle_right_frames[2] = (fan_rect){
-        (2.0f * sprite_girl_size.x), (3.0f * sprite_girl_size.y), sprite_girl_size.x, sprite_girl_size.y
+    player_idle_down_frames[2]  = (fan_rect){
+        (2.0f * citizen_size.x), (2.0f * citizen_size.y), citizen_size.x, citizen_size.y
     };
+    player_idle_down_frames[3]  = (fan_rect){
+        (3.0f * citizen_size.x), (2.0f * citizen_size.y), citizen_size.x, citizen_size.y
+    };
+
+    player_idle_right_frames[0]  = (fan_rect){
+        0,                           citizen_size.y, citizen_size.x, citizen_size.y
+    };
+    player_idle_right_frames[1]  = (fan_rect){
+        citizen_size.x,          citizen_size.y, citizen_size.x, citizen_size.y
+    };
+    player_idle_right_frames[2]  = (fan_rect){
+        (2.0f * citizen_size.x), citizen_size.y, citizen_size.x, citizen_size.y
+    };
+    player_idle_right_frames[3]  = (fan_rect){
+        (3.0f * citizen_size.x), citizen_size.y, citizen_size.x, citizen_size.y
+    };
+
+    player_idle_up_frames[0] = (fan_rect){
+        0,                           (3.0f * citizen_size.y), citizen_size.x, citizen_size.y
+    };
+    player_idle_up_frames[1] = (fan_rect){
+        citizen_size.x,          (3.0f * citizen_size.y), citizen_size.x, citizen_size.y
+    };
+    player_idle_up_frames[2] = (fan_rect){
+        (2.0f * citizen_size.x), (3.0f * citizen_size.y), citizen_size.x, citizen_size.y
+    };
+    player_idle_up_frames[3] = (fan_rect){
+        (3.0f * citizen_size.x), (3.0f * citizen_size.y), citizen_size.x, citizen_size.y
+    };
+
+    // WALK
+
+    player_walk_left_frames[0]  = (fan_rect){
+        0,                           (4.0f * citizen_size.y), citizen_size.x, citizen_size.y
+    };
+    player_walk_left_frames[1]  = (fan_rect){
+        citizen_size.x,          (4.0f * citizen_size.y), citizen_size.x, citizen_size.y
+    };
+    player_walk_left_frames[2]  = (fan_rect){
+        (2.0f * citizen_size.x), (4.0f * citizen_size.y), citizen_size.x, citizen_size.y
+    };
+    player_walk_left_frames[3]  = (fan_rect){
+        (3.0f * citizen_size.x), (4.0f * citizen_size.y), citizen_size.x, citizen_size.y
+    };
+
+    player_walk_down_frames[0]  = (fan_rect){
+        0,                           (6.0f * citizen_size.y), citizen_size.x, citizen_size.y
+    };
+    player_walk_down_frames[1]  = (fan_rect){
+        citizen_size.x,          (6.0f * citizen_size.y), citizen_size.x, citizen_size.y
+    };
+    player_walk_down_frames[2]  = (fan_rect){
+        (2.0f * citizen_size.x), (6.0f * citizen_size.y), citizen_size.x, citizen_size.y
+    };
+    player_walk_down_frames[3]  = (fan_rect){
+        (3.0f * citizen_size.x), (6.0f * citizen_size.y), citizen_size.x, citizen_size.y
+    };
+
+    player_walk_right_frames[0]  = (fan_rect){
+        0,                           (5.0f * citizen_size.y), citizen_size.x, citizen_size.y
+    };
+    player_walk_right_frames[1]  = (fan_rect){
+        citizen_size.x,          (5.0f * citizen_size.y), citizen_size.x, citizen_size.y
+    };
+    player_walk_right_frames[2]  = (fan_rect){
+        (2.0f * citizen_size.x), (5.0f * citizen_size.y), citizen_size.x, citizen_size.y
+    };
+    player_walk_right_frames[3]  = (fan_rect){
+        (3.0f * citizen_size.x), (5.0f * citizen_size.y), citizen_size.x, citizen_size.y
+    };
+
+    player_walk_up_frames[0] = (fan_rect){
+        0,                           (7.0f * citizen_size.y), citizen_size.x, citizen_size.y
+    };
+    player_walk_up_frames[1] = (fan_rect){
+        citizen_size.x,          (7.0f * citizen_size.y), citizen_size.x, citizen_size.y
+    };
+    player_walk_up_frames[2] = (fan_rect){
+        (2.0f * citizen_size.x), (7.0f * citizen_size.y), citizen_size.x, citizen_size.y
+    };
+    player_walk_up_frames[3] = (fan_rect){
+        (3.0f * citizen_size.x), (7.0f * citizen_size.y), citizen_size.x, citizen_size.y
+    };
+
 
     global AnimationData anim_table[] = {
-        { "player_idle_down",  player_idle_down_frames,  .frame_time = 0.5f, .frame_count = 3, true, -1 },
-        { "player_idle_up",    player_idle_up_frames,    .frame_time = 0.5f, .frame_count = 3, true, -1 },
-        { "player_idle_left",  player_idle_left_frames,  .frame_time = 0.5f, .frame_count = 3, true, -1 },
-        { "player_idle_right", player_idle_right_frames, .frame_time = 0.5f, .frame_count = 3, true, -1 },
+        { "player_idle_up",    player_idle_up_frames,    .frame_time = 0.2f, .frame_count = 4, true, -1 },
+        { "player_idle_down",  player_idle_down_frames,  .frame_time = 0.2f, .frame_count = 4, true, -1 },
+        { "player_idle_left",  player_idle_left_frames,  .frame_time = 0.2f, .frame_count = 4, true, -1 },
+        { "player_idle_right", player_idle_right_frames, .frame_time = 0.2f, .frame_count = 4, true, -1 },
+        { "player_walk_up",    player_walk_up_frames,    .frame_time = 0.2f, .frame_count = 4, true, -1 },
+        { "player_walk_down",  player_walk_down_frames,  .frame_time = 0.2f, .frame_count = 4, true, -1 },
+        { "player_walk_left",  player_walk_left_frames,  .frame_time = 0.2f, .frame_count = 4, true, -1 },
+        { "player_walk_right", player_walk_right_frames, .frame_time = 0.2f, .frame_count = 4, true, -1 },
     };
 
     world->anim_table = anim_table;
@@ -1502,10 +1538,10 @@ global void SceneMain(World *world) {
         // .flags = MovementFlag_CollideSoftly
     );
     ComponentAddArgs(&world->c_texture,   world->entity_count,
-        .texture = tex_girl,
+        .texture = tex_girl_01,
         // .rect = player_idle_down_frames[0],
         // .rect = (fan_rect_i32){ 0, 0, tex_link.width / 10.0f, tex_link.height / 8.0f }
-        .rect = { .x = 0, .y = 0, .width = sprite_girl_size.x, .height = sprite_girl_size.y },
+        .rect = { .x = 0, .y = 0, .width = citizen_size.x, .height = citizen_size.y },
         // .rect = { .width = 36, .height = 36 },
     );
     ComponentAddArgs(&world->c_animation, world->entity_count);
@@ -1532,12 +1568,13 @@ global void SceneMain(World *world) {
     );
     ComponentAddArgs(&world->c_movement, world->entity_count, .speed = 1.0f);
     ComponentAddArgs(&world->c_texture,  world->entity_count,
-        .texture = tex_sprite,
-        .rect = { .width = 36, .height = 36 },
+        .texture = tex_girl_02,
+        .rect = { .x = 0, .y = 0, .width = citizen_size.x, .height = citizen_size.y },
     );
+    ComponentAddArgs(&world->c_animation, world->entity_count);
     ComponentAddArgs(&world->c_behavior, world->entity_count,
         .type = BehaviorType_Random,
-        .update_time = 3.0f,
+        .update_time = 6.0f,
     );
     ComponentAdd(&world->c_interaction,  world->entity_count);
     ComponentAdd(&world->c_interactable, world->entity_count);
@@ -1553,9 +1590,10 @@ global void SceneMain(World *world) {
     );
     ComponentAddArgs(&world->c_movement, world->entity_count, .speed = 0.5f);
     ComponentAddArgs(&world->c_texture,  world->entity_count,
-        .texture = tex_sprite,
-        .rect = { .x = 64, .y = 0, .width = 14, .height = 16 },
+        .texture = tex_girl_03,
+        .rect = { .x = 0, .y = 0, .width = citizen_size.x, .height = citizen_size.y },
     );
+    ComponentAddArgs(&world->c_animation, world->entity_count);
     ComponentAddArgs(&world->c_behavior, world->entity_count,
         .type = BehaviorType_Follow,
     );
