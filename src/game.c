@@ -1011,14 +1011,14 @@ void UpdateEntities(
                         anim = &world->c_animation.data[animation_idx];
 
                         if (direction.x > 0.0f) {
-                            anim->request.id = 3;
+                            anim->request.id = 1;
                         }
                         else if (direction.x < 0.0f) {
                             anim->request.id = 2;
                         }
 
                         if (direction.y > 0.0f) {
-                            anim->request.id = 1;
+                            anim->request.id = 3;
                         }
                         else if (direction.y < 0.0f) {
                             anim->request.id = 0;
@@ -1441,11 +1441,12 @@ global void SceneMain(World *world) {
     // };
 
     global fan_rect player_idle_down_frames[3]  = { 0 };
-    global fan_rect player_idle_up_frames[1]    = { 0 };
+    global fan_rect player_idle_up_frames[3]    = { 0 };
     global fan_rect player_idle_left_frames[3]  = { 0 };
     global fan_rect player_idle_right_frames[3] = { 0 };
 
-    fan_vec2 sprite_girl_size = (fan_vec2){ (float32)tex_girl.width / 10.0f, (float32)tex_girl.height / 8.0f };
+    fan_vec2 sprite_girl_size = (fan_vec2){ (float32)16.0f, (float32)16.0f };
+
     player_idle_down_frames[0]  = (fan_rect){
         0,                           0, sprite_girl_size.x, sprite_girl_size.y
     };
@@ -1456,8 +1457,41 @@ global void SceneMain(World *world) {
         (2.0f * sprite_girl_size.x), 0, sprite_girl_size.x, sprite_girl_size.y
     };
 
+    player_idle_down_frames[0]  = (fan_rect){
+        0,                           (2.0f * sprite_girl_size.y), sprite_girl_size.x, sprite_girl_size.y
+    };
+    player_idle_down_frames[1]  = (fan_rect){
+        sprite_girl_size.x,          (2.0f * sprite_girl_size.y), sprite_girl_size.x, sprite_girl_size.y
+    };
+    player_idle_down_frames[2]  = (fan_rect){
+        (2.0f * sprite_girl_size.x), (2.0f * sprite_girl_size.y), sprite_girl_size.x, sprite_girl_size.y
+    };
+
+    player_idle_left_frames[0]  = (fan_rect){
+        0,                           sprite_girl_size.y, sprite_girl_size.x, sprite_girl_size.y
+    };
+    player_idle_left_frames[1]  = (fan_rect){
+        sprite_girl_size.x,          sprite_girl_size.y, sprite_girl_size.x, sprite_girl_size.y
+    };
+    player_idle_left_frames[2]  = (fan_rect){
+        (2.0f * sprite_girl_size.x), sprite_girl_size.y, sprite_girl_size.x, sprite_girl_size.y
+    };
+
+    player_idle_right_frames[0] = (fan_rect){
+        0,                           (3.0f * sprite_girl_size.y), sprite_girl_size.x, sprite_girl_size.y
+    };
+    player_idle_right_frames[1] = (fan_rect){
+        sprite_girl_size.x,          (3.0f * sprite_girl_size.y), sprite_girl_size.x, sprite_girl_size.y
+    };
+    player_idle_right_frames[2] = (fan_rect){
+        (2.0f * sprite_girl_size.x), (3.0f * sprite_girl_size.y), sprite_girl_size.x, sprite_girl_size.y
+    };
+
     global AnimationData anim_table[] = {
-        { "player_idle_down", player_idle_down_frames, .frame_time = 0.5f, .frame_count = 4, true, -1 },
+        { "player_idle_down",  player_idle_down_frames,  .frame_time = 0.5f, .frame_count = 3, true, -1 },
+        { "player_idle_up",    player_idle_up_frames,    .frame_time = 0.5f, .frame_count = 3, true, -1 },
+        { "player_idle_left",  player_idle_left_frames,  .frame_time = 0.5f, .frame_count = 3, true, -1 },
+        { "player_idle_right", player_idle_right_frames, .frame_time = 0.5f, .frame_count = 3, true, -1 },
     };
 
     world->anim_table = anim_table;
@@ -1471,10 +1505,10 @@ global void SceneMain(World *world) {
         .texture = tex_girl,
         // .rect = player_idle_down_frames[0],
         // .rect = (fan_rect_i32){ 0, 0, tex_link.width / 10.0f, tex_link.height / 8.0f }
-        .rect = { .x = 0, .y = 0, .width = 16, .height = 16 },
+        .rect = { .x = 0, .y = 0, .width = sprite_girl_size.x, .height = sprite_girl_size.y },
         // .rect = { .width = 36, .height = 36 },
     );
-    // ComponentAddArgs(&world->c_animation, world->entity_count);
+    ComponentAddArgs(&world->c_animation, world->entity_count);
     ComponentAdd(&world->c_interaction,  world->entity_count);
     ComponentAdd(&world->c_interactable, world->entity_count);
     ComponentAddArgs(&world->c_attack,   world->entity_count,
