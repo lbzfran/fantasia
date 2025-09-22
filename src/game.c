@@ -1052,14 +1052,23 @@ void UpdateEntities(
                     } break;
                     case BehaviorType_Follow: {
                         if (behavior->updating) {
-                            CTransform *target_transform = &world->c_transform.data[0];
-                            fan_vec2 target_face       = target_transform->position;
+                            CTransform *target_transform = &world->c_transform.data[world->spec_id.player];
+                            fan_vec2 target_face         = target_transform->position;
+
                             if (id == world->spec_id.camera) {
-                                CShape *target_shape = &world->c_shape.data[0];
-                                target_face = fan_vec2_add(target_face, target_shape->offset);
+                                // CShape *target_shape = &world->c_shape.data[world->spec_id.player];
+                                fan_vec2 target_offset = target_transform->scale;
+                                target_offset.y *= -1.0f;
+                                target_offset = fan_vec2_scale(target_offset, 0.5f);
+                                target_face = fan_vec2_add(target_face, target_offset);
+
+                                float32 lerp_factor = 0.001f;
+                                transform->position = fan_vec2_lerp(transform->position, lerp_factor, target_face);
                             }
-                            fan_vec2 face = fan_vec2_normalize(fan_vec2_sub(target_face, transform->position));
-                            direction = (fan_vec2){ signof(face.x), signof(face.y) };
+                            else {
+                                fan_vec2 face = fan_vec2_normalize(fan_vec2_sub(target_face, transform->position));
+                                direction = (fan_vec2){ signof(face.x), signof(face.y) };
+                            }
                         }
                         else {
                             direction = move->direction;
