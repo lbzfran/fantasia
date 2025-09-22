@@ -17,7 +17,6 @@ fan_vec2 WorldToScreen(
         (render_size.x / 2.0f) + px_coord.x,
         (render_size.y / 2.0f) - px_coord.y,
     };
-
     return screen_coord;
 }
 
@@ -1378,6 +1377,8 @@ void SceneSolo(World *world) {
 global void SceneMain(World *world) {
     fan_texture tex_sprite = fan_texture_load("./resources/Sprite-0001.png");
 
+    fan_texture tex_girl = fan_texture_load("./resources/Citizens/Female/Nel/Nel.png");
+
     // fan_rect_i32 player_idle_up_frames[1]    = { 0 };
     // global fan_rect_i32 player_idle_down_frames[2]  = { 0 };
     // player_idle_down_frames[0] = (fan_rect_i32){ 0, 0,  .width = 32, .height = 32 };
@@ -1439,7 +1440,27 @@ global void SceneMain(World *world) {
     //     { "player_idle_right", player_idle_right_frames, .frame_time = 0.5f, .frame_count = 3, true,  -1 },
     // };
 
-    // world->anim_table = anim_table;
+    global fan_rect player_idle_down_frames[3]  = { 0 };
+    global fan_rect player_idle_up_frames[1]    = { 0 };
+    global fan_rect player_idle_left_frames[3]  = { 0 };
+    global fan_rect player_idle_right_frames[3] = { 0 };
+
+    fan_vec2 sprite_girl_size = (fan_vec2){ (float32)tex_girl.width / 10.0f, (float32)tex_girl.height / 8.0f };
+    player_idle_down_frames[0]  = (fan_rect){
+        0,                           0, sprite_girl_size.x, sprite_girl_size.y
+    };
+    player_idle_down_frames[1]  = (fan_rect){
+        sprite_girl_size.x,          0, sprite_girl_size.x, sprite_girl_size.y
+    };
+    player_idle_down_frames[2]  = (fan_rect){
+        (2.0f * sprite_girl_size.x), 0, sprite_girl_size.x, sprite_girl_size.y
+    };
+
+    global AnimationData anim_table[] = {
+        { "player_idle_down", player_idle_down_frames, .frame_time = 0.5f, .frame_count = 4, true, -1 },
+    };
+
+    world->anim_table = anim_table;
 
     ComponentAdd(&world->c_transform,     world->entity_count);
     ComponentAdd(&world->c_shape,         world->entity_count);
@@ -1447,10 +1468,10 @@ global void SceneMain(World *world) {
         // .flags = MovementFlag_CollideSoftly
     );
     ComponentAddArgs(&world->c_texture,   world->entity_count,
-        .texture = tex_sprite,
+        .texture = tex_girl,
         // .rect = player_idle_down_frames[0],
         // .rect = (fan_rect_i32){ 0, 0, tex_link.width / 10.0f, tex_link.height / 8.0f }
-        .rect = { .x = 64, .y = 0, .width = 14, .height = 16 },
+        .rect = { .x = 0, .y = 0, .width = 16, .height = 16 },
         // .rect = { .width = 36, .height = 36 },
     );
     // ComponentAddArgs(&world->c_animation, world->entity_count);
