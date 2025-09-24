@@ -181,3 +181,16 @@ void fan_rect_i32_print_(fan_rect_i32 r, const char8 *name) {
 void fan_rect_f32_print_(fan_rect_f32 r, const char8 *name) {
     printf("%s: (%f, %f, %f, %f)\n", name, (float64)r.x, (float64)r.y, (float64)r.width, (float64)r.height);
 }
+
+fan_matrix fan_matrix_create_(ssize rows, ssize cols, int32 *data) {
+    fan_matrix mat = { .cols = cols, .rows = rows, .V = data };
+    return mat;
+}
+
+FAN_API void fan_matrix_fill(fan_matrix mat, int32 x) {
+    for (ssize i = 0; i < mat.rows; i++) {
+        for (ssize j = 0; j < mat.cols; j++) {
+            fan_matrix_at(mat, i, j) = x;
+        }
+    }
+}

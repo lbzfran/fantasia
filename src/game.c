@@ -38,6 +38,70 @@ fan_vec2 ScreenToWorld(
     return world_coord;
 }
 
+GridAtlas GridAtlasCreate(int32 tile_size) {
+    GridAtlas atlas = { 0 };
+
+    atlas.sizes[0] = 0.0f;
+    atlas.sizes[1] = (float32)tile_size;
+    atlas.sizes[2] = 2.0f * (float32)tile_size;
+    atlas.sizes[3] = 3.0f * (float32)tile_size;
+
+    atlas.coordinates[0]  = (fan_vec2){ 0.0f, 0.0f };
+    atlas.coordinates[1]  = (fan_vec2){ 1.0f, 0.0f };
+    atlas.coordinates[2]  = (fan_vec2){ 2.0f, 0.0f };
+    atlas.coordinates[3]  = (fan_vec2){ 3.0f, 0.0f };
+    atlas.coordinates[4]  = (fan_vec2){ 0.0f, 1.0f };
+    atlas.coordinates[5]  = (fan_vec2){ 1.0f, 1.0f };
+    atlas.coordinates[6]  = (fan_vec2){ 2.0f, 1.0f };
+    atlas.coordinates[7]  = (fan_vec2){ 3.0f, 1.0f };
+    atlas.coordinates[8]  = (fan_vec2){ 0.0f, 2.0f };
+    atlas.coordinates[9]  = (fan_vec2){ 1.0f, 2.0f };
+    atlas.coordinates[10] = (fan_vec2){ 2.0f, 2.0f };
+    atlas.coordinates[11] = (fan_vec2){ 3.0f, 2.0f };
+    atlas.coordinates[12] = (fan_vec2){ 0.0f, 3.0f };
+    atlas.coordinates[13] = (fan_vec2){ 1.0f, 3.0f };
+    atlas.coordinates[14] = (fan_vec2){ 2.0f, 3.0f };
+    atlas.coordinates[15] = (fan_vec2){ 3.0f, 3.0f };
+
+    return atlas;
+}
+
+fan_rect GridAtlasGetRect(GridAtlas atlas, int32 x, int32 y) {
+    int32 index = x + y;
+    assert(index > -1 && "atlas index must be greater than -1.");
+    assert(index < 16 && "atlas index must be less than 16.");
+    fan_vec2 size_index = atlas.coordinates[index];
+    fan_rect rect = (fan_rect){
+        atlas.sizes[(int32)size_index.x],
+        atlas.sizes[(int32)size_index.y],
+        atlas.sizes[1],
+        atlas.sizes[1]
+    };
+    return rect;
+}
+
+TileOffsets GridGetOffsetFromWorld(fan_vec2 v) {
+    TileOffsets result;
+    result.tl = v;
+    result.tr = (fan_vec2){ v.x + 1.0f,        v.y };
+    result.bl = (fan_vec2){        v.x, v.y + 1.0f };
+    result.br = (fan_vec2){ v.x + 1.0f, v.y + 1.0f };
+    return result;
+}
+
+TileOffsets GridGetWorldFromOffset(fan_vec2 v) {
+    TileOffsets result;
+    result.tl = (fan_vec2){ v.x - 1.0f, v.y - 1.0f };
+    result.tr = (fan_vec2){        v.x, v.y - 1.0f };
+    result.bl = (fan_vec2){ v.x - 1.0f,        v.y };
+    result.br = v;
+    return result;
+}
+
+void GridWorldTileSet() {
+
+}
+
 void MovementSystem(CMovement *m, CTransform *t, fan_vec2 direction, fan_rect_i32 bound_zone, float32 dt) {
     if (not m->initialized) {
         init_if_null(m->speed,       4.0f);
@@ -188,18 +252,18 @@ bool32 CollisionCheckV(fan_vec2 aPos, fan_vec2 aSize, fan_vec2 bPos, fan_vec2 bS
 /*
  * MATRIX
  */
-int32 MatrixInt32Get_(MatrixInt32 m, ssize i, ssize j) {
+int32 MatrixInt32Get_(fan_matrix m, ssize i, ssize j) {
     ssize idx = i * m.cols + j;
     return m.V[idx];
 }
 #define MatrixInt32Get(m, i, j) MatrixInt32Get_(m, max((ssize)i, (ssize)(m.rows - 1)), max((ssize)j, (ssize)(m.cols - 1)))
 
-MatrixInt32 MatrixInt32Create(Allocator *a, ssize rows, ssize cols, int32 default_value) {
+fan_matrix MatrixInt32Create(Allocator *a, ssize rows, ssize cols, int32 default_value) {
     ssize size = rows * cols;
     int32 *data = (int32 *)a->make(a->ctx, size * sizeof(int32));
     for (ssize i = 0; i < size; i++)
         data[i] = default_value;
-    return (MatrixInt32) {
+    return (fan_matrix) {
         .V = data,
         .rows = rows,
         .cols = cols
@@ -1426,7 +1490,11 @@ global void SceneMain(World *world) {
 
     fan_texture tex_girl_01 = fan_texture_load("./resources/Citizens/Female/Hana/Hana.png");
     fan_texture tex_girl_02 = fan_texture_load("./resources/Citizens/Female/Khali/Khali.png");
-    fan_texture tex_girl_03 = fan_texture_load("./resources/Citizens/Female/Nel/Nel.png");
+    fan_texture tex_girl_03 = fan_texture_load("./resources/Citizens/Male/Artun/Artun.png");
+
+    world->tilesets[0] = fan_texture_load("./resources/tileset_01.png");
+    // TODO(liam): initialize a basic tilemap.
+    // world->map.tiles = ...;
 
     global fan_rect player_idle_down_frames[4]  = { 0 };
     global fan_rect player_idle_up_frames[4]    = { 0 };
@@ -1560,6 +1628,14 @@ global void SceneMain(World *world) {
 
     world->anim_table = anim_table;
 
+    // non-visual that keeps track of what goes where
+    global TileVisual world_grid[50] = { 0 };
+    // visual that is offset by half a tile and determines
+    // what tile to render based on its four neighbors from
+    // the world grid.
+    global TileLogic offset_grid[50] = { 0 };
+
+
     ComponentAdd(&world->c_transform,     world->entity_count);
     ComponentAdd(&world->c_shape,         world->entity_count);
     ComponentAddArgs(&world->c_movement,  world->entity_count,
@@ -1614,7 +1690,7 @@ global void SceneMain(World *world) {
     ComponentAddArgs(&world->c_animation, world->entity_count);
     ComponentAddArgs(&world->c_behavior, world->entity_count,
         .type = BehaviorType_Random,
-        .update_time = 6.0f,
+        .update_time = 60.0f,
     );
     ComponentAdd(&world->c_interaction,  world->entity_count);
     ComponentAdd(&world->c_interactable, world->entity_count);
@@ -1726,6 +1802,7 @@ void GameInit(Allocator *a, World *world, GameState *state) {
     world->split.static_entities  = a->make(a->ctx, split_size);
     world->split.static_capacity  = split_size;
 
+    world->tilesets = a->make(a->ctx, sizeof(fan_texture) * 2);
     SceneMain(world);
 
     state->bound_zone  = (fan_rect_i32){ .width = 10, .height = 6 };
@@ -1743,6 +1820,7 @@ void GameInit(Allocator *a, World *world, GameState *state) {
 		.tiles     = MatrixInt32Create(a, 10, 10, 1),
     };
 
+    world->tile_atlas = GridAtlasCreate(TILE_SIZE);
 	world->map = map;
 
     printf("Successfully passed initialization!\n");

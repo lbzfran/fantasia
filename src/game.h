@@ -206,6 +206,47 @@ typedef struct {
     int32 camera;
 } SpecialEntityID;
 
+/*
+ * Tilemaps will have a strict 16-size array
+ * of rectangles that point to the exact location on a texture.
+ * If this is standardized correctly across the textures,
+ * this tilemap will only need to be initialized and set once.
+ * TILESETS NECESSARY
+ * all corners
+ * outer bottom-right
+ * outer bottom-left
+ * outer top-right
+ * outer top-left
+ * right edge
+ * left edge
+ * bottom edge
+ * top edge
+ * outer bottom-right
+ * outer bottom-left
+ * outer top-right
+ * outer top-left
+ * bottom-left top-right
+ * top-left bottom-right
+ * no corners
+ */
+typedef struct {
+    int32 sprite_id;
+    fan_rect rect;
+} TileVisual;
+
+typedef struct {
+    bool32 solid;
+} TileLogic;
+
+typedef struct {
+    fan_vec2 tl, tr, bl, br;
+} TileOffsets;
+
+typedef struct {
+    float32 sizes[4];
+    fan_vec2 coordinates[16];
+} GridAtlas;
+
 typedef enum {
     SystemMode_Overworld = 0,
     SystemMode_Menu,
@@ -254,15 +295,8 @@ typedef struct {
 } EntitySplit;
 
 typedef struct {
-    ssize  rows;
-    ssize  cols;
-    int32 *V;
-} MatrixInt32;
-
-typedef struct {
-    MatrixInt32 tiles; // 1D repr 2D plane
-
-    fan_vec2    origin; // top-left, relative to screen
+    fan_matrix  tiles;  // 1D repr 2D plane
+    fan_vec2    origin;
     int32       tile_size;
 } TileMap;
 
@@ -298,6 +332,8 @@ typedef struct {
     EntitySplit            split;
 	bool32                 update_entity_split;
 
+    GridAtlas              tile_atlas;
+    fan_texture           *tilesets;
 	TileMap                map;
 
     CTransformStorage      c_transform;

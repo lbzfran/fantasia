@@ -50,6 +50,12 @@ typedef struct {
 } fan_rect, fan_rect_f32;
 
 typedef struct {
+    ssize  rows;
+    ssize  cols;
+    int32 *V;
+} fan_matrix, fan_matrix_i32;
+
+typedef struct {
     uint32 id;
     int32  width;
     int32  height;
@@ -398,6 +404,12 @@ FAN_API fan_vec2 fan_vec2_lerp(fan_vec2 v1, float32 t, fan_vec2 v2);
 
 FAN_API int32 fan_rect_i32_isempty(fan_rect_i32 rect);
 FAN_API int32 fan_rect_f32_isempty(fan_rect_f32 rect);
+
+FAN_API fan_matrix fan_matrix_create_(ssize, ssize, int32 *);
+#define fan_matrix_create(a, row, col) fan_matrix_create_(row, col, (a)->make((a)->ctx,sizeof(int32) * row * col))
+#define fan_matrix_at(mat, i, j) ((mat).V[(i) * (mat).cols + (j)])
+
+FAN_API void fan_matrix_fill(fan_matrix, int32);
 
 // threading
 
