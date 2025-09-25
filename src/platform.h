@@ -407,9 +407,10 @@ FAN_API int32 fan_rect_f32_isempty(fan_rect_f32 rect);
 
 FAN_API fan_matrix fan_matrix_create_(ssize, ssize, int32 *);
 #define fan_matrix_create(a, row, col) fan_matrix_create_(row, col, (a)->make((a)->ctx,sizeof(int32) * row * col))
-#define fan_matrix_at(mat, i, j) ((mat).V[(i) * (mat).cols + (j)])
+#define fan_matrix_at(mat, i, j) ((mat).V[(int32)((ssize)(i) * (mat).cols + (ssize)(j))])
 
 FAN_API void fan_matrix_fill(fan_matrix, int32);
+FAN_API void fan_matrix_randomize(fan_matrix, int32, int32);
 
 // threading
 

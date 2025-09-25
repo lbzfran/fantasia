@@ -66,8 +66,10 @@ GridAtlas GridAtlasCreate(int32 tile_size) {
     return atlas;
 }
 
-fan_rect GridAtlasGetRect(GridAtlas atlas, int32 x, int32 y) {
-    int32 index = x + y;
+/*
+ * STRICTLY returns a texture space coordinate and size.
+ */
+fan_rect GridAtlasGetRect(GridAtlas atlas, int32 index) {
     assert(index > -1 && "atlas index must be greater than -1.");
     assert(index < 16 && "atlas index must be less than 16.");
     fan_vec2 size_index = atlas.coordinates[index];
@@ -80,26 +82,100 @@ fan_rect GridAtlasGetRect(GridAtlas atlas, int32 x, int32 y) {
     return rect;
 }
 
-TileOffsets GridGetOffsetFromWorld(fan_vec2 v) {
+inline int32 fan_i32_clamp(int32 v, int32 min, int32 max) {
+    return v < min ? min : (v > max ? max : v);
+}
+
+TileOffsets GridGetLogicalFromVisual(fan_vec2 v, int32 rows, int32 cols) {
     TileOffsets result;
-    result.tl = v;
-    result.tr = (fan_vec2){ v.x + 1.0f,        v.y };
-    result.bl = (fan_vec2){        v.x, v.y + 1.0f };
-    result.br = (fan_vec2){ v.x + 1.0f, v.y + 1.0f };
+
+    result.tl.x = (float32)fan_i32_clamp((int32)v.x, 0, cols - 1);
+    result.tl.y = (float32)fan_i32_clamp((int32)v.y, 0, rows - 1);
+
+    result.tr.x = (float32)fan_i32_clamp((int32)v.x + 1, 0, cols - 1);
+    result.tr.y = result.tl.y;
+
+    result.bl.x = result.tl.x;
+    result.bl.y = (float32)fan_i32_clamp((int32)v.y + 1, 0, rows - 1);
+
+    result.br.x = result.tr.x;
+    result.br.y = result.bl.y;
+
     return result;
 }
 
-TileOffsets GridGetWorldFromOffset(fan_vec2 v) {
+TileOffsets GridGetVisualFromLogical(fan_vec2 v, int32 rows, int32 cols) {
     TileOffsets result;
-    result.tl = (fan_vec2){ v.x - 1.0f, v.y - 1.0f };
-    result.tr = (fan_vec2){        v.x, v.y - 1.0f };
-    result.bl = (fan_vec2){ v.x - 1.0f,        v.y };
-    result.br = v;
+
+    result.br.x = (float32)fan_i32_clamp((int32)v.x, 0, cols - 1);
+    result.br.y = (float32)fan_i32_clamp((int32)v.y, 0, rows - 1);
+
+    result.tr.x = result.br.x;
+    result.tr.y = (float32)fan_i32_clamp((int32)v.y - 1, 0, rows - 1);
+
+    result.bl.x = (float32)fan_i32_clamp((int32)v.x - 1, 0, cols - 1);
+    result.bl.y = result.br.y;
+
+    result.tl.x = result.bl.x;
+    result.tl.y = result.tr.y;
+
     return result;
 }
 
-void GridWorldTileSet() {
+void GridWorldGenerate(TileMap map) {
+    for (int32 i = 0; i < map.visual_tiles.rows; i++) {
+        for (int32 j = 0; j < map.visual_tiles.cols; j++) {
+            TileOffsets offsets = GridGetLogicalFromVisual((fan_vec2){ (float32)i, (float32)j },
+                                                           (int32)map.visual_tiles.rows,
+                                                           (int32)map.visual_tiles.cols);
 
+            // TODO(liam): get the atlas indexing correct.
+            int32 bits = 0;
+            if (fan_matrix_at(map.logic_tiles, offsets.tl.x, offsets.tl.y)) {
+                bits |= (1 << 0);
+            }
+            if (fan_matrix_at(map.logic_tiles, offsets.tr.x, offsets.tr.y)) {
+                bits |= (1 << 1);
+            }
+            if (fan_matrix_at(map.logic_tiles, offsets.bl.x, offsets.bl.y)) {
+                bits |= (1 << 2);
+            }
+            if (fan_matrix_at(map.logic_tiles, offsets.br.x, offsets.br.y)) {
+                bits |= (1 << 3);
+            }
+
+            fan_matrix_at(map.visual_tiles, i, j) = bits;
+            printf("found: %d bits!\n", bits);
+            // fan_rect src = GridAtlasGetRect(atlas, bits);
+            // fan_rect dst = (fan_rect) {
+            //     0, 0, map.tile_size, map.tile_size
+            // };
+
+
+            // fan_draw_texture(tile_texture, src, dst, fan_vec2_zero(), 0.0f, fan_color_WHITE);
+        }
+    }
+}
+
+void GridWorldDraw(TileMap map, GridAtlas atlas, int32 pixels_per_unit, fan_texture tile_texture) {
+    for (int32 i = 0; i < map.visual_tiles.rows; i++) {
+        for (int32 j = 0; j < map.visual_tiles.cols; j++) {
+            int32 bits = (int32)fan_matrix_at(map.visual_tiles, i, j);
+
+            fan_rect src = GridAtlasGetRect(atlas, bits);
+            // fan_rect src = (fan_rect) {
+            //     48, 48, 16, 16
+            // };
+            fan_rect dst = (fan_rect) {
+                (float32)(i * pixels_per_unit),
+                (float32)(j * pixels_per_unit),
+                (float32)pixels_per_unit,
+                (float32)pixels_per_unit
+            };
+
+            fan_draw_texture(tile_texture, src, dst, fan_vec2_zero(), 0.0f, fan_color_WHITE);
+        }
+    }
 }
 
 void MovementSystem(CMovement *m, CTransform *t, fan_vec2 direction, fan_rect_i32 bound_zone, float32 dt) {
@@ -247,27 +323,6 @@ bool32 CollisionCheckV(fan_vec2 aPos, fan_vec2 aSize, fan_vec2 bPos, fan_vec2 bS
                   aPos.y + aSize.y < bPos.y or bPos.y + bSize.y < aPos.y);
 
     return result;
-}
-
-/*
- * MATRIX
- */
-int32 MatrixInt32Get_(fan_matrix m, ssize i, ssize j) {
-    ssize idx = i * m.cols + j;
-    return m.V[idx];
-}
-#define MatrixInt32Get(m, i, j) MatrixInt32Get_(m, max((ssize)i, (ssize)(m.rows - 1)), max((ssize)j, (ssize)(m.cols - 1)))
-
-fan_matrix MatrixInt32Create(Allocator *a, ssize rows, ssize cols, int32 default_value) {
-    ssize size = rows * cols;
-    int32 *data = (int32 *)a->make(a->ctx, size * sizeof(int32));
-    for (ssize i = 0; i < size; i++)
-        data[i] = default_value;
-    return (fan_matrix) {
-        .V = data,
-        .rows = rows,
-        .cols = cols
-    };
 }
 
 fan_vec2 TileMapGetPosition(TileMap map, fan_vec2 position) {
@@ -624,7 +679,7 @@ void RenderSystem(
             tx->texture,
             src,
             dst,
-            (fan_vec2) { 0.0f, 0.0f },
+            fan_vec2_zero(),
             0.0f,
             s->color
         );
@@ -726,6 +781,10 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
 
     fan_mode_texture_begin(state->rendermap);
         fan_draw_clear(fan_color_WHITE);
+
+        // NOTE: drawing world grid here!!
+        GridWorldDraw(world->map, world->tile_atlas, state->world_scale, world->tilesets[0]);
+
         for (ssize i = 0; i < render_entry_count; i++) {
             ssize id = render_array[i].id;
             if (id == -1)
@@ -803,7 +862,7 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
             );
 
             fan_vec2 map_pos = TileMapGetPosition(world->map, center_pos);
-            int32 tile_data = MatrixInt32Get(world->map.tiles, map_pos.x, map_pos.y);
+            int32 tile_data = fan_matrix_at(world->map.logic_tiles, map_pos.x, map_pos.y);
 
             if (id == world->spec_id.player) {
                 // fan_vec2 tile_world_pos = (fan_vec2) {
@@ -1495,6 +1554,8 @@ global void SceneMain(World *world) {
     world->tilesets[0] = fan_texture_load("./resources/tileset_01.png");
     // TODO(liam): initialize a basic tilemap.
     // world->map.tiles = ...;
+    fan_matrix_randomize(world->map.logic_tiles, 0, 1);
+    fan_matrix_fill(world->map.visual_tiles, 0);
 
     global fan_rect player_idle_down_frames[4]  = { 0 };
     global fan_rect player_idle_up_frames[4]    = { 0 };
@@ -1629,11 +1690,10 @@ global void SceneMain(World *world) {
     world->anim_table = anim_table;
 
     // non-visual that keeps track of what goes where
-    global TileVisual world_grid[50] = { 0 };
+    // global TileVisual world_grid[50] = { 0 };
     // visual that is offset by half a tile and determines
     // what tile to render based on its four neighbors from
     // the world grid.
-    global TileLogic offset_grid[50] = { 0 };
 
 
     ComponentAdd(&world->c_transform,     world->entity_count);
@@ -1803,7 +1863,19 @@ void GameInit(Allocator *a, World *world, GameState *state) {
     world->split.static_capacity  = split_size;
 
     world->tilesets = a->make(a->ctx, sizeof(fan_texture) * 2);
+
+    TileMap map = (TileMap) {
+        .tile_size = 16,
+		.logic_tiles  = fan_matrix_create(a, 10, 10),
+        .visual_tiles = fan_matrix_create(a, 10, 10)
+    };
+
+    world->tile_atlas = GridAtlasCreate(map.tile_size);
+	world->map = map;
+
     SceneMain(world);
+
+    GridWorldGenerate(world->map);
 
     state->bound_zone  = (fan_rect_i32){ .width = 10, .height = 6 };
     state->camera_zoom = 1.0f;
@@ -1814,14 +1886,6 @@ void GameInit(Allocator *a, World *world, GameState *state) {
     state->music = fan_music_load("./resources/My Uncles Last Voyage.mp3");
     fan_music_play(state->music);
     fan_music_volume_set(state->music, 0.4f);
-
-    TileMap map = (TileMap) {
-        .tile_size = 1,
-		.tiles     = MatrixInt32Create(a, 10, 10, 1),
-    };
-
-    world->tile_atlas = GridAtlasCreate(TILE_SIZE);
-	world->map = map;
 
     printf("Successfully passed initialization!\n");
 }

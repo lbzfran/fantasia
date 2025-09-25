@@ -187,10 +187,18 @@ fan_matrix fan_matrix_create_(ssize rows, ssize cols, int32 *data) {
     return mat;
 }
 
-FAN_API void fan_matrix_fill(fan_matrix mat, int32 x) {
+void fan_matrix_fill(fan_matrix mat, int32 x) {
     for (ssize i = 0; i < mat.rows; i++) {
         for (ssize j = 0; j < mat.cols; j++) {
             fan_matrix_at(mat, i, j) = x;
+        }
+    }
+}
+
+void fan_matrix_randomize(fan_matrix mat, int32 start, int32 end) {
+    for (ssize i = 0; i < mat.rows; i++) {
+        for (ssize j = 0; j < mat.cols; j++) {
+            fan_matrix_at(mat, i, j) = (rand() % (end + 1)) + start;
         }
     }
 }

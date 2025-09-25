@@ -295,10 +295,16 @@ typedef struct {
 } EntitySplit;
 
 typedef struct {
-    fan_matrix  tiles;  // 1D repr 2D plane
+    fan_matrix  logic_tiles;
+    fan_matrix  visual_tiles;
     fan_vec2    origin;
     int32       tile_size;
 } TileMap;
+
+typedef enum {
+    TileID_None = 0,
+    TileID_Ground,
+} TileID;
 
 ComponentDeclare(CTransform, CTransform);
 ComponentDeclare(CShape,     CShape);
