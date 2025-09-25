@@ -1867,7 +1867,7 @@ void GameInit(Allocator *a, World *world, GameState *state) {
     TileMap map = (TileMap) {
         .tile_size = 16,
 		.logic_tiles  = fan_matrix_create(a, 10, 10),
-        .visual_tiles = fan_matrix_create(a, 10, 10)
+        .visual_tiles = fan_matrix_create(a, 9, 9)
     };
 
     world->tile_atlas = GridAtlasCreate(map.tile_size);
