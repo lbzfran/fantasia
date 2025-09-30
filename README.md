@@ -27,17 +27,19 @@
 
 # Build
 
-For Windows builds, the Makefile will target `mingw64` and use the mingw64 toolchain.
+For development on Windows, a posix shell is required. `w64devkit` is recommended.
+
+The Makefile will target `mingw64` and use the mingw64 toolchain.
 Linux builds will use the native gcc compiler available.
 
 ```sh
 ./setup.sh && make
 ```
 
-OS is set to `windows` by default within the Makefile.
+OS is set to `windows` by default.
 The `PLATFORM` variable can be set explicitly as shown.
-This feature is primarily for cross-compilation from Linux to Windows (and not necessarily
-the other way around)
+
+This feature is exposed primarily for cross-compilation.
 
 Valid values: `linux`, `windows`
 ```sh
@@ -61,3 +63,4 @@ I simply have to credit the original from. Below is that list.
 
 Helped with separation of physics timestep to the rendering timestep (framestep).
 - https://gafferongames.com/post/fix_your_timestep/
+
