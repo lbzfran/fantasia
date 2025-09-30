@@ -6,6 +6,8 @@
 TARGET=${1:-$(uname | tr '[:upper:]' '[:lower:]')}
 RAYLIB_VERSION=5.5
 
+mkdir -p bin
+
 case "$TARGET" in
     *"linux"*)
         TARGET=linux
