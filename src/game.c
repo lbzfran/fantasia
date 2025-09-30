@@ -1864,10 +1864,11 @@ void GameInit(Allocator *a, World *world, GameState *state) {
 
     world->tilesets = a->make(a->ctx, sizeof(fan_texture) * 2);
 
+	int32 map_size = 10;
     TileMap map = (TileMap) {
         .tile_size = 16,
-		.logic_tiles  = fan_matrix_create(a, 10, 10),
-        .visual_tiles = fan_matrix_create(a, 9, 9)
+		.logic_tiles  = fan_matrix_create(a, map_size + 1, map_size + 1),
+        .visual_tiles = fan_matrix_create(a, map_size, map_size)
     };
 
     world->tile_atlas = GridAtlasCreate(map.tile_size);
