@@ -1554,7 +1554,7 @@ global void SceneMain(World *world) {
     world->tilesets[0] = fan_texture_load("./resources/tileset_01.png");
     // TODO(liam): initialize a basic tilemap.
     // world->map.tiles = ...;
-    fan_matrix_randomize(world->map.logic_tiles, 0, 1);
+    fan_matrix_fill(world->map.logic_tiles, 0);
     fan_matrix_fill(world->map.visual_tiles, 0);
 
     global fan_rect player_idle_down_frames[4]  = { 0 };
@@ -1780,8 +1780,8 @@ global void SceneMain(World *world) {
     world->entity_count++;
 
     ComponentAddArgs(&world->c_transform,  world->entity_count,
-        .position = (fan_vec2){   0,  5 },
-        .scale    = (fan_vec2){  10,  6 },
+        .position = (fan_vec2){  0, 5 },
+        .scale    = (fan_vec2){ 10, 6 },
     );
     ComponentAddArgs(&world->c_shape,      world->entity_count,
         .layer = 1,
@@ -1864,9 +1864,9 @@ void GameInit(Allocator *a, World *world, GameState *state) {
 
     world->tilesets = a->make(a->ctx, sizeof(fan_texture) * 2);
 
-	int32 map_size = 10;
+	int32 map_size = 8;
     TileMap map = (TileMap) {
-        .tile_size = 16,
+        .tile_size    = 16,
 		.logic_tiles  = fan_matrix_create(a, map_size + 1, map_size + 1),
         .visual_tiles = fan_matrix_create(a, map_size, map_size)
     };
@@ -1896,6 +1896,8 @@ void GameUpdateAndRender(Allocator *a, World *world, GameState *state, float32 d
 
     if (state->resized) {
         StateGetView(state);
+        fan_matrix_randomize(world->map.logic_tiles, 0, 1);
+        GridWorldGenerate(world->map);
         state->resized = false;
     }
 
