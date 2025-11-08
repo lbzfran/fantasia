@@ -196,9 +196,11 @@ void fan_matrix_fill(fan_matrix mat, int32 x) {
 }
 
 void fan_matrix_randomize(fan_matrix mat, int32 start, int32 end) {
+    srand(start);
     for (ssize i = 0; i < mat.rows; i++) {
         for (ssize j = 0; j < mat.cols; j++) {
-            fan_matrix_at(mat, i, j) = (rand() % (end + 1)) + start;
+            int32 value = (int32)((rand() % (end + 1)) + start);
+            fan_matrix_at(mat, i, j) = value;
         }
     }
 }

@@ -125,7 +125,7 @@ TileOffsets GridGetVisualFromLogical(fan_vec2 v, int32 rows, int32 cols) {
 void GridWorldGenerate(TileMap map) {
     for (int32 i = 0; i < map.visual_tiles.rows; i++) {
         for (int32 j = 0; j < map.visual_tiles.cols; j++) {
-            TileOffsets offsets = GridGetLogicalFromVisual((fan_vec2){ (float32)i, (float32)j },
+            TileOffsets offsets = GridGetLogicalFromVisual((fan_vec2){ (float32)j, (float32)i },
                                                            (int32)map.visual_tiles.rows,
                                                            (int32)map.visual_tiles.cols);
 
@@ -144,8 +144,8 @@ void GridWorldGenerate(TileMap map) {
                 bits |= (1 << 3);
             }
 
-            fan_matrix_at(map.visual_tiles, i, j) = bits;
-            // printf("found: %d bits!\n", bits);
+            fan_matrix_at(map.visual_tiles, j, i) = bits;
+            printf("%d\t", bits);
             // fan_rect src = GridAtlasGetRect(atlas, bits);
             // fan_rect dst = (fan_rect) {
             //     0, 0, map.tile_size, map.tile_size
@@ -154,13 +154,14 @@ void GridWorldGenerate(TileMap map) {
             //
             // fan_draw_texture(tile_texture, src, dst, fan_vec2_zero(), 0.0f, fan_color_WHITE);
         }
+        printf("\n");
     }
 }
 
 void GridWorldDraw(TileMap map, GridAtlas atlas, int32 pixels_per_unit, fan_texture tile_texture) {
     for (int32 i = 0; i < map.visual_tiles.rows; i++) {
         for (int32 j = 0; j < map.visual_tiles.cols; j++) {
-            int32 bits = (int32)fan_matrix_at(map.visual_tiles, i, j);
+            int32 bits = fan_matrix_at(map.visual_tiles, i, j);
 
             fan_rect src = GridAtlasGetRect(atlas, bits);
             // fan_rect src = (fan_rect) {
@@ -1572,7 +1573,8 @@ global void SceneMain(World *world) {
     world->tilesets[0] = fan_texture_load("./resources/tileset_01.png");
     // TODO(liam): initialize a basic tilemap.
     // world->map.tiles = ...;
-    fan_matrix_fill(world->map.logic_tiles, 0);
+    // fan_matrix_fill(world->map.logic_tiles, 0);
+    fan_matrix_randomize(world->map.logic_tiles, 0, 1);
     fan_matrix_fill(world->map.visual_tiles, 0);
 
     global fan_rect player_idle_down_frames[4]  = { 0 };
@@ -1882,11 +1884,11 @@ void GameInit(Allocator *a, World *world, GameState *state) {
 
     world->tilesets = a->make(a->ctx, sizeof(fan_texture) * 2);
 
-	int32 map_size_x = 12;
+	int32 map_size_x = 8;
     int32 map_size_y = 8;
     TileMap map = (TileMap) {
         .tile_size    = 16,
-		.logic_tiles  = fan_matrix_create(a, map_size_x + 1, map_size_y + 1),
+		.logic_tiles  = fan_matrix_create(a, map_size_x, map_size_y),
         .visual_tiles = fan_matrix_create(a, map_size_x, map_size_y)
     };
 
@@ -1895,7 +1897,8 @@ void GameInit(Allocator *a, World *world, GameState *state) {
 
     SceneMain(world);
 
-    fan_matrix_randomize(world->map.logic_tiles, 0, 1);
+    // fan_matrix_randomize(world->map.logic_tiles, 0, 1);
+
     GridWorldGenerate(world->map);
 
     state->bound_zone  = (fan_rect_i32){ .width = 10, .height = 6 };
