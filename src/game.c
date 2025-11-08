@@ -145,13 +145,13 @@ void GridWorldGenerate(TileMap map) {
             }
 
             fan_matrix_at(map.visual_tiles, i, j) = bits;
-            printf("found: %d bits!\n", bits);
+            // printf("found: %d bits!\n", bits);
             // fan_rect src = GridAtlasGetRect(atlas, bits);
             // fan_rect dst = (fan_rect) {
             //     0, 0, map.tile_size, map.tile_size
             // };
-
-
+            //
+            //
             // fan_draw_texture(tile_texture, src, dst, fan_vec2_zero(), 0.0f, fan_color_WHITE);
         }
     }
@@ -613,7 +613,7 @@ void RenderSystem(
         fan_vec2 render_size,
 	    int32 flags
     ) {
-    fan_vec2 screen_pos    = WorldToScreen(
+    fan_vec2 screen_pos = WorldToScreen(
         t->position,
         camera_position,
         camera_zoom,
@@ -691,10 +691,26 @@ void RenderProcessPost(
     int32 window_width,
     int32 window_height
 ) {
+    float32 target_width = (float32)map.texture.width;
+    float32 target_height = (float32)map.texture.height;
+
+    float32 scale = min(
+        (float32)window_width  / target_width,
+        (float32)window_height / target_height
+    );
+
+    float32 render_width  = target_width  * scale;
+    float32 render_height = target_height * scale;
+
+    float32 offset_x = ((float32)window_width  - render_width)  * 0.5f;
+    float32 offset_y = ((float32)window_height - render_height) * 0.5f;
+
+    fan_draw_clear(fan_color_BLACK);
+
     fan_draw_texture(
         map.texture,
-        (fan_rect){ 0, 0, (float32)map.texture.width, (float32)-map.texture.height },
-        (fan_rect){ 0, 0, (float32)window_width, (float32)window_height },
+        (fan_rect){ 0, 0, target_width, -target_height },
+        (fan_rect){ offset_x, offset_y, render_width, render_height },
         fan_vec2_zero(),
         0.0f,
         fan_color_WHITE
@@ -1480,22 +1496,24 @@ void StateGetView(GameState *state) {
     float32 window_width  = (float32)fan_window_width();
     float32 window_height = (float32)fan_window_height();
 
-    fan_vec2 render_size = (fan_vec2){ 640, 480 };
-    fan_vec2 world_offset = fan_vec2_zero();
+    // fan_vec2 world_offset = fan_vec2_zero();
 
-    int32 scale_x = (int32)(window_width  / render_size.x);
-    int32 scale_y = (int32)(window_height / render_size.y);
-    int32 world_scale = TILE_SIZE * min(scale_x, scale_y);
-
-    // float32 offset_x = ((float32)state->window_width  - render_width)  / 2.0f;
-    // float32 offset_y = ((float32)state->window_height - render_height)  / 2.0f;
-    // render_width  = render_width ;
-    // render_height = render_height;
+    // float32 scale_x = (window_width  / render_size.x);
+    // float32 scale_y = (window_height / render_size.y);
+    // float32 render_scale = min(scale_x, scale_y);
+    //
+    // float32 render_width  = render_size.x * render_scale;
+    // float32 render_height = render_size.y * render_scale;
+    // fan_vec2 render_offset = (fan_vec2){
+    //     (window_width  - render_width)  * 0.5f,
+    //     (window_height - render_height) * 0.5f,
+    // };
 
     state->window_width  = (int32)window_width;
     state->window_height = (int32)window_height;
-    state->world_scale = world_scale;
-    state->render_size = render_size;
+    state->world_scale = TILE_SIZE;
+    // state->render_scale = render_scale;
+    // state->render_offset = render_offset;
 }
 
 void SceneSolo(World *world) {
@@ -1864,11 +1882,12 @@ void GameInit(Allocator *a, World *world, GameState *state) {
 
     world->tilesets = a->make(a->ctx, sizeof(fan_texture) * 2);
 
-	int32 map_size = 8;
+	int32 map_size_x = 12;
+    int32 map_size_y = 8;
     TileMap map = (TileMap) {
         .tile_size    = 16,
-		.logic_tiles  = fan_matrix_create(a, map_size + 1, map_size + 1),
-        .visual_tiles = fan_matrix_create(a, map_size, map_size)
+		.logic_tiles  = fan_matrix_create(a, map_size_x + 1, map_size_y + 1),
+        .visual_tiles = fan_matrix_create(a, map_size_x, map_size_y)
     };
 
     world->tile_atlas = GridAtlasCreate(map.tile_size);
@@ -1876,13 +1895,15 @@ void GameInit(Allocator *a, World *world, GameState *state) {
 
     SceneMain(world);
 
+    fan_matrix_randomize(world->map.logic_tiles, 0, 1);
     GridWorldGenerate(world->map);
 
     state->bound_zone  = (fan_rect_i32){ .width = 10, .height = 6 };
     state->camera_zoom = 1.0f;
 
-    state->rendermap = fan_rtexture_load((int32)640, (int32)480);
-    state->lightmap  = fan_rtexture_load((int32)640, (int32)480);
+    state->render_size = (fan_vec2){ 640, 480 };
+    state->rendermap = fan_rtexture_load((int32)state->render_size.x, (int32)state->render_size.y);
+    state->lightmap  = fan_rtexture_load((int32)state->render_size.x, (int32)state->render_size.y);
 
     state->music = fan_music_load("./resources/My Uncles Last Voyage.mp3");
     fan_music_play(state->music);
@@ -1895,8 +1916,11 @@ void GameUpdateAndRender(Allocator *a, World *world, GameState *state, float32 d
     (void)a;
 
     if (state->resized) {
+        // TODO(liam):
+        // There is a bug that causes issues with the tilemap to
+        // have parts of it disappear when resizing screen.
         StateGetView(state);
-        fan_matrix_randomize(world->map.logic_tiles, 0, 1);
+        // fan_matrix_randomize(world->map.logic_tiles, 0, 1);
         GridWorldGenerate(world->map);
         state->resized = false;
     }

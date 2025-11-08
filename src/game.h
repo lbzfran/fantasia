@@ -278,7 +278,9 @@ typedef struct {
     int32        window_height;
 
     fan_vec2     render_size;
-    fan_vec2     world_offset;
+    fan_vec2     render_offset;
+    float32      render_scale;
+
     int32        world_scale; // pixels_per_unit
 
     bool32       called_object_dump;
