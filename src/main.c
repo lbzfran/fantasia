@@ -82,40 +82,37 @@ int main(void) {
             p_input->direction.x += 1;
         }
 
-        if (fan_key_down(FanKey_K)) {
-            player_offset.y += 500.0f * dt;
-            if (player_offset.y >= 200.0f) {
-                player_offset.y = 200.0f;
-            }
-        }
-        if (fan_key_down(FanKey_I)) {
-            player_offset.y -= 500.0f * dt;
-            if (player_offset.y <= -200.0f) {
-                player_offset.y = -200.0f;
-            }
-        }
-        if (fan_key_down(FanKey_L)) {
-            player_offset.x += 500.0f * dt;
-            if (player_offset.x >= 200.0f) {
-                player_offset.x = 200.0f;
-            }
-        }
-        if (fan_key_down(FanKey_J)) {
-            player_offset.x -= 500.0f * dt;
-            if (player_offset.x <= -200.0f) {
-                player_offset.x = -200.0f;
-            }
-        }
+        // if (fan_key_down(FanKey_K)) {
+        //     player_offset.y += 500.0f * dt;
+        //     if (player_offset.y >= 200.0f) {
+        //         player_offset.y = 200.0f;
+        //     }
+        // }
+        // if (fan_key_down(FanKey_I)) {
+        //     player_offset.y -= 500.0f * dt;
+        //     if (player_offset.y <= -200.0f) {
+        //         player_offset.y = -200.0f;
+        //     }
+        // }
+        // if (fan_key_down(FanKey_L)) {
+        //     player_offset.x += 500.0f * dt;
+        //     if (player_offset.x >= 200.0f) {
+        //         player_offset.x = 200.0f;
+        //     }
+        // }
+        // if (fan_key_down(FanKey_J)) {
+        //     player_offset.x -= 500.0f * dt;
+        //     if (player_offset.x <= -200.0f) {
+        //         player_offset.x = -200.0f;
+        //     }
+        // }
 
-        if (fan_key_pressed(FanKey_E)) {
-            p_input->actions[0] = true;
-        }
-        else {
-            p_input->actions[0] = false;
-        }
-        if (fan_key_pressed(FanKey_R)) {
-            p_input->actions[1] = not p_input->actions[1];
-        }
+        p_input->actions[0] = fan_key_pressed(FanKey_E);
+        p_input->actions[1] = fan_key_pressed(FanKey_R) ? not p_input->actions[1] : p_input->actions[1];
+        p_input->actions[4] = fan_key_pressed(FanKey_J);
+        p_input->actions[5] = fan_key_pressed(FanKey_K);
+        p_input->actions[6] = fan_key_pressed(FanKey_L);
+        p_input->actions[7] = fan_key_pressed(FanKey_U);
 
         if (fan_key_down(FanKey_O)) {
             player_offset = fan_vec2_zero();

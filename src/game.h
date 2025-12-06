@@ -200,10 +200,32 @@ typedef struct {
     bool32  attacking;
 } CAttack;
 
+/*
+ * Mana: external force
+ * Energy: bodily force
+ * Soul: internal force
+ *
+ */
+typedef enum {
+    MagicType_None = 0,
+    MagicType_Mana = 1,
+    MagicType_Energy,
+    MagicType_Soul,
+} MagicType;
+
+typedef struct {
+    int32 damage;
+} MagicData;
+
+typedef struct {
+    MagicType cast[8]; // ring buffer
+    int32 index;
+} CMagic;
 
 typedef struct {
     int32 player;
     int32 camera;
+    int32 tilemap;
 } SpecialEntityID;
 
 /*
@@ -255,7 +277,7 @@ typedef enum {
 
 typedef struct {
     fan_vec2  direction;
-    int32     actions[4];
+    int32     actions[8];
 } PlayerInput;
 
 typedef struct {
@@ -270,6 +292,8 @@ typedef struct {
 
     fan_rtexture rendermap;
     fan_rtexture lightmap;
+
+    fan_rtexture tilemap;
 
     // TODO(liam): support dynamic window resizing
     // also support minimum window size in platform layer.
@@ -323,6 +347,7 @@ ComponentDeclare(CInteraction,  bool32);
 ComponentDeclare(CInteractable, bool32);
 ComponentDeclare(CZone,         fan_rect_f32);
 ComponentDeclare(CAttack,       CAttack);
+ComponentDeclare(CMagic,        CMagic);
 
 ComponentDeclare(CEnemyTag,      uint8);
 ComponentDeclare(CBackgroundTag, uint8);
@@ -359,6 +384,7 @@ typedef struct {
     CInteractableStorage   c_interactable;
     CZoneStorage           c_zone;
     CAttackStorage         c_attack;
+    CMagicStorage          c_magic;
 
     CEnemyTagStorage       c_tag_enemy;
     CBackgroundTagStorage  c_tag_background;

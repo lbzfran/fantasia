@@ -461,7 +461,62 @@ void AttackSystem(CAttack *a, CMovement *m, CTransform *t, CMovement *o_m, CTran
     }
 }
 
-void TextureUpdate(CTexture *tx, fan_vec2 pos, fan_vec2 size, float dt) {
+void MagicUpdate(CMagic *ma, int32 value, int32 count) {
+    int32 iterations = fan_i32_clamp(count, 0, 8);
+    for (ssize i = 0; i < iterations; i++) {
+        ma->index = (ma->index + 1) & 7;
+        ma->cast[ma->index] = value;
+    }
+}
+
+void MagicSystem(CMagic *ma, int32 input, bool casting, float32 dt) {
+    if (input >= 1 and input <= 3) {
+        MagicUpdate(ma, input, 1);
+    }
+
+    if (not casting) {
+        return;
+    }
+
+    int32 code = ma->cast[ma->index] +
+        ma->cast[(ma->index + 8 - 1) % 8] * 10 +
+        ma->cast[(ma->index + 8 - 2) % 8] * 100 +
+        ma->cast[(ma->index + 8 - 3) % 8] * 1000;
+
+    printf("cast: %04d\n", code);
+
+    switch (code) {
+        case 11: {
+            printf("casting: ball!\n");
+            break;
+        };
+        case 112: {
+            printf("casting: pop!\n");
+            break;
+        };
+        case 221: {
+            printf("casting: slice!\n");
+            break;
+        };
+        case 121: {
+            printf("casting: spread!\n");
+            break;
+        };
+        case 333: {
+            printf("casting: heal!\n");
+            break;
+        };
+
+        default:
+            printf("casting: not found...\n");
+            break;
+    }
+
+    // null out last 4 code
+    MagicUpdate(ma, 0, 4);
+}
+
+void TextureUpdate(CTexture *tx, fan_vec2 pos, fan_vec2 size, float32 dt) {
     (void)dt;
 
     tx->rect = (fan_rect){
@@ -800,7 +855,6 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
         fan_draw_clear(fan_color_WHITE);
 
         // NOTE: drawing world grid here!!
-        GridWorldDraw(world->map, world->tile_atlas, state->world_scale, world->tilesets[0]);
 
         for (ssize i = 0; i < render_entry_count; i++) {
             ssize id = render_array[i].id;
@@ -815,7 +869,7 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
             ssize attack_idx       = world->c_attack.sparse[id];
 
             ssize tag_bg           = world->c_tag_background.sparse[id];
-            (void)tag_bg;
+            // (void)tag_bg;
 
             ssize interaction_idx  = world->c_interaction.sparse[id];
             ssize interactable_idx = world->c_interactable.sparse[id];
@@ -881,6 +935,22 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
             fan_vec2 map_pos = TileMapGetPosition(world->map, center_pos);
             int32 tile_data = fan_matrix_at(world->map.logic_tiles, map_pos.x, map_pos.y);
 
+            if (id == world->spec_id.tilemap) {
+                // fan_mode_texture_begin(state->tilemap);
+                //     fan_draw_clear(fan_color_WHITE);
+                //     GridWorldDraw(world->map, world->tile_atlas, state->world_scale, world->tilesets[0]);
+                // fan_mode_texture_end();
+                //
+                // fan_draw_texture(
+                //     state->tilemap.texture,
+                //     (fan_rect){ 0, 0, (float32)state->tilemap.texture.width, (float32)-state->tilemap.texture.height },
+                //     (fan_rect){ transform->position.x, transform->position.y, transform->scale.x, transform->scale.y },
+                //     fan_vec2_zero(),
+                //     0.0f,
+                //     fan_color_WHITE
+                // );
+                // continue;
+            }
             if (id == world->spec_id.player) {
                 // fan_vec2 tile_world_pos = (fan_vec2) {
                 //     map_pos.x * world->map.tile_size,
@@ -1262,12 +1332,16 @@ void UpdateEntities(
             ssize interact_idx    = world->c_interaction.sparse[id];
             ssize zone_idx        = world->c_zone.sparse[id];
             ssize attack_idx      = world->c_attack.sparse[id];
+            ssize magic_idx       = world->c_magic.sparse[id];
 
             ssize tag_enemy       = world->c_tag_enemy.sparse[id];
 
             CMovement      *move      = &world->c_movement.data[move_idx];
             CTransform     *transform = &world->c_transform.data[transform_idx];
             CAttack        *attack    = &world->c_attack.data[attack_idx];
+
+            CMagic         *magic     = &world->c_magic.data[magic_idx];
+
             bool32         *interact  = null;
             fan_rect_f32  zone      = (fan_rect_f32) { 0 };
 
@@ -1332,6 +1406,28 @@ void UpdateEntities(
                         if (move->lock_time <= 0.0f) {
                             AttackSystem(attack, move, transform, other_move, other_transform, fixed_dt);
                         }
+                    }
+
+                    if (magic_idx != -1) {
+                        int32 magic_type = MagicType_None;
+                        bool32 casting = false;
+                        if (state->p_input.actions[4]) {
+                            magic_type = MagicType_Mana;
+                            state->p_input.actions[4] = 0;
+                        }
+                        else if (state->p_input.actions[5]) {
+                            magic_type = MagicType_Energy;
+                            state->p_input.actions[5] = 0;
+                        }
+                        else if (state->p_input.actions[6]) {
+                            magic_type = MagicType_Soul;
+                            state->p_input.actions[6] = 0;
+                        }
+                        else if (state->p_input.actions[7]) {
+                            casting = true;
+                            state->p_input.actions[7] = 0;
+                        }
+                        MagicSystem(magic, magic_type, casting, fixed_dt);
                     }
 
                     CollisionSystem(transform, move, other_transform, other_move, fixed_dt);
@@ -1742,6 +1838,7 @@ global void SceneMain(World *world) {
         .color  = (fan_color){ 170, 170, 170, 170 },
         .radius = 200.0f,
     );
+    ComponentAdd(&world->c_magic, world->entity_count);
     world->spec_id.player = world->entity_count;
     world->entity_count++;
 
@@ -1811,6 +1908,7 @@ global void SceneMain(World *world) {
         .flags = MovementFlag_NoCollision,
     );
     ComponentAdd(&world->c_tag_background, world->entity_count);
+    world->spec_id.tilemap = world->entity_count;
     world->entity_count++;
     //
     // ComponentAddArgs(&world->c_transform, world->entity_count,
@@ -1872,6 +1970,7 @@ void GameInit(Allocator *a, World *world, GameState *state) {
     ComponentCreate(&world->c_interactable,   a, component_size);
     ComponentCreate(&world->c_zone,           a, component_size);
     ComponentCreate(&world->c_attack,         a, component_size);
+    ComponentCreate(&world->c_magic,          a, component_size);
 
     ComponentCreate(&world->c_tag_background, a, component_size);
     ComponentCreate(&world->c_tag_enemy,      a, component_size);
@@ -1907,6 +2006,8 @@ void GameInit(Allocator *a, World *world, GameState *state) {
     state->render_size = (fan_vec2){ 640, 480 };
     state->rendermap = fan_rtexture_load((int32)state->render_size.x, (int32)state->render_size.y);
     state->lightmap  = fan_rtexture_load((int32)state->render_size.x, (int32)state->render_size.y);
+
+    state->tilemap = fan_rtexture_load(state->render_size.x * 10, state->render_size.y * 6);
 
     state->music = fan_music_load("./resources/My Uncles Last Voyage.mp3");
     fan_music_play(state->music);
@@ -1949,5 +2050,6 @@ void GameClose(Allocator *a, World *world, GameState *state) {
     }
     fan_rtexture_unload(state->rendermap);
     fan_rtexture_unload(state->lightmap);
+    fan_rtexture_unload(state->tilemap);
     fan_music_unload(state->music);
 }
