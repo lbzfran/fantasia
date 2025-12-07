@@ -508,7 +508,7 @@ void MagicSystem(CMagic *ma, int32 input, bool casting, float32 dt) {
         };
 
         default:
-            printf("casting: not found...\n");
+            // printf("casting: not found...\n");
             break;
     }
 
@@ -1411,21 +1411,21 @@ void UpdateEntities(
                     if (magic_idx != -1) {
                         int32 magic_type = MagicType_None;
                         bool32 casting = false;
-                        if (state->p_input.actions[4]) {
+                        if (state->p_input.actions[5]) {
                             magic_type = MagicType_Mana;
-                            state->p_input.actions[4] = 0;
-                        }
-                        else if (state->p_input.actions[5]) {
-                            magic_type = MagicType_Energy;
                             state->p_input.actions[5] = 0;
                         }
                         else if (state->p_input.actions[6]) {
-                            magic_type = MagicType_Soul;
+                            magic_type = MagicType_Energy;
                             state->p_input.actions[6] = 0;
                         }
                         else if (state->p_input.actions[7]) {
-                            casting = true;
+                            magic_type = MagicType_Soul;
                             state->p_input.actions[7] = 0;
+                        }
+                        else if (state->p_input.actions[2]) {
+                            casting = true;
+                            state->p_input.actions[2] = 0;
                         }
                         MagicSystem(magic, magic_type, casting, fixed_dt);
                     }
@@ -2007,7 +2007,7 @@ void GameInit(Allocator *a, World *world, GameState *state) {
     state->rendermap = fan_rtexture_load((int32)state->render_size.x, (int32)state->render_size.y);
     state->lightmap  = fan_rtexture_load((int32)state->render_size.x, (int32)state->render_size.y);
 
-    state->tilemap = fan_rtexture_load(state->render_size.x * 10, state->render_size.y * 6);
+    state->tilemap = fan_rtexture_load((int32)state->render_size.x * 10, (int32)state->render_size.y * 6);
 
     state->music = fan_music_load("./resources/My Uncles Last Voyage.mp3");
     fan_music_play(state->music);
