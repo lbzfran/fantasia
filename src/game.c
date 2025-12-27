@@ -179,6 +179,33 @@ void GridWorldDraw(TileMap map, GridAtlas atlas, int32 pixels_per_unit, fan_text
     }
 }
 
+void SpawnBullet(World *world, fan_vec2 position, fan_vec2 direction) {
+    printf("Spawning a bullet!\n");
+    // TODO(liam): dynamically added entity not properly initializing.
+    ComponentAddArgs(&world->c_transform, world->entity_count,
+        .position = position,
+        .scale = fan_vec2_scale(fan_vec2_one(), 0.5f)
+    );
+    ComponentAdd(&world->c_movement,  world->entity_count);
+    ComponentAddArgs(&world->c_behavior, world->entity_count,
+        .target_id = world->spec_id.player,
+        .type      = BehaviorType_Follow
+    );
+    ComponentAddArgs(&world->c_shape, world->entity_count,
+        .color = (fan_color){ 50, 50, 50, 255 },
+    );
+    // TODO(liam): add a lifetime component
+    // ComponentAddArgs(&world->c_life, world->entity_count,
+    //     .time = 5.0f
+    // );
+
+    world->entity_count++;
+
+    // TODO(liam): call to update entity split not respected.
+    world->update_entity_split = true;
+}
+
+
 void MovementSystem(CMovement *m, CTransform *t, fan_vec2 direction, fan_rect_i32 bound_zone, float32 dt) {
     if (not m->initialized) {
         init_if_null(m->speed,       4.0f);
@@ -1151,7 +1178,8 @@ void UpdateEntities(
     static float32 accumulator = 0.0f;
 
     EntitySplit *split = &world->split;
-    if (world->update_entity_split) {
+    // if (world->update_entity_split) {
+    //     printf("Updating Entity Split!\n");
         UpdateEntitySplit(world);
 
         for (ssize i = 0; i < world->c_transform.size; i++) {
@@ -1167,7 +1195,8 @@ void UpdateEntities(
                 transform->initialized = true;
             }
         }
-    }
+    //     world->update_entity_split = false;
+    // }
 
     accumulator += dt;
     bool32 last_iter = false;
@@ -1426,6 +1455,7 @@ void UpdateEntities(
                         else if (state->p_input.actions[2]) {
                             casting = true;
                             state->p_input.actions[2] = 0;
+                            SpawnBullet(world, transform->position, state->p_input.direction);
                         }
                         MagicSystem(magic, magic_type, casting, fixed_dt);
                     }
@@ -1946,6 +1976,16 @@ global void SceneMain(World *world) {
     );
     world->entity_count++;
 
+    ComponentAddArgs(&world->c_transform, world->entity_count,
+        .position = (fan_vec2){ 5, 3 },
+    );
+    ComponentAdd(&world->c_movement,  world->entity_count);
+    ComponentAddArgs(&world->c_shape, world->entity_count,
+        .color = (fan_color){ 50, 255, 50, 255 },
+    );
+    world->entity_count++;
+
+    SpawnBullet(world, fan_vec2_zero(), fan_vec2_one());
 }
 
 void GameInit(Allocator *a, World *world, GameState *state) {

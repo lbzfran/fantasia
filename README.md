@@ -6,7 +6,7 @@
     - [x] Render Ordering
 - [x] Animations
     - [x] animation trigger
-    - [-] refine animation control (moving forward/backward) [scrapped idea]
+    - [ ] refine animation control (moving forward/backward) [scrapped idea]
     - [x] chaining animations
 - [x] Collisions (AABB)
 - [x] Interactions
@@ -23,7 +23,6 @@
 - [ ] Loading/Saving Game Data (with versioning)
 - [ ] Behaviors
     - [x] Linear Behaviors
-    - [ ] dynamic behaviors (based on conditions, decision tree maybe..?)
 
 # Build
 
