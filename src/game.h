@@ -59,6 +59,7 @@ typedef enum {
     MovementFlag_Immovable     = (1 << 0),
     MovementFlag_NoCollision   = (1 << 1),
     MovementFlag_CollideSoftly = (1 << 2),
+    MovementFlag_Ghost         = (1 << 3),
 } MovementFlags;
 
 typedef struct {

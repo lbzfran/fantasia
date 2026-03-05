@@ -179,21 +179,29 @@ void GridWorldDraw(TileMap map, GridAtlas atlas, int32 pixels_per_unit, fan_text
     }
 }
 
+
+// TODO(liam):
+// - Transform scales less than 1 have scaling issues with their hitbox.
+// - Having less components causes issues with interactivity (likely a bounds error during iterations).
 void SpawnBullet(World *world, fan_vec2 position, fan_vec2 direction) {
     printf("Spawning a bullet!\n");
     // TODO(liam): dynamically added entity not properly initializing.
     ComponentAddArgs(&world->c_transform, world->entity_count,
         .position = position,
-        .scale = fan_vec2_scale(fan_vec2_one(), 0.5f)
-    );
-    ComponentAdd(&world->c_movement,  world->entity_count);
-    ComponentAddArgs(&world->c_behavior, world->entity_count,
-        .target_id = world->spec_id.player,
-        .type      = BehaviorType_Follow
+        .scale = fan_vec2_one()
     );
     ComponentAddArgs(&world->c_shape, world->entity_count,
         .color = (fan_color){ 50, 50, 50, 255 },
     );
+    ComponentAddArgs(&world->c_movement,  world->entity_count,
+        .flags = MovementFlag_Ghost
+    );
+    ComponentAddArgs(&world->c_behavior, world->entity_count,
+        .target_id = world->spec_id.player,
+        .type      = BehaviorType_Follow
+    );
+    ComponentAdd(&world->c_interaction,  world->entity_count);
+    ComponentAdd(&world->c_interactable, world->entity_count);
     // TODO(liam): add a lifetime component
     // ComponentAddArgs(&world->c_life, world->entity_count,
     //     .time = 5.0f
@@ -252,6 +260,11 @@ void MovementSystem(CMovement *m, CTransform *t, fan_vec2 direction, fan_rect_i3
 
         float32 overlap;
         float32 softness = 0.005f;
+
+        // if (m->flags & MovementFlag_Ghost) {
+        //     softness = 0.0f;
+        // }
+
         if (t->position.x < bound_zone.x) {
             overlap = (float32)bound_zone.x - t->position.x;
             t->position.x += overlap * softness;
@@ -376,6 +389,10 @@ bool32 CollisionSystem(
         return false;
 
     if (CollisionCheckV(a->position, a->scale, b->position, b->scale)) {
+        if (a_m->flags & MovementFlag_Ghost or b_m->flags & MovementFlag_Ghost) {
+            return true;
+        }
+
         fan_vec2 aMax = (fan_vec2){
             a->position.x + a->scale.x,
             a->position.y + a->scale.y
@@ -1863,7 +1880,6 @@ global void SceneMain(World *world) {
         .knockback    = 1.0f,
         .attack_range = 1.5f,
     );
-    // ComponentAddArgs(&world->c_animation, world->entity_count);
     ComponentAddArgs(&world->c_light,     world->entity_count,
         .color  = (fan_color){ 170, 170, 170, 170 },
         .radius = 200.0f,
@@ -1887,7 +1903,7 @@ global void SceneMain(World *world) {
     // fan_texture tex_mewee = fan_texture_load("./resources/mewee.png");
     ComponentAdd(&world->c_transform,    world->entity_count);
     ComponentAddArgs(&world->c_shape,    world->entity_count,
-        // .color = (fan_color){ 50, 255, 255, 255 },
+        .color = (fan_color){ 50, 255, 255, 255 },
     );
     ComponentAddArgs(&world->c_movement, world->entity_count, .speed = 1.0f);
     ComponentAddArgs(&world->c_texture,  world->entity_count,
@@ -1907,25 +1923,25 @@ global void SceneMain(World *world) {
     ComponentAdd(&world->c_tag_enemy,    world->entity_count);
     world->entity_count++;
 
-    ComponentAdd(&world->c_transform,    world->entity_count);
-    ComponentAddArgs(&world->c_shape,    world->entity_count,
+    // ComponentAdd(&world->c_transform,    world->entity_count);
+    // ComponentAddArgs(&world->c_shape,    world->entity_count,
         // .color = (fan_color){ 255, 50, 255, 255 },
-    );
-    ComponentAddArgs(&world->c_movement, world->entity_count, .speed = 2.0f);
-    ComponentAddArgs(&world->c_texture,  world->entity_count,
-        .texture = tex_girl_03,
-        .rect = { .x = 0, .y = 0, .width = citizen_size.x, .height = citizen_size.y },
-    );
-    ComponentAddArgs(&world->c_animation, world->entity_count);
-    ComponentAddArgs(&world->c_behavior, world->entity_count,
-        .type = BehaviorType_Follow,
-        .target_id = world->spec_id.player,
-    );
-    ComponentAdd(&world->c_interaction,  world->entity_count);
-    ComponentAdd(&world->c_interactable, world->entity_count);
-    ComponentAdd(&world->c_tag_enemy,    world->entity_count);
-    world->entity_count++;
-
+    // );
+    // ComponentAddArgs(&world->c_movement, world->entity_count, .speed = 2.0f);
+    // ComponentAddArgs(&world->c_texture,  world->entity_count,
+    //     .texture = tex_girl_03,
+    //     .rect = { .x = 0, .y = 0, .width = citizen_size.x, .height = citizen_size.y },
+    // );
+    // ComponentAddArgs(&world->c_animation, world->entity_count);
+    // ComponentAddArgs(&world->c_behavior, world->entity_count,
+    //     .type = BehaviorType_Follow,
+    //     .target_id = world->spec_id.player,
+    // );
+    // ComponentAdd(&world->c_interaction,  world->entity_count);
+    // ComponentAdd(&world->c_interactable, world->entity_count);
+    // ComponentAdd(&world->c_tag_enemy,    world->entity_count);
+    // world->entity_count++;
+    //
     ComponentAddArgs(&world->c_transform,  world->entity_count,
         .position = (fan_vec2){  0, 5 },
         .scale    = (fan_vec2){ 10, 6 },
@@ -1965,27 +1981,27 @@ global void SceneMain(World *world) {
     // );
     // world->entity_count++;
 
-    ComponentAddArgs(&world->c_transform, world->entity_count,
-        .position = (fan_vec2){ 5, 2 },
-    );
-    ComponentAddArgs(&world->c_shape,     world->entity_count,
-        .color = (fan_color){ 50, 255, 255, 255 },
-    );
-    ComponentAddArgs(&world->c_movement,  world->entity_count,
-        .flags = MovementFlag_Immovable,
-    );
-    world->entity_count++;
+    // ComponentAddArgs(&world->c_transform, world->entity_count,
+    //     .position = (fan_vec2){ 5, 2 },
+    // );
+    // ComponentAddArgs(&world->c_shape,     world->entity_count,
+    //     .color = (fan_color){ 50, 255, 255, 255 },
+    // );
+    // ComponentAddArgs(&world->c_movement,  world->entity_count,
+    //     .flags = MovementFlag_Immovable,
+    // );
+    // world->entity_count++;
+    //
+    // ComponentAddArgs(&world->c_transform, world->entity_count,
+    //     .position = (fan_vec2){ 5, 3 },
+    // );
+    // ComponentAdd(&world->c_movement,  world->entity_count);
+    // ComponentAddArgs(&world->c_shape, world->entity_count,
+    //     .color = (fan_color){ 50, 255, 50, 255 },
+    // );
+    // world->entity_count++;
 
-    ComponentAddArgs(&world->c_transform, world->entity_count,
-        .position = (fan_vec2){ 5, 3 },
-    );
-    ComponentAdd(&world->c_movement,  world->entity_count);
-    ComponentAddArgs(&world->c_shape, world->entity_count,
-        .color = (fan_color){ 50, 255, 50, 255 },
-    );
-    world->entity_count++;
-
-    SpawnBullet(world, fan_vec2_zero(), fan_vec2_one());
+    // SpawnBullet(world, fan_vec2_zero(), fan_vec2_one());
 }
 
 void GameInit(Allocator *a, World *world, GameState *state) {
