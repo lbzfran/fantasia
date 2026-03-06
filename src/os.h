@@ -46,7 +46,14 @@ typedef size_t        usize;
 typedef ptrdiff_t     ssize;
 typedef uintptr_t     uintptr;
 
-#define assert(c)           while (!(c)) __builtin_unreachable()
+
+#ifdef NDEBUG
+# define assert(c) ((void)0)
+# define assume assert
+#else
+# define assert
+# define assume(c) if (!(c)) __builtin_unreachable()
+#endif
 
 #define sizeof(x)           (ssize)sizeof(x)
 #define alignof(x)          (_Alignof(x))
