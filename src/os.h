@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+
 #if defined(OS_WINDOWS)
     #define GAME_LIB_PATH "libgame.dll"
     #if defined(BUILD_SHARED)
@@ -46,13 +47,11 @@ typedef size_t        usize;
 typedef ptrdiff_t     ssize;
 typedef uintptr_t     uintptr;
 
-
-#define NDEBUG
-#ifdef NDEBUG
-# define assert(c) ((void)0)
-# define assume assert
+#ifdef  DEBUG
+# define assert(c) ((c) ? (void) (0) : fprintf(stderr, "%s failed in %s:%d:%s()\n", #c, __FILE__, __LINE__, __func__))
+# define assume(c) assert(c)
 #else
-# define assert
+# define assert(c) ((void) (0))
 # define assume(c) if (!(c)) __builtin_unreachable()
 #endif
 
