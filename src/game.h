@@ -6,32 +6,45 @@
 
 #define istagged(t) (t >= 0 ? true : false)
 #define TILE_SIZE 64
+#define MAX_ENTITY_CAP kilobytes(2)
 
-#define ComponentDeclare(name, T) \
-    typedef struct name##Storage {       \
-         int32 *sparse;                  \
-         int32 *dense;                   \
-             T *data;                    \
-         ssize  size;                    \
-         ssize  capacity;                \
+#define ComponentDeclare(name, T)  \
+    typedef struct name##Storage { \
+         ssize *sparse;            \
+         ssize *dense;             \
+             T *data;              \
+         ssize  size;              \
+         ssize  capacity;          \
     } name##Storage
 
 #define ComponentHas(storage, id) ((storage)->sparse[id] != -1)
 
-#define ComponentCreate(storage, mem, cap) do{                                         \
-    (storage)->sparse   = (mem)->make((mem)->ctx, sizeof(*(storage)->sparse) * (cap)); \
-    (storage)->dense    = (mem)->make((mem)->ctx, sizeof(*(storage)->dense)  * (cap)); \
-    (storage)->data     = (mem)->make((mem)->ctx, sizeof(*(storage)->data)   * (cap)); \
-    (storage)->capacity = (cap);                                                       \
-    (storage)->size = 0;                                                               \
-    memset((storage)->sparse, -1, sizeof(*(storage)->sparse) * (cap));                 \
+#define ComponentGetValueOrElse(storage, id, default_value) \
+    (ComponentHas(storage, id) ? (storage)->data[(storage)->sparse[(id)]] : (default_value))
+#define ComponentGetValue(storage, id) ComponentGetValueOrElse(storage, id, 0)
+
+#define ComponentGetOrElse(storage, id, default_value) \
+    (ComponentHas(storage, id) ? &(storage)->data[(storage)->sparse[(id)]] : (default_value))
+#define ComponentGet(storage, id) ComponentGetOrElse(storage, id, null)
+
+// NOTE(liam): 'Fast' includes optimizations in 'release' build.
+#define ComponentGetFast(storage, id) \
+    (assume(ComponentHas(storage, id)), &(storage)->data[(storage)->sparse[(id)]])
+
+#define ComponentCreate(storage, mem, cap) do{                                                    \
+    (storage)->sparse   = (mem)->make((mem)->ctx, sizeof(*(storage)->sparse) * (MAX_ENTITY_CAP)); \
+    (storage)->dense    = (mem)->make((mem)->ctx, sizeof(*(storage)->dense)  * (cap));            \
+    (storage)->data     = (mem)->make((mem)->ctx, sizeof(*(storage)->data)   * (cap));            \
+    (storage)->capacity = (cap);                                                                  \
+    (storage)->size = 0;                                                                          \
+    memset((storage)->sparse, -1, sizeof(*(storage)->sparse) * (cap));                            \
 }while(0);
 
 // WARN: assert on fail
 #define ComponentAdd(storage, id) do{              \
     assert((storage)->size < (storage)->capacity); \
     assert(ComponentHas(storage,id));              \
-    int32 i = (storage)->size++;                   \
+    ssize i = (storage)->size++;                   \
     (storage)->dense[i] = (id);                    \
     (storage)->sparse[id] = i;                     \
 }while(0);
@@ -45,7 +58,7 @@
     ssize i = (storage)->sparse[id];              \
     assert(i != -1);                              \
     ssize last_i = --(storage)->size;             \
-    int32 last_entity = (storage)->dense[last_i]; \
+    ssize last_entity = (storage)->dense[last_i]; \
     (storage)->dense[i] = last_entity;            \
     (storage)->sparse[last_entity] = i;           \
     (storage)->data[i] = (storage)->data[last_i]; \

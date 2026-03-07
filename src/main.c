@@ -139,8 +139,8 @@ int main(void) {
         }
 
         state.current_time = fan_time_get();
-        int32 cam_move_idx = world.c_transform.sparse[world.spec_id.camera];
-        CTransform *cam_transform = &world.c_transform.data[cam_move_idx];
+        // int32 cam_move_idx = world.c_transform.sparse[world.spec_id.camera];
+        CTransform *cam_transform = ComponentGet(&world.c_transform, world.spec_id.camera);
         camera.target = fan_vec2_add(cam_transform->position, fan_vec2_scale(cam_transform->scale, 0.5f));
         // camera.offset = (fan_vec2){ FanWindowWidth() / 2.0f, FanWindowHeight() / 2.0f };
 

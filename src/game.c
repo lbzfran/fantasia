@@ -513,7 +513,7 @@ void MagicUpdate(CMagic *ma, int32 value, int32 count) {
     }
 }
 
-void MagicSystem(CMagic *ma, int32 input, bool casting, float32 dt) {
+void MagicSystem(CMagic *ma, int32 input, bool32 casting, float32 dt) {
     if (input >= 1 and input <= 3) {
         MagicUpdate(ma, input, 1);
     }
@@ -869,12 +869,11 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
         ssize id = world->c_shape.dense[i];
         if (id == -1)
             continue;
-        CShape *shape = &world->c_shape.data[i];
 
-        ssize transform_idx = world->c_transform.sparse[id];
-        if (transform_idx == -1)
+        CShape *shape         = ComponentGetFast(&world->c_shape, id);
+        CTransform *transform = ComponentGet(&world->c_transform, id);
+        if (transform == null)
             continue;
-        CTransform *transform = &world->c_transform.data[transform_idx];
 
         if (not shape->initialized) {
             if (shape->color.a == 0) {
@@ -905,29 +904,25 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
             if (id == -1)
                 continue;
 
-            ssize shape_idx        = world->c_shape.sparse[id];
-            ssize transform_idx    = world->c_transform.sparse[id];
-            ssize move_idx         = world->c_movement.sparse[id];
-            ssize animation_idx    = world->c_animation.sparse[id];
-            ssize texture_idx      = world->c_texture.sparse[id];
-            ssize attack_idx       = world->c_attack.sparse[id];
+            // ssize shape_idx        = world->c_shape.sparse[id];
+            // ssize transform_idx    = world->c_transform.sparse[id];
+            // ssize move_idx         = world->c_movement.sparse[id];
+            // ssize animation_idx    = world->c_animation.sparse[id];
+            // ssize texture_idx      = world->c_texture.sparse[id];
+            // ssize attack_idx       = world->c_attack.sparse[id];
 
-            ssize tag_bg           = world->c_tag_background.sparse[id];
             // (void)tag_bg;
 
-            ssize interaction_idx  = world->c_interaction.sparse[id];
-            ssize interactable_idx = world->c_interactable.sparse[id];
-            ssize zone_idx         = world->c_zone.sparse[id];
-
-            CShape         *shape       = &world->c_shape.data[shape_idx];
-            CTransform     *transform   = &world->c_transform.data[transform_idx];
-            CMovement      *move        = &world->c_movement.data[move_idx];
-            CTexture       *texture     = null;
-            // CAnimation     *animation   = null;
-            CAttack        *attack      = &world->c_attack.data[attack_idx];
-            bool32          interacting = false;
-            bool32          interacted  = false;
-            fan_rect        zone        = { 0 };
+            CShape         *shape       =  ComponentGetFast(&world->c_shape, id);
+            CTransform     *transform   =  ComponentGetFast(&world->c_transform, id);
+            CMovement      *move        =  ComponentGet(&world->c_movement, id);
+            CTexture       *texture     =  ComponentGet(&world->c_texture, id);
+            CAnimation     *animation   =  ComponentGet(&world->c_animation, id);
+            CAttack        *attack      =  ComponentGet(&world->c_attack, id);
+            bool32          interacting =  ComponentGetValue(&world->c_interaction, id);
+            bool32          interacted  =  ComponentGetValue(&world->c_interactable, id);
+            fan_rect        zone        =  ComponentGetValueOrElse(&world->c_zone, id, (fan_rect){ 0 });
+            // ssize           tag_bg      = *ComponentGet(&world->c_tag_background, id);
 
             if (not shape->visible) {
                 continue;
@@ -935,12 +930,7 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
 
             int32 render_flags = 0;
 
-            if (zone_idx != -1) {
-                zone = world->c_zone.data[zone_idx];
-                zone.x += transform->position.x;
-                zone.y += transform->position.y;
-            }
-            else {
+            if (fan_rect_f32_isempty(zone)) {
                 zone = (fan_rect) {
                     .x      = transform->position.x,
                     .y      = transform->position.y,
@@ -948,24 +938,9 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
                     .height = transform->scale.y,
                 };
             }
-
-            if (interaction_idx != -1) {
-                interacting = world->c_interaction.data[interaction_idx];
-            }
-
-            if (interactable_idx != -1) {
-                interacted  = world->c_interactable.data[interactable_idx];
-            }
-
-            if (texture_idx != -1) {
-                texture       = &world->c_texture.data[texture_idx];
-                // if (animation_idx != -1) {
-                //     animation = &world->c_animation.data[animation_idx];
-                // }
-            }
-
-            if (move_idx != -1) {
-                move = &world->c_movement.data[move_idx];
+            else {
+                zone.x += transform->position.x;
+                zone.y += transform->position.y;
             }
 
             fan_vec2 center_pos = fan_vec2_add(
@@ -1017,7 +992,7 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
                 }
             }
 
-            if (animation_idx == -1)
+            if (animation == null)
                 render_flags |= RenderFlag_FlipX;
 
             if (state->p_input.actions[1])
@@ -1038,7 +1013,7 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
             );
 
 
-            if (attack_idx != -1 and attack->attacking and attack->cast_timer <= 0.0f) {
+            if (attack and attack->attacking and attack->cast_timer <= 0.0f) {
                 fan_vec2 center = fan_vec2_add(transform->position,
                         (fan_vec2){ transform->scale.x * 0.5f, transform->scale.y * -0.5f });
                 fan_vec2 facing = move->direction;
@@ -1195,8 +1170,8 @@ void UpdateEntities(
     static float32 accumulator = 0.0f;
 
     EntitySplit *split = &world->split;
-    // if (world->update_entity_split) {
-    //     printf("Updating Entity Split!\n");
+    if (world->update_entity_split) {
+        printf("Updating Entity Split!\n");
         UpdateEntitySplit(world);
 
         for (ssize i = 0; i < world->c_transform.size; i++) {
@@ -1212,12 +1187,12 @@ void UpdateEntities(
                 transform->initialized = true;
             }
         }
-    //     world->update_entity_split = false;
-    // }
+        world->update_entity_split = false;
+    }
 
     accumulator += dt;
-    bool32 last_iter = false;
     while (accumulator >= fixed_dt) {
+        bool32 last_iter = false;
         accumulator -= fixed_dt;
         if (accumulator < fixed_dt)
             last_iter = true;
@@ -1226,37 +1201,23 @@ void UpdateEntities(
             if (id == -1)
                 continue;
 
-            ssize transform_idx   = world->c_transform.sparse[id];
-            ssize behavior_idx    = world->c_behavior.sparse[id];
-            ssize interact_idx    = world->c_interaction.sparse[id];
-            ssize interacted_idx  = world->c_interactable.sparse[id];
-            ssize animation_idx   = world->c_animation.sparse[id];
-            ssize attack_idx      = world->c_attack.sparse[id];
-            // int32 zone_idx        = world->c_zone.sparse[id];
+            CMovement    *move      = ComponentGet(&world->c_movement,  id);
+            CTransform   *transform = ComponentGet(&world->c_transform, id);
+            CBehavior    *behavior  = ComponentGet(&world->c_behavior,  id);
+            CAttack      *attack    = ComponentGet(&world->c_attack,    id);
+            CAnimation   *anim      = ComponentGet(&world->c_animation, id);
 
-            CMovement       *move      = &world->c_movement.data[i];
-            CTransform      *transform = &world->c_transform.data[transform_idx];
-            CBehavior       *behavior  = null;
-            CAttack         *attack    = null;
-            CAnimation      *anim      = null;
-            // fan_rect_f32  *zone      = null;
+            bool32 *interact   = ComponentGet(&world->c_interaction, id);
+            bool32 *interacted = ComponentGet(&world->c_interactable, id);
 
             fan_vec2 direction = fan_vec2_zero();
 
-            // if (zone_idx != -1) {
-            //     zone = &world->c_zone.data[zone_idx];
-            // }
-
-            if (interact_idx != -1) {
-                world->c_interaction.data[interact_idx] = false;
+            if (interact != null) {
+                *interact = false;
             }
 
-            if (interacted_idx != -1) {
-                world->c_interactable.data[interacted_idx] = false;
-            }
-
-            if (attack_idx != -1) {
-                attack = &world->c_attack.data[attack_idx];
+            if (interacted != null) {
+                *interacted = false;
             }
 
             if (id == world->spec_id.player) {
@@ -1265,9 +1226,7 @@ void UpdateEntities(
 
                 }
             }
-            else if (behavior_idx != -1) {
-                behavior = &world->c_behavior.data[behavior_idx];
-
+            else if (behavior) {
                 behavior->updating = false;
                 behavior->timer += dt;
                 if (behavior->timer >= behavior->update_time) {
@@ -1373,34 +1332,15 @@ void UpdateEntities(
         for (ssize i = 0; i < split->dynamic_count; i++) {
             ssize id = split->dynamic_entities[i];
 
-            ssize move_idx        = world->c_movement.sparse[id];
-            ssize transform_idx   = world->c_transform.sparse[id];
-            ssize interact_idx    = world->c_interaction.sparse[id];
-            ssize zone_idx        = world->c_zone.sparse[id];
-            ssize attack_idx      = world->c_attack.sparse[id];
-            ssize magic_idx       = world->c_magic.sparse[id];
+            CMovement     *move      = ComponentGetFast(&world->c_movement,    id);
+            CTransform    *transform = ComponentGetFast(&world->c_transform,   id);
+            CAttack       *attack    = ComponentGet(&world->c_attack,          id);
+            CMagic        *magic     = ComponentGet(&world->c_magic,           id);
+            bool32        *interact  = ComponentGet(&world->c_interaction,     id);
+            ssize          tag_enemy = ComponentGetValue(&world->c_tag_enemy,  id);
+            fan_rect_f32   zone      = ComponentGetValueOrElse(&world->c_zone, id, (fan_rect_f32){ 0 });
 
-            ssize tag_enemy       = world->c_tag_enemy.sparse[id];
-
-            CMovement      *move      = &world->c_movement.data[move_idx];
-            CTransform     *transform = &world->c_transform.data[transform_idx];
-            CAttack        *attack    = &world->c_attack.data[attack_idx];
-
-            CMagic         *magic     = &world->c_magic.data[magic_idx];
-
-            bool32         *interact  = null;
-            fan_rect_f32  zone      = (fan_rect_f32) { 0 };
-
-            if (interact_idx != -1) {
-                interact = &world->c_interaction.data[interact_idx];
-            }
-
-            if (zone_idx != -1) {
-                zone = world->c_zone.data[zone_idx];
-                zone.x += transform->position.x;
-                zone.y += transform->position.y;
-            }
-            else {
+            if (fan_rect_f32_isempty(zone)) {
                 zone = (fan_rect_f32) {
                     .x      = transform->position.x,
                     .y      = transform->position.y,
@@ -1408,34 +1348,22 @@ void UpdateEntities(
                     .height = transform->scale.y,
                 };
             }
+            else {
+                zone.x += transform->position.x;
+                zone.y += transform->position.y;
+            }
 
             if (move->active and not (move->flags & MovementFlag_NoCollision)) {
                 for (ssize j = i + 1; j < split->dynamic_count; j++) {
                     ssize other_id = split->dynamic_entities[j];
 
-                    ssize other_transform_idx    = world->c_transform.sparse[other_id];
-                    ssize other_move_idx         = world->c_movement.sparse[other_id];
-                    assert(other_move_idx != -1);
-                    ssize other_interacted_idx   = world->c_interactable.sparse[other_id];
-                    ssize other_zone_idx         = world->c_zone.sparse[other_id];
+                    CTransform    *other_transform  = ComponentGetFast(&world->c_transform,   other_id);
+                    CMovement     *other_move       = ComponentGetFast(&world->c_movement,    other_id);
+                    bool32        *other_interacted = ComponentGet(&world->c_interactable,    other_id);
+                    fan_rect_f32   other_zone       = ComponentGetValueOrElse(&world->c_zone, other_id, (fan_rect_f32) { 0 });
+                    ssize          other_tag_enemy  = ComponentGetValue(&world->c_tag_enemy,  other_id);
 
-                    ssize other_tag_enemy        = world->c_tag_enemy.sparse[other_id];
-
-                    CTransform     *other_transform  = &world->c_transform.data[other_transform_idx];
-                    CMovement      *other_move       = &world->c_movement.data[other_move_idx];
-                    bool32         *other_interacted = null;
-                    fan_rect_f32  other_zone       = (fan_rect_f32) { 0 };
-
-                    if (other_interacted_idx != -1) {
-                        other_interacted = &world->c_interactable.data[other_interacted_idx];
-                    }
-
-                    if (other_zone_idx != -1) {
-                        other_zone = world->c_zone.data[other_zone_idx];
-                        other_zone.x += other_transform->position.x;
-                        other_zone.y += other_transform->position.y;
-                    }
-                    else {
+                    if (fan_rect_f32_isempty(other_zone)) {
                         other_zone = (fan_rect_f32) {
                             .x      = other_transform->position.x,
                             .y      = other_transform->position.y,
@@ -1443,18 +1371,22 @@ void UpdateEntities(
                             .height = other_transform->scale.y,
                         };
                     }
+                    else {
+                        other_zone.x += other_transform->position.x;
+                        other_zone.y += other_transform->position.y;
+                    }
 
-                    if (attack_idx != -1) {
+                    if (attack) {
                         if (id == world->spec_id.player and state->p_input.actions[0] and not attack->attacking) {
                             attack->attacking = true;
-                            attack->cast_timer = 0.5f;
+                            attack->cast_timer = 0.2f;
                         }
                         if (move->lock_time <= 0.0f) {
                             AttackSystem(attack, move, transform, other_move, other_transform, fixed_dt);
                         }
                     }
 
-                    if (magic_idx != -1) {
+                    if (magic) {
                         int32 magic_type = MagicType_None;
                         bool32 casting = false;
                         if (state->p_input.actions[5]) {
@@ -1494,29 +1426,13 @@ void UpdateEntities(
                 for (ssize i = 0; i < split->static_count; i++) {
                     ssize other_id = split->static_entities[i];
 
-                    ssize other_transform_idx    = world->c_transform.sparse[other_id];
-                    ssize other_move_idx         = world->c_movement.sparse[other_id];
-                    assert(other_move_idx != -1);
-                    ssize other_interacted_idx   = world->c_interactable.sparse[other_id];
-                    ssize other_zone_idx         = world->c_zone.sparse[other_id];
+                    CTransform     *other_transform  = ComponentGetFast(&world->c_transform,   other_id);
+                    CMovement      *other_move       = ComponentGetFast(&world->c_movement,    other_id);
+                    bool32         *other_interacted = ComponentGet(&world->c_interactable,    other_id);
+                    fan_rect_f32    other_zone       = ComponentGetValueOrElse(&world->c_zone, other_id, (fan_rect_f32) { 0 });
+                    ssize           other_tag_enemy  = ComponentGetValue(&world->c_tag_enemy,  other_id);
 
-                    ssize other_tag_enemy        = world->c_tag_enemy.sparse[other_id];
-
-                    CTransform     *other_transform  = &world->c_transform.data[other_transform_idx];
-                    CMovement      *other_move       = &world->c_movement.data[other_move_idx];
-                    bool32         *other_interacted = null;
-                    fan_rect_f32  other_zone       = (fan_rect_f32) { 0 };
-
-                    if (other_interacted_idx != -1) {
-                        other_interacted = &world->c_interactable.data[other_interacted_idx];
-                    }
-
-                    if (other_zone_idx != -1) {
-                        other_zone = world->c_zone.data[other_zone_idx];
-                        other_zone.x += other_transform->position.x;
-                        other_zone.y += other_transform->position.y;
-                    }
-                    else {
+                    if (fan_rect_f32_isempty(other_zone)) {
                         other_zone = (fan_rect_f32) {
                             .x      = other_transform->position.x,
                             .y      = other_transform->position.y,
@@ -1524,8 +1440,12 @@ void UpdateEntities(
                             .height = other_transform->scale.y,
                         };
                     }
+                    else {
+                        other_zone.x += other_transform->position.x;
+                        other_zone.y += other_transform->position.y;
+                    }
 
-                    if (attack_idx != -1) {
+                    if (attack) {
                         if (id == world->spec_id.player and state->p_input.actions[0]) {
                             attack->attacking = true;
                         }
@@ -1571,18 +1491,14 @@ void UpdateEntities(
         }
     }
 
-
     for (ssize i = 0; i < world->c_animation.size; i++) {
         ssize id = world->c_animation.dense[i];
         if (id == -1)
             continue;
 
-        ssize texture_idx = world->c_texture.sparse[id];
-        ssize move_idx    = world->c_movement.sparse[id];
-
-        CAnimation *anim    = &world->c_animation.data[i];
-        CTexture   *texture = &world->c_texture.data[texture_idx];
-        CMovement  *move    = &world->c_movement.data[move_idx];
+        CAnimation *anim    = ComponentGet(&world->c_animation, id);
+        CTexture   *texture = ComponentGet(&world->c_texture,   id);
+        CMovement  *move    = ComponentGet(&world->c_movement,  id);
         (void)move;
 
         fan_vec2 direction = move->direction;
@@ -1876,7 +1792,7 @@ global void SceneMain(World *world) {
     ComponentAdd(&world->c_interactable, world->entity_count);
     ComponentAddArgs(&world->c_attack,   world->entity_count,
         .arc_angle    = fan_f32_rad(45.0f),
-        .swing_time   = 0.4f,
+        .swing_time   = 0.2f,
         .knockback    = 1.0f,
         .attack_range = 1.5f,
     );
