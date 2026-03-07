@@ -47,6 +47,7 @@ typedef ptrdiff_t     ssize;
 typedef uintptr_t     uintptr;
 
 
+#define NDEBUG
 #ifdef NDEBUG
 # define assert(c) ((void)0)
 # define assume assert
@@ -92,9 +93,9 @@ typedef uintptr_t     uintptr;
 #define clamp(x, a, b)   min(max(x, a), b)
 
 typedef struct allocator {
-    void *(*make)   (void *ctx, ssize);
-    void  (*free)   (void *ctx, void *, ssize);
-    void *(*resize) (void *ctx, void *, ssize, ssize);
+    void *(*make)   (void *ctx, ssize size);
+    void  (*free)   (void *ctx, void *ptr, ssize size);
+    void *(*resize) (void *ctx, void *ptr, ssize old, ssize new);
     void *ctx;
 } Allocator;
 
@@ -121,14 +122,32 @@ typedef struct {
 
 typedef struct {
     uchar8 *data;
-    ssize         length;
+    ssize   length;
 } fan_str8;
 
 typedef struct {
     fan_str8 head;
     fan_str8 tail;
     int32    ok;
-} cutstr8;
+} fan_cutstr8;
+
+#define FAN_ARRAY_INITIAL_CAPACITY 32
+#define fan_array_append(allocator, arr, x) do{                                             \
+    assume(allocator.resize != null && "allocator 'resize' must be defined.");              \
+    if (arr.size + 1 >= arr.capacity) {                                                     \
+        ssize new_capacity = max(arr.capacity * 2, FAN_ARRAY_INITIAL_CAPACITY);             \
+        arr.data = allocator.resize(allocator.ctx, arr.capacity, sizeof(x) * new_capacity); \
+        arr.capacity = new_capacity;                                                        \
+    }                                                                                       \
+    assume(typeof(*allocator.data) == typeof(x) && "array's data type must match.");        \
+    arr.data[arr.size] = x;                                                                 \
+    arr.size++;                                                                             \
+}while(0)
+
+#define fan_array_clear(allocator, arr) do{                                \
+    assume(allocator.free != null && "allocator 'free' must be defined."); \
+    allocator.free(allocator.ctx, arr.data, arr.capacity);                 \
+}while(0)
 
 #define fan_fbuf8_mem(buf, cap)    { buf, 0, cap, -1, 0 }
 #define fan_fbuf8_fd(fd, buf, cap) { buf, 0, cap, fd, 0 }
@@ -170,7 +189,7 @@ fan_str8 fan_str8_triml(fan_str8);
 fan_str8 fan_str8_trimr(fan_str8);
 fan_str8 fan_str8_substr(fan_str8, ssize);
 
-cutstr8 fan_str8_cut(fan_str8, uchar8);
+fan_cutstr8 fan_str8_cut(fan_str8, uchar8);
 
 
 inline uintptr fan_align_forward(uintptr ptr, ssize alignment) {

@@ -241,8 +241,8 @@ fan_str8 fan_str8_substr(fan_str8 s, ssize i)
     return s;
 }
 
-cutstr8 fan_str8_cut(fan_str8 s, uchar8 c) {
-    cutstr8 r = { 0 };
+fan_cutstr8 fan_str8_cut(fan_str8 s, uchar8 c) {
+    fan_cutstr8 r = { 0 };
     if (!s.length) return r;  // null pointer special case
     uchar8 *beg = s.data;
     uchar8 *end = s.data + s.length;

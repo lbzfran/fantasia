@@ -16,44 +16,41 @@
          ssize  capacity;                \
     } name##Storage
 
-#define ComponentCreate(storage, mem, size) do{                                        \
-    (storage)->sparse   = (mem)->make((mem)->ctx, sizeof(*(storage)->sparse) * size);  \
-    (storage)->dense    = (mem)->make((mem)->ctx, sizeof(*(storage)->dense)  * size);  \
-    (storage)->data     = (mem)->make((mem)->ctx, sizeof(*(storage)->data)   * size);  \
-    (storage)->capacity = size;                                                        \
-    memset((storage)->sparse, -1, sizeof(*(storage)->sparse) * size);                  \
-    memset((storage)->dense,  -1, sizeof(*(storage)->dense)  * size);                  \
-    memset((storage)->data,    0, sizeof(*(storage)->data)   * size);                  \
-    }while(0);
+#define ComponentHas(storage, id) ((storage)->sparse[id] != -1)
 
-// WARN: assert on fail
-#define ComponentAdd(storage, id) do{                                   \
-        (storage)->sparse[id] = (int32)(storage)->size;                 \
-        (storage)->dense[(storage)->size % (storage)->capacity] = (id); \
-        (storage)->size++;                                              \
-        if ((storage)->size >= (storage)->capacity)                     \
-            assert(false && "Out of Memory!");                          \
-    }while(0);
-
-
-#define ComponentArgs(storage, id, ...) do{                                                             \
-        assert((storage)->sparse[id] != -1 && "Attempted to pass component args to unassigned entity"); \
-        (storage)->data[(storage)->sparse[id]] = (typeof(*(storage)->data)){__VA_ARGS__};               \
-    }while(0);
-
-#define ComponentAddArgs(storage, id, ...) do{ \
-    ComponentAdd(storage, id);                 \
-    ComponentArgs(storage, id, __VA_ARGS__);   \
+#define ComponentCreate(storage, mem, cap) do{                                         \
+    (storage)->sparse   = (mem)->make((mem)->ctx, sizeof(*(storage)->sparse) * (cap)); \
+    (storage)->dense    = (mem)->make((mem)->ctx, sizeof(*(storage)->dense)  * (cap)); \
+    (storage)->data     = (mem)->make((mem)->ctx, sizeof(*(storage)->data)   * (cap)); \
+    (storage)->capacity = (cap);                                                       \
+    (storage)->size = 0;                                                               \
+    memset((storage)->sparse, -1, sizeof(*(storage)->sparse) * (cap));                 \
 }while(0);
 
-// WARN: no bounds check
-#define ComponentDelete(storage, id, count_ptr) do{                             \
-        (storage)->dense[(storage)->sparse[id]] = (typeof(*(storage)->dense))0; \
-        (storage)->parse[id] = (typeof(*(storage)->parse))-1;                   \
-        (storage)->data[(storage)->size] = typeof(*(storage)->data) {0};        \
-        if ((storage)->size > 0)                                                \
-            (storage)->size--;                                                  \
-    }while(0);
+// WARN: assert on fail
+#define ComponentAdd(storage, id) do{              \
+    assert((storage)->size < (storage)->capacity); \
+    assert(ComponentHas(storage,id));              \
+    int32 i = (storage)->size++;                   \
+    (storage)->dense[i] = (id);                    \
+    (storage)->sparse[id] = i;                     \
+}while(0);
+
+#define ComponentAddArgs(storage, id, ...) do{                                        \
+    ComponentAdd(storage, id);                                                        \
+    (storage)->data[(storage)->sparse[id]] = (typeof(*(storage)->data)){__VA_ARGS__}; \
+}while(0);
+
+#define ComponentDelete(storage, id) do{          \
+    ssize i = (storage)->sparse[id];              \
+    assert(i != -1);                              \
+    ssize last_i = --(storage)->size;             \
+    int32 last_entity = (storage)->dense[last_i]; \
+    (storage)->dense[i] = last_entity;            \
+    (storage)->sparse[last_entity] = i;           \
+    (storage)->data[i] = (storage)->data[last_i]; \
+    (storage)->sparse[id] = -1;                   \
+}while(0);
 
 typedef enum {
     MovementFlag_Immovable     = (1 << 0),
