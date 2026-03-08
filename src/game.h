@@ -351,6 +351,17 @@ typedef struct RenderEntry {
     int32   layer;
 } RenderEntry;
 
+typedef enum {
+    RenderFlag_FlipX        = (1 << 0),
+    RenderFlag_FlipY        = (1 << 1),
+    RenderFlag_ShowInteract = (1 << 2)
+} RenderFlags;
+
+typedef enum {
+    AnimationFlag_NotInterruptible = (1 << 0),
+    AnimationFlag_DisableLoop      = (1 << 1),
+} AnimationFlags;
+
 ComponentDeclare(CTransform, CTransform);
 ComponentDeclare(CShape,     CShape);
 ComponentDeclare(CMovement,  CMovement);
