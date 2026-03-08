@@ -43,7 +43,7 @@
 // WARN: assert on fail
 #define ComponentAdd(storage, id) do{              \
     assert((storage)->size < (storage)->capacity); \
-    assert(ComponentHas(storage,id));              \
+    assert(!ComponentHas(storage,id));             \
     ssize i = (storage)->size++;                   \
     (storage)->dense[i] = (id);                    \
     (storage)->sparse[id] = i;                     \

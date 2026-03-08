@@ -47,7 +47,8 @@ typedef size_t        usize;
 typedef ptrdiff_t     ssize;
 typedef uintptr_t     uintptr;
 
-#ifdef  DEBUG
+#define DEBUG
+#ifdef DEBUG
 # define assert(c) ((c) ? (void) (0) : fprintf(stderr, "%s failed in %s:%d:%s()\n", #c, __FILE__, __LINE__, __func__))
 # define assume(c) assert(c)
 #else
