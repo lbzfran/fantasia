@@ -82,10 +82,6 @@ fan_rect GridAtlasGetRect(GridAtlas atlas, int32 index) {
     return rect;
 }
 
-inline int32 fan_i32_clamp(int32 v, int32 min, int32 max) {
-    return v < min ? min : (v > max ? max : v);
-}
-
 TileOffsets GridGetLogicalFromVisual(fan_vec2 v, int32 rows, int32 cols) {
     TileOffsets result;
 
@@ -817,12 +813,6 @@ void RenderProcessPost(
     );
 }
 
-typedef struct RenderEntry {
-    int32   id;
-    float32 height;
-    int32   layer;
-} RenderEntry;
-
 ssize SortRenderPartition_(RenderEntry *entries, ssize low, ssize high) {
     RenderEntry pivot = entries[high];
     RenderEntry temp;
@@ -928,10 +918,9 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
                 continue;
             }
 
-            int32 render_flags = 0;
 
             if (fan_rect_f32_isempty(zone)) {
-                zone = (fan_rect) {
+                zone = (fan_rect_f32) {
                     .x      = transform->position.x,
                     .y      = transform->position.y,
                     .width  = transform->scale.x,
@@ -992,6 +981,7 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
                 }
             }
 
+            int32 render_flags = 0;
             if (animation == null)
                 render_flags |= RenderFlag_FlipX;
 
@@ -1413,8 +1403,8 @@ void UpdateEntities(
                     if (
                             interact and
                             other_interacted and
-                            CollisionCheckR(zone, other_zone) and
-                            not (istagged(tag_enemy) and istagged(other_tag_enemy))
+                            CollisionCheckR(zone, other_zone)
+                            // and not (istagged(tag_enemy) and istagged(other_tag_enemy))
                         ) {
                         // FanRectInt32Print(zone);
                         // FanRectInt32Print(other_zone);

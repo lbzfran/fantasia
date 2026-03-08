@@ -47,13 +47,16 @@ typedef size_t        usize;
 typedef ptrdiff_t     ssize;
 typedef uintptr_t     uintptr;
 
-#define DEBUG
 #ifdef DEBUG
 # define assert(c) ((c) ? (void) (0) : fprintf(stderr, "%s failed in %s:%d:%s()\n", #c, __FILE__, __LINE__, __func__))
 # define assume(c) assert(c)
 #else
 # define assert(c) ((void) (0))
-# define assume(c) if (!(c)) __builtin_unreachable()
+static inline void assume(bool32 condition) {
+    if (!condition) {
+        __builtin_unreachable();
+    }
+}
 #endif
 
 #define sizeof(x)           (ssize)sizeof(x)

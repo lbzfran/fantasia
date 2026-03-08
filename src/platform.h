@@ -402,6 +402,8 @@ FAN_API fan_vec2 fan_vec2_rotate(fan_vec2 v, float32 angle);
 
 FAN_API fan_vec2 fan_vec2_lerp(fan_vec2 v1, float32 t, fan_vec2 v2);
 
+FAN_API int32 fan_i32_clamp(int32 v, int32 min, int32 max);
+
 FAN_API int32 fan_rect_i32_isempty(fan_rect_i32 rect);
 FAN_API int32 fan_rect_f32_isempty(fan_rect_f32 rect);
 

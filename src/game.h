@@ -28,6 +28,8 @@
 #define ComponentGet(storage, id) ComponentGetOrElse(storage, id, null)
 
 // NOTE(liam): 'Fast' includes optimizations in 'release' build.
+#define ComponentGetValueFast(storage, id) \
+    (assume(ComponentHas(storage, id)), (storage)->data[(storage)->sparse[(id)]])
 #define ComponentGetFast(storage, id) \
     (assume(ComponentHas(storage, id)), &(storage)->data[(storage)->sparse[(id)]])
 
@@ -342,6 +344,12 @@ typedef enum {
     TileID_None = 0,
     TileID_Ground,
 } TileID;
+
+typedef struct RenderEntry {
+    int32   id;
+    float32 height;
+    int32   layer;
+} RenderEntry;
 
 ComponentDeclare(CTransform, CTransform);
 ComponentDeclare(CShape,     CShape);

@@ -9,21 +9,25 @@
 
 #include <math.h>
 
+int32 fan_i32_clamp(int32 v, int32 min, int32 max) {
+    return v < min ? min : ((v > max) ? max : v);
+}
+
 bool32 fan_rect_i32_isempty(fan_rect_i32 rect) {
-    int result = 1;
-    if (rect.x && rect.y && rect.width && rect.height) {
-        result = 0;
+    bool32 result = true;
+    if (rect.x || rect.y || rect.width || rect.height) {
+        result = false;
     }
     return result;
 }
 
 bool32 fan_rect_f32_isempty(fan_rect_f32 rect) {
-    int result = 1;
+    bool32 result = false;
     if (fan_f32_equals(rect.x,      0.0f) &&
         fan_f32_equals(rect.y,      0.0f) &&
         fan_f32_equals(rect.width,  0.0f) &&
         fan_f32_equals(rect.height, 0.0f)) {
-        result = 0;
+        result = true;
     }
     return result;
 }
