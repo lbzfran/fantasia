@@ -607,7 +607,7 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
             if (animation == null)
                 render_flags |= RenderFlag_FlipX;
 
-            if (state->p_input.actions[1])
+            if (state->player_input.actions[1])
                 render_flags |= RenderFlag_ShowInteract;
 
             RenderSystem(
@@ -699,7 +699,7 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
                 );
             }
 
-            if (state->called_object_dump) {
+            if (state->player_called_object_dump) {
                 printf("id: %td\n", id);
                 printf("interacting: %s\n", interacting ? "true" : "false");
                 printf("interacted: %s\n",  interacted  ? "true" : "false");

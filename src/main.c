@@ -4,13 +4,13 @@
 #include "game.h"
 
 typedef struct {
-    void (*init)(Allocator *a, World *world, GameState *state);
-    void (*update_and_render)(Allocator *a, World *world, GameState *state, float32 dt);
-    void (*close)(Allocator *a, World *world, GameState *state);
+    void (*init)(fan_allocator *a, World *world, GameState *state);
+    void (*update_and_render)(fan_allocator *a, World *world, GameState *state, float32 dt);
+    void (*close)(fan_allocator *a, World *world, GameState *state);
 } GameAPI;
 GameAPI game = {};
 
-Allocator heap_allocator = {
+fan_allocator heap_allocator = {
     .make   = fan_heap_make,
     .free   = fan_heap_free,
     .resize = fan_heap_resize,
@@ -39,7 +39,7 @@ int main(void) {
         .size     = 0,
         .capacity = megabytes(1)
     };
-    Allocator arena_allocator = {
+    fan_allocator arena_allocator = {
         .make   = fan_arena_make,
         .free   = fan_arena_free,
         .resize = fan_arena_resize,
@@ -55,7 +55,7 @@ int main(void) {
 
     fan_camera2D camera = { 0 };
     camera.zoom = 0.8f;
-    PlayerInput *p_input = &state.p_input;
+    PlayerInput *p_input = &state.player_input;
 
     game.init(&arena_allocator, &world, &state);
     while (running) {
@@ -65,7 +65,7 @@ int main(void) {
         }
 
         if (fan_window_resized()) {
-            state.resized = true;
+            state.window_resized = true;
         }
 
         p_input->direction = (fan_vec2){ 0 };
@@ -134,7 +134,7 @@ int main(void) {
         }
 
         if (fan_key_pressed(FanKey_P)) {
-            state.called_object_dump = true;
+            state.player_called_object_dump = true;
             printf("[[DEBUG INFO]]\n");
         }
 
@@ -144,7 +144,7 @@ int main(void) {
         camera.target = fan_vec2_add(cam_transform->position, fan_vec2_scale(cam_transform->scale, 0.5f));
         // camera.offset = (fan_vec2){ FanWindowWidth() / 2.0f, FanWindowHeight() / 2.0f };
 
-        if (state.called_object_dump) {
+        if (state.player_called_object_dump) {
             printf("Total Allocations: %.2f / %.2f KB\n", (float64)world.arena.size / 1000.0, (float64)world.arena.capacity / 1000.0);
             printf("current_time: %.3f\n", state.current_time);
 
@@ -163,7 +163,7 @@ int main(void) {
             fan_camera_end();
             fan_draw_fps(2, 2);
         fan_draw_end();
-        state.called_object_dump = false;
+        state.player_called_object_dump = false;
         world.update_entity_split = false;
     }
 

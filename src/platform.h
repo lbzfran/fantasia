@@ -36,17 +36,17 @@ typedef struct {
 } fan_color;
 
 typedef struct {
-    int32 x;
-    int32 y;
-    int32 width;
-    int32 height;
+    union {
+        struct { int32 x, y, w, h; };
+        struct { int32 left, top, width, height; };
+        int32 v[4];
+    };
 } fan_rect_int32, fan_rect_i32;
 
 typedef struct {
-    float32 x;
-    float32 y;
-    float32 width;
-    float32 height;
+    struct { float32 x, y, w, h; };
+    struct { float32 left, top, width, height; };
+    float32 v[4];
 } fan_rect, fan_rect_f32;
 
 typedef struct {
@@ -375,6 +375,11 @@ FAN_API void fan_rect_f32_print_(fan_rect_f32, const char8 *);
     fan_rect_i32: fan_rect_i32_print_,         \
     fan_rect_f32: fan_rect_f32_print_)(r, #r)
 
+FAN_API bool32 fan_rect_i32_valid(fan_rect_i32);
+FAN_API fan_rect_i32 fan_rect_i32_intersection(fan_rect_i32, fan_rect_i32);
+FAN_API fan_rect_i32 fan_rect_i32_bounding(fan_rect_i32, fan_rect_i32);
+FAN_API bool32 fan_rect_i32_equals(fan_rect_i32, fan_rect_i32);
+FAN_API bool32 fan_rect_i32_contains(fan_rect_i32, int32, int32);
 
 FAN_API fan_vec2 fan_vec2_zero(void);
 FAN_API fan_vec2 fan_vec2_one(void);

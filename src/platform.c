@@ -208,3 +208,51 @@ void fan_matrix_randomize(fan_matrix mat, int32 start, int32 end) {
         }
     }
 }
+
+inline bool32 fan_rect_i32_valid(fan_rect_i32 rect) {
+    return rect.x >= 0 && rect.y >= 0 && rect.width >= 0 && rect.height >= 0;
+}
+
+fan_rect_i32 fan_rect_i32_intersection(fan_rect_i32 a, fan_rect_i32 b) {
+    int32_t x1 = (a.x > b.x) ? a.x : b.x;
+    int32_t y1 = (a.y > b.y) ? a.y : b.y;
+
+    int32_t x2 = ((a.x + a.w) < (b.x + b.w)) ? (a.x + a.w) : (b.x + b.w);
+    int32_t y2 = ((a.y + a.h) < (b.y + b.h)) ? (a.y + a.h) : (b.y + b.h);
+
+    if (x2 <= x1 || y2 <= y1) {
+        return (fan_rect_i32) {};
+    }
+    return (fan_rect_i32) {
+        x1, y1, x2 - x1, y2 - y1
+    };
+}
+
+fan_rect_i32 fan_rect_i32_bounding(fan_rect_i32 a, fan_rect_i32 b) {
+    int32_t x1 = (a.x < b.x) ? a.x : b.x;
+    int32_t y1 = (a.y < b.y) ? a.y : b.y;
+
+    int32_t x2 = ((a.x + a.w) > (b.x + b.w)) ? (a.x + a.w) : (b.x + b.w);
+    int32_t y2 = ((a.y + a.h) > (b.y + b.h)) ? (a.y + a.h) : (b.y + b.h);
+
+    return (fan_rect_i32){
+        x1,
+        y1,
+        x2 - x1,
+        y2 - y1
+    };
+}
+
+inline bool32 fan_rect_i32_equals(fan_rect_i32 a, fan_rect_i32 b) {
+    return a.x == b.x &&
+           a.y == b.y &&
+           a.w == b.w &&
+           a.h == b.h;
+}
+
+inline bool32 fan_rect_i32_contains(fan_rect_i32 r, int32 x, int32 y) {
+    return x >= r.x &&
+           y >= r.y &&
+           x <  r.x + r.w &&
+           y <  r.y + r.h;
+}

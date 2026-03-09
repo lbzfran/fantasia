@@ -1,7 +1,6 @@
 #ifndef FAN_OS_H
 #define FAN_OS_H
 
-#include <inttypes.h>
 #include <stddef.h>
 #include <sys/types.h>
 #include <uchar.h>
@@ -9,7 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include <stdalign.h>
 
 #if defined(OS_WINDOWS)
     #define GAME_LIB_PATH "libgame.dll"
@@ -37,7 +36,11 @@ typedef uint8_t       uint8;
 typedef uint32_t      uint32;
 typedef uint64_t      uint64;
 
+#ifndef bool
 typedef int32_t       bool32;
+#else
+typedef bool          bool32;
+#endif
 typedef int32_t       int32;
 
 typedef float         float32;
@@ -60,10 +63,23 @@ static inline void assume(bool32 condition) {
 #endif
 
 #define sizeof(x)           (ssize)sizeof(x)
-#define alignof(x)          (_Alignof(x))
+#ifndef alignas
+#define alignas(x)          _Alignas(x)
+#endif
+#ifndef alignof
+#define alignof(x)          _Alignof(x)
+#endif
 #define countof(a)          (sizeof(a) / sizeof(*(a)))
 #define lengthof(s)         (countof(s) - 1)
 #define signof(x)           ((x) > 0) ? 1 : (((x) < 0) ? -1 : 0)
+#ifndef static_assert
+#define static_assert _Static_assert
+#endif
+#ifdef nullptr_t
+typedef nullptr_t nullptr;
+#else
+#define nullptr null
+#endif
 
 #define coalesce(a, b)      ((a) ? (a) : (b))
 #define init_if_null(a, x)  ((a) = coalesce((a), (x)))
@@ -72,6 +88,7 @@ static inline void assume(bool32 condition) {
 # define true    1
 # define false   0
 #endif
+
 #define not     !
 #define is      ==
 #define isnt    !=
@@ -81,6 +98,8 @@ static inline void assume(bool32 condition) {
 #define local   static
 #define global  static
 
+// NOTE(liam): fake attribute used to denote if a function's parameter
+// is effectively optional (as in a nullable parameter)
 #define optional_
 
 #define null            0
@@ -95,12 +114,12 @@ static inline void assume(bool32 condition) {
 
 #define clamp(x, a, b)   min(max(x, a), b)
 
-typedef struct allocator {
+typedef struct fan_allocator {
     void *(*make)   (void *ctx, ssize size);
     void  (*free)   (void *ctx, void *ptr, ssize size);
     void *(*resize) (void *ctx, void *ptr, ssize old, ssize new);
     void *ctx;
-} Allocator;
+} fan_allocator;
 
 typedef struct Arena {
     uint8 *data;

@@ -297,20 +297,19 @@ typedef struct {
     SystemMode   mode;
     fan_music    music;
 
-    PlayerInput  p_input;
+    PlayerInput  player_input;
+    bool32       player_called_object_dump;
 
-    fan_rect_i32 bound_zone;
     float64      current_time;
     float32      camera_zoom;
 
     fan_rtexture rendermap;
     fan_rtexture lightmap;
-
     fan_rtexture tilemap;
 
     // TODO(liam): support dynamic window resizing
     // also support minimum window size in platform layer.
-    bool32       resized;
+    bool32       window_resized;
     int32        window_width;
     int32        window_height;
 
@@ -319,8 +318,8 @@ typedef struct {
     float32      render_scale;
 
     int32        world_scale; // pixels_per_unit
+    fan_rect_i32 world_bound_zone;
 
-    bool32       called_object_dump;
 } GameState;
 
 typedef struct {
@@ -420,8 +419,8 @@ typedef struct {
     CBackgroundTagStorage  c_tag_background;
 } World;
 
-void GAME_API GameInit(Allocator *a, World *world, GameState *state);
-void GAME_API GameUpdateAndRender(Allocator *a, World *world, GameState *state, float32 dt);
-void GAME_API GameClose(Allocator *a, World *world, GameState *state);
+void GAME_API GameInit(fan_allocator *a, World *world, GameState *state);
+void GAME_API GameUpdateAndRender(fan_allocator *a, World *world, GameState *state, float32 dt);
+void GAME_API GameClose(fan_allocator *a, World *world, GameState *state);
 
 #endif // FAN_GAME_H
