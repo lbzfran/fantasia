@@ -44,8 +44,8 @@ void MovementSystem(CMovement *m, CTransform *t, fan_vec2 direction, fan_rect_i3
 
     if (not (m->flags & MovementFlag_NoCollision)) {
         if (fan_vec2_length(t->scale) > 0.0f) {
-            bound_zone.width  = (int32)((float32)bound_zone.width  - t->scale.x);
-            bound_zone.height = (int32)((float32)bound_zone.height - t->scale.y);
+            bound_zone.w = (int32)((float32)bound_zone.w - t->scale.x);
+            bound_zone.h = (int32)((float32)bound_zone.h - t->scale.y);
         }
 
         float32 overlap;
@@ -59,8 +59,8 @@ void MovementSystem(CMovement *m, CTransform *t, fan_vec2 direction, fan_rect_i3
             overlap = (float32)bound_zone.x - t->position.x;
             t->position.x += overlap * softness;
         }
-        else if (t->position.x > bound_zone.width) {
-            overlap = t->position.x - (float32)bound_zone.width;
+        else if (t->position.x > bound_zone.w) {
+            overlap = t->position.x - (float32)bound_zone.w;
             t->position.x -= overlap * softness;
         }
 
@@ -68,8 +68,8 @@ void MovementSystem(CMovement *m, CTransform *t, fan_vec2 direction, fan_rect_i3
             overlap = (float32)bound_zone.y - t->position.y;
             t->position.y += overlap * softness;
         }
-        else if (t->position.y > bound_zone.height) {
-            overlap = t->position.y - (float32)bound_zone.height;
+        else if (t->position.y > bound_zone.h) {
+            overlap = t->position.y - (float32)bound_zone.h;
             t->position.y -= overlap * softness;
         }
     }
@@ -140,8 +140,8 @@ void SoundSystem(CSound *s, bool32 playing, float32 volume, float32 dt) {
 inline bool32 CollisionCheckR(fan_rect_f32 a, fan_rect_f32 b) {
     bool32 result = false;
 
-    result = not (a.x + a.width  < b.x or b.x + b.width  < a.x or
-                  a.y + a.height < b.y or b.y + b.height < a.y);
+    result = not (a.x + a.w < b.x or b.x + b.w < a.x or
+                  a.y + a.h < b.y or b.y + b.h < a.y);
 
     return result;
 }
@@ -550,10 +550,10 @@ void UpdateEntities(
 
             if (fan_rect_f32_isempty(zone)) {
                 zone = (fan_rect_f32) {
-                    .x      = transform->position.x,
-                    .y      = transform->position.y,
-                    .width  = transform->scale.x,
-                    .height = transform->scale.y,
+                    .x = transform->position.x,
+                    .y = transform->position.y,
+                    .w = transform->scale.x,
+                    .h = transform->scale.y,
                 };
             }
             else {
@@ -573,10 +573,10 @@ void UpdateEntities(
 
                     if (fan_rect_f32_isempty(other_zone)) {
                         other_zone = (fan_rect_f32) {
-                            .x      = other_transform->position.x,
-                            .y      = other_transform->position.y,
-                            .width  = other_transform->scale.x,
-                            .height = other_transform->scale.y,
+                            .x = other_transform->position.x,
+                            .y = other_transform->position.y,
+                            .w = other_transform->scale.x,
+                            .h = other_transform->scale.y,
                         };
                     }
                     else {
@@ -642,10 +642,10 @@ void UpdateEntities(
 
                     if (fan_rect_f32_isempty(other_zone)) {
                         other_zone = (fan_rect_f32) {
-                            .x      = other_transform->position.x,
-                            .y      = other_transform->position.y,
-                            .width  = other_transform->scale.x,
-                            .height = other_transform->scale.y,
+                            .x = other_transform->position.x,
+                            .y = other_transform->position.y,
+                            .w = other_transform->scale.x,
+                            .h = other_transform->scale.y,
                         };
                     }
                     else {
@@ -836,7 +836,7 @@ void GameInit(fan_allocator *a, World *world, GameState *state) {
 
     GridWorldGenerate(world->map);
 
-    state->world_bound_zone  = (fan_rect_i32){ .width = 10, .height = 6 };
+    state->world_bound_zone  = (fan_rect_i32){ .w = 10, .h = 6 };
     state->camera_zoom = 1.0f;
 
     state->render_size = (fan_vec2){ 640, 480 };

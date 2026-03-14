@@ -344,7 +344,7 @@ void fan_draw_rectv(fan_vec2 pos, fan_vec2 scale, fan_color color) {
 }
 
 void fan_draw_rectr(fan_rect rect, fan_color color) {
-    fan_draw_rect((int32)rect.x, (int32)rect.y, (int32)rect.width, (int32)rect.height, color);
+    fan_draw_rect((int32)rect.x, (int32)rect.y, (int32)rect.w, (int32)rect.h, color);
 }
 
 void fan_draw_line(int32 sx, int32 sy, int32 ex, int32 ey, fan_color color) {
@@ -368,14 +368,14 @@ void fan_draw_texture(fan_texture texture, fan_rect src, fan_rect dst, fan_vec2 
     Rectangle rl_src = (Rectangle){
         .x      = src.x,
         .y      = src.y,
-        .width  = src.width,
-        .height = src.height
+        .width  = src.w,
+        .height = src.h
     };
     Rectangle rl_dst = (Rectangle){
         .x      = dst.x,
         .y      = dst.y,
-        .width  = dst.width,
-        .height = dst.height
+        .width  = dst.w,
+        .height = dst.h
     };
     Vector2 rl_origin = (Vector2){
         .x = origin.x,

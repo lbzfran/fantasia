@@ -36,18 +36,12 @@ typedef struct {
 } fan_color;
 
 typedef struct {
-    union {
-        struct { int32 x, y, w, h; };
-        struct { int32 left, top, width, height; };
-        int32 v[4];
-    };
+    int32 x, y, w, h;
 } fan_rect_int32, fan_rect_i32;
 
 typedef struct {
-    struct { float32 x, y, w, h; };
-    struct { float32 left, top, width, height; };
-    float32 v[4];
-} fan_rect, fan_rect_f32;
+    float32 x, y, w, h;
+} fan_rect, fan_rect_float32, fan_rect_f32;
 
 typedef struct {
     ssize  rows;

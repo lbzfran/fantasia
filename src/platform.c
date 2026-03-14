@@ -15,7 +15,7 @@ int32 fan_i32_clamp(int32 v, int32 min, int32 max) {
 
 bool32 fan_rect_i32_isempty(fan_rect_i32 rect) {
     bool32 result = true;
-    if (rect.x || rect.y || rect.width || rect.height) {
+    if (rect.x || rect.y || rect.w || rect.h) {
         result = false;
     }
     return result;
@@ -25,8 +25,8 @@ bool32 fan_rect_f32_isempty(fan_rect_f32 rect) {
     bool32 result = false;
     if (fan_f32_equals(rect.x,      0.0f) &&
         fan_f32_equals(rect.y,      0.0f) &&
-        fan_f32_equals(rect.width,  0.0f) &&
-        fan_f32_equals(rect.height, 0.0f)) {
+        fan_f32_equals(rect.w,      0.0f) &&
+        fan_f32_equals(rect.h,      0.0f)) {
         result = true;
     }
     return result;
@@ -179,11 +179,11 @@ void fan_color_print_(fan_color c, const char8 *name) {
 }
 
 void fan_rect_i32_print_(fan_rect_i32 r, const char8 *name) {
-    printf("%s: (%d, %d, %d, %d)\n", name, r.x, r.y, r.width, r.height);
+    printf("%s: (%d, %d, %d, %d)\n", name, r.x, r.y, r.w, r.h);
 }
 
 void fan_rect_f32_print_(fan_rect_f32 r, const char8 *name) {
-    printf("%s: (%f, %f, %f, %f)\n", name, (float64)r.x, (float64)r.y, (float64)r.width, (float64)r.height);
+    printf("%s: (%f, %f, %f, %f)\n", name, (float64)r.x, (float64)r.y, (float64)r.w, (float64)r.h);
 }
 
 fan_matrix fan_matrix_create_(ssize rows, ssize cols, int32 *data) {
@@ -210,7 +210,7 @@ void fan_matrix_randomize(fan_matrix mat, int32 start, int32 end) {
 }
 
 inline bool32 fan_rect_i32_valid(fan_rect_i32 rect) {
-    return rect.x >= 0 && rect.y >= 0 && rect.width >= 0 && rect.height >= 0;
+    return rect.x >= 0 && rect.y >= 0 && rect.w >= 0 && rect.h >= 0;
 }
 
 fan_rect_i32 fan_rect_i32_intersection(fan_rect_i32 a, fan_rect_i32 b) {
@@ -224,7 +224,10 @@ fan_rect_i32 fan_rect_i32_intersection(fan_rect_i32 a, fan_rect_i32 b) {
         return (fan_rect_i32) {};
     }
     return (fan_rect_i32) {
-        x1, y1, x2 - x1, y2 - y1
+        .x = x1,
+        .y = y1,
+        .w = x2 - x1,
+        .h = y2 - y1
     };
 }
 
@@ -236,10 +239,10 @@ fan_rect_i32 fan_rect_i32_bounding(fan_rect_i32 a, fan_rect_i32 b) {
     int32_t y2 = ((a.y + a.h) > (b.y + b.h)) ? (a.y + a.h) : (b.y + b.h);
 
     return (fan_rect_i32){
-        x1,
-        y1,
-        x2 - x1,
-        y2 - y1
+        .x = x1,
+        .y = y1,
+        .w = x2 - x1,
+        .h = y2 - y1
     };
 }
 

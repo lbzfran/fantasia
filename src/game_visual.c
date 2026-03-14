@@ -74,10 +74,10 @@ fan_rect GridAtlasGetRect(GridAtlas atlas, int32 index) {
     assert(index < 16 && "atlas index must be less than 16.");
     fan_vec2 size_index = atlas.coordinates[index];
     fan_rect rect = (fan_rect){
-        atlas.sizes[(int32)size_index.x],
-        atlas.sizes[(int32)size_index.y],
-        atlas.sizes[1],
-        atlas.sizes[1]
+        .x = atlas.sizes[(int32)size_index.x],
+        .y = atlas.sizes[(int32)size_index.y],
+        .w = atlas.sizes[1],
+        .h = atlas.sizes[1]
     };
     return rect;
 }
@@ -175,10 +175,10 @@ void GridWorldDraw(TileMap map, GridAtlas atlas, int32 pixels_per_unit, fan_text
             //     48, 48, 16, 16
             // };
             fan_rect dst = (fan_rect) {
-                (float32)(i * pixels_per_unit),
-                (float32)(j * pixels_per_unit),
-                (float32)pixels_per_unit,
-                (float32)pixels_per_unit
+                .x = (float32)(i * pixels_per_unit),
+                .y = (float32)(j * pixels_per_unit),
+                .w = (float32)pixels_per_unit,
+                .h = (float32)pixels_per_unit
             };
 
             fan_draw_texture(tile_texture, src, dst, fan_vec2_zero(), 0.0f, fan_color_WHITE);
@@ -219,8 +219,8 @@ void RenderSystem(
         fan_draw_rectv(screen_pos, screen_scale, s->color);
     }
     else {
-        float32 width  = (tx->rect.width)  ? (float32)tx->rect.width  : (float32)tx->texture.width;
-        float32 height = (tx->rect.height) ? (float32)tx->rect.height : (float32)tx->texture.height;
+        float32 width  = (tx->rect.w)  ? (float32)tx->rect.w: (float32)tx->texture.width;
+        float32 height = (tx->rect.h) ? (float32)tx->rect.h: (float32)tx->texture.height;
 
         if (m) {
             if (flags & RenderFlag_FlipX) {
@@ -232,10 +232,10 @@ void RenderSystem(
         }
 
         fan_rect src = (fan_rect) {
-            tx->rect.x,
-            tx->rect.y,
-            width,
-            height
+            .x = tx->rect.x,
+            .y = tx->rect.y,
+            .w = width,
+            .h = height
         };
 
         fan_rect dst = (fan_rect) {
@@ -256,8 +256,8 @@ void RenderSystem(
             fan_rect screen_zone = (fan_rect) {
                 screen_zone_pos.x,
                 screen_zone_pos.y,
-                (float32)zone.width  * (float32)pixels_per_unit * camera_zoom,
-                (float32)zone.height * (float32)pixels_per_unit * camera_zoom
+                (float32)zone.w * (float32)pixels_per_unit * camera_zoom,
+                (float32)zone.h * (float32)pixels_per_unit * camera_zoom
             };
             fan_color zone_color = interacting ?
                 (fan_color){ 255, 0, 0, 75 } : (fan_color){ 0, 255, 0, 75 };
@@ -355,10 +355,10 @@ void TextureUpdate(CTexture *tx, fan_vec2 pos, fan_vec2 size, float32 dt) {
     (void)dt;
 
     tx->rect = (fan_rect){
-        .x      = (int32)pos.x,
-        .y      = (int32)pos.y,
-        .width  = (int32)size.x,
-        .height = (int32)size.y
+        .x = (int32)pos.x,
+        .y = (int32)pos.y,
+        .w = (int32)size.x,
+        .h = (int32)size.y
     };
 }
 
@@ -408,8 +408,8 @@ void AnimationSystem(CAnimation *a, CTexture *t, AnimationData *table, float dt)
         t,
         (fan_vec2){ (float32)current.x, (float32)current.y },
         (fan_vec2){
-            coalesce((float32)current.width,  (float32)t->rect.width),
-            coalesce((float32)current.height, (float32)t->rect.height)
+            coalesce((float32)current.w, (float32)t->rect.w),
+            coalesce((float32)current.h, (float32)t->rect.h)
         },
         dt
     );
@@ -543,10 +543,10 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
 
             if (fan_rect_f32_isempty(zone)) {
                 zone = (fan_rect_f32) {
-                    .x      = transform->position.x,
-                    .y      = transform->position.y,
-                    .width  = transform->scale.x,
-                    .height = transform->scale.y,
+                    .x = transform->position.x,
+                    .y = transform->position.y,
+                    .w = transform->scale.x,
+                    .h = transform->scale.y,
                 };
             }
             else {

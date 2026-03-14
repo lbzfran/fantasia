@@ -248,7 +248,7 @@ global void SceneMain(World *world) {
         .texture = tex_girl_01,
         // .rect = player_idle_down_frames[0],
         // .rect = (fan_rect_i32){ 0, 0, tex_link.width / 10.0f, tex_link.height / 8.0f }
-        .rect = { .x = 0, .y = 0, .width = citizen_size.x, .height = citizen_size.y },
+        .rect = { .x = 0, .y = 0, .w = citizen_size.x, .h = citizen_size.y },
         // .rect = { .width = 36, .height = 36 },
     );
     ComponentAddArgs(&world->c_animation, world->entity_count);
@@ -288,7 +288,7 @@ global void SceneMain(World *world) {
     ComponentAddArgs(&world->c_movement, world->entity_count, .speed = 1.0f);
     ComponentAddArgs(&world->c_texture,  world->entity_count,
         .texture = tex_girl_02,
-        .rect = { .x = 0, .y = 0, .width = citizen_size.x, .height = citizen_size.y },
+        .rect = { .x = 0, .y = 0, .w = citizen_size.x, .h = citizen_size.y },
     );
     ComponentAddArgs(&world->c_animation, world->entity_count);
     ComponentAddArgs(&world->c_behavior, world->entity_count,
