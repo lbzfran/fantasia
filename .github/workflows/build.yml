@@ -38,7 +38,7 @@ jobs:
     - name: make Windows
       run: make PLATFORM=windows
     - name: Package Windows
-      run: zip -j fantasia-windows_x86_64.zip bin/*
+      run: zip fantasia-windows_x86_64.zip resources -j bin/*
     - name: Create tag
       run: |
         git tag $VERSION
