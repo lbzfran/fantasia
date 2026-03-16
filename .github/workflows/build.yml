@@ -3,10 +3,14 @@ name: Build and Release
 on:
   workflow_dispatch:
     inputs:
-      version:
-        description: "Release version"
+      major:
+        description: "Major version"
         required: true
-        default: "v0.0.0"
+        default: "0"
+      minor:
+        description: "Minor version"
+        required: true
+        default: "0"
   push:
     tags:
     - "v*"
@@ -17,6 +21,12 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+    - name: Computer version
+      id: version
+      run: |
+        VERSION=v${{ github.event.inputs.major }}.${{ github.event.inputs.minor }}.${{ github.run_number }}
+        echo "VERSION=$VERSION" >> $GITHUB_ENV
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
     - name: Install Compilers
       run: |
         sudo apt-get update
@@ -29,10 +39,11 @@ jobs:
       run: zip fantasia-windows_x86_64.zip ./bin
     - name: Create tag
       run: |
-        git tag v0.0.${{ github.run_number }}
-        git push origin v0.0.${{ github.run_number }}
+        git tag $VERSION
+        git push origin $VERSION
     - name: Create Release
       uses: softprops/action-gh-release@v2
       with:
+        tag_name: ${{ steps.version.outputs.version }}
         files: |
           fantasia-windows_x86_64.zip
