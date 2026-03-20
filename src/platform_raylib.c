@@ -1,7 +1,6 @@
 
 #include "platform.h"
 
-#define RAYLIB_IMPLEMENTATION
 #include <raylib.h>
 
 Color fan_color_rl(fan_color color) {

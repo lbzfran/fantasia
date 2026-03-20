@@ -12,7 +12,6 @@
 // - Transform scales less than 1 have scaling issues with their hitbox.
 // - Having less components causes issues with interactivity (likely a bounds error during iterations).
 void SpawnBullet(World *world, fan_vec2 position, fan_vec2 direction) {
-    printf("Spawning a bullet!\n");
     // TODO(liam): dynamically added entity not properly initializing.
     ComponentAddArgs(&world->c_transform, world->entity_count,
         .position = position,
