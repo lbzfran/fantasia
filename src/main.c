@@ -7,8 +7,10 @@ typedef struct {
     void (*init)(fan_allocator *a, World *world, GameState *state);
     void (*update_and_render)(fan_allocator *a, World *world, GameState *state, float32 dt);
     void (*close)(fan_allocator *a, World *world, GameState *state);
+    void (*on_reload)(World *world, GameState *state);
+
+    void *library;
 } GameAPI;
-GameAPI game = {};
 
 fan_allocator heap_allocator = {
     .make   = fan_heap_make,
@@ -17,18 +19,47 @@ fan_allocator heap_allocator = {
     .ctx    = null
 };
 
+GameAPI game = {};
 GameState state = {};
 World world = {};
 
-int main(void) {
-    void *lib = fan_lib_open(GAME_LIB_PATH);
-    if ((uintptr)lib == null) {
+void GameAPIClose(GameAPI *game) {
+    fan_lib_close(game->library);
+    fan_os_file_delete(GAME_LIB_TMP_PATH);
+}
+
+bool32 GameAPILoad(GameAPI *game) {
+    if (game->library != nullptr) {
+        GameAPIClose(game);
+    }
+    if (!fan_os_file_copy(GAME_LIB_PATH, GAME_LIB_TMP_PATH)) {
+        printf("ERROR: DEBUGGING Failed to copy game library!\n");
+        return false;
+    }
+
+    game->library = fan_lib_open(GAME_LIB_TMP_PATH);
+
+    if (game->library == nullptr) {
         printf("ERROR: Failed to load game library!\n");
+        return false;
+    }
+
+    game->init = fan_lib_load(game->library, "GameInit");
+    game->update_and_render = fan_lib_load(game->library, "GameUpdateAndRender");
+    game->close = fan_lib_load(game->library, "GameClose");
+    game->on_reload = fan_lib_load(game->library, "GameOnReload");
+
+    if (game->init == nullptr || game->update_and_render == nullptr || game->close == nullptr || game->on_reload == nullptr) {
+        return false;
+    }
+
+    return true;
+}
+
+int main(void) {
+    if (!GameAPILoad(&game)) {
         return 1;
     }
-    game.init = fan_lib_load(lib, "GameInit");
-    game.update_and_render = fan_lib_load(lib, "GameUpdateAndRender");
-    game.close = fan_lib_load(lib, "GameClose");
 
     fan_window_config(FanWindow_WINDOW_RESIZABLE | FanWindow_VSYNC_HINT);
     fan_window_create(800, 600, "Fantasia");
@@ -48,6 +79,8 @@ int main(void) {
 
     bool32 running             = true;
     world.update_entity_split  = true;
+    bool32 requested_reload    = false;
+    uint64 last_mod_time        = 0;
     fan_vec2 player_offset   = fan_vec2_zero();
     fan_vec2 player_index    = fan_vec2_zero();
 
@@ -138,6 +171,12 @@ int main(void) {
             printf("[[DEBUG INFO]]\n");
         }
 
+        if (fan_key_pressed(FanKey_T) ||
+            fan_os_file_time_last_written(GAME_LIB_PATH,
+                                         &last_mod_time) == 1) {
+            requested_reload = true;
+        }
+
         state.current_time = fan_time_get();
         // int32 cam_move_idx = world.c_transform.sparse[world.spec_id.camera];
         CTransform *cam_transform = ComponentGet(&world.c_transform, world.spec_id.camera);
@@ -163,6 +202,20 @@ int main(void) {
             fan_camera_end();
             fan_draw_fps(2, 2);
         fan_draw_end();
+
+        // printf("DEBUG: MS IS: %zu\n", last_mod_time);
+        if (requested_reload) {
+            // printf("DEBUG: Reloading!\n");
+            fan_os_wait(1000);
+            if (!GameAPILoad(&game)) {
+                break;
+            }
+            if (game.on_reload) {
+                game.on_reload(&world, &state);
+            }
+            requested_reload = false;
+        }
+
         state.player_called_object_dump = false;
         world.update_entity_split = false;
     }
@@ -171,6 +224,6 @@ int main(void) {
     heap_allocator.free(null, world.arena.data, world.arena.capacity);
     fan_dev_audio_close();
     fan_window_close();
-    fan_lib_close(lib);
+    GameAPIClose(&game);
     return 0;
 }

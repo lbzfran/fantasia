@@ -11,7 +11,13 @@
 #include <stdalign.h>
 
 #if defined(OS_WINDOWS)
-    #define GAME_LIB_PATH "libgame.dll"
+ #if defined(DEBUG)
+  #define GAME_LIB_PATH "bin/libgame.dll"
+  #define GAME_LIB_TMP_PATH "bin/dbg_libgame.dll"
+ #else
+  #define GAME_LIB_PATH "libgame.dll"
+  #define GAME_LIB_TMP_PATH "dbg_libgame.dll"
+ #endif
     #if defined(BUILD_SHARED)
         #define GAME_API __declspec(dllexport)
     #elif defined(USE_SHARED)
@@ -19,6 +25,7 @@
     #endif
 #else
     #define GAME_LIB_PATH "libgame.so"
+    #define GAME_LIB_TMP_PATH "dbg_libgame.so"
     #if defined(BUILD_SHARED)
         #define GAME_API __attribute((visibility("default")))
     #endif
@@ -233,6 +240,11 @@ void *fan_lib_load(void *lib, const char *name);
 void  fan_lib_close(void *lib);
 
 bool32 fan_os_write(fan_pipe pipe, void *data, ssize length);
+
+bool32 fan_os_file_copy(const char *src, const char *dst);
+bool32 fan_os_file_delete(const char *path);
+bool32 fan_os_file_time_last_written(const char *path, uint64 *last_ms);
+void fan_os_wait(uint64 ms);
 
 // char* LibGetError(void);
 

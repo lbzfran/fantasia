@@ -310,7 +310,7 @@ void MagicSystem(CMagic *ma, int32 input, bool32 casting, float32 dt) {
 
     switch (code) {
         case 11: {
-            printf("casting: ball!\n");
+            printf("casting: bat!\n");
             break;
         };
         case 112: {
@@ -782,6 +782,141 @@ void StateGetView(GameState *state) {
     state->world_scale = TILE_SIZE;
     // state->render_scale = render_scale;
     // state->render_offset = render_offset;
+}
+
+void GameOnReload(World *world, GameState *state) {
+    // SceneMain(world);
+    global fan_rect player_idle_down_frames[4]  = { 0 };
+    global fan_rect player_idle_up_frames[4]    = { 0 };
+    global fan_rect player_idle_left_frames[4]  = { 0 };
+    global fan_rect player_idle_right_frames[4] = { 0 };
+
+    global fan_rect player_walk_down_frames[4]  = { 0 };
+    global fan_rect player_walk_up_frames[4]    = { 0 };
+    global fan_rect player_walk_left_frames[4]  = { 0 };
+    global fan_rect player_walk_right_frames[4] = { 0 };
+
+    fan_vec2 citizen_size = (fan_vec2){ (float32)16.0f, (float32)16.0f };
+
+    player_idle_left_frames[0]  = (fan_rect){
+        0,                           0, citizen_size.x, citizen_size.y
+    };
+    player_idle_left_frames[1]  = (fan_rect){
+        citizen_size.x,          0, citizen_size.x, citizen_size.y
+    };
+    player_idle_left_frames[2]  = (fan_rect){
+        (2.0f * citizen_size.x), 0, citizen_size.x, citizen_size.y
+    };
+    player_idle_left_frames[3]  = (fan_rect){
+        (3.0f * citizen_size.x), 0, citizen_size.x, citizen_size.y
+    };
+
+    player_idle_down_frames[0]  = (fan_rect){
+        0,                           (2.0f * citizen_size.y), citizen_size.x, citizen_size.y
+    };
+    player_idle_down_frames[1]  = (fan_rect){
+        citizen_size.x,          (2.0f * citizen_size.y), citizen_size.x, citizen_size.y
+    };
+    player_idle_down_frames[2]  = (fan_rect){
+        (2.0f * citizen_size.x), (2.0f * citizen_size.y), citizen_size.x, citizen_size.y
+    };
+    player_idle_down_frames[3]  = (fan_rect){
+        (3.0f * citizen_size.x), (2.0f * citizen_size.y), citizen_size.x, citizen_size.y
+    };
+
+    player_idle_right_frames[0]  = (fan_rect){
+        0,                           citizen_size.y, citizen_size.x, citizen_size.y
+    };
+    player_idle_right_frames[1]  = (fan_rect){
+        citizen_size.x,          citizen_size.y, citizen_size.x, citizen_size.y
+    };
+    player_idle_right_frames[2]  = (fan_rect){
+        (2.0f * citizen_size.x), citizen_size.y, citizen_size.x, citizen_size.y
+    };
+    player_idle_right_frames[3]  = (fan_rect){
+        (3.0f * citizen_size.x), citizen_size.y, citizen_size.x, citizen_size.y
+    };
+
+    player_idle_up_frames[0] = (fan_rect){
+        0,                           (3.0f * citizen_size.y), citizen_size.x, citizen_size.y
+    };
+    player_idle_up_frames[1] = (fan_rect){
+        citizen_size.x,          (3.0f * citizen_size.y), citizen_size.x, citizen_size.y
+    };
+    player_idle_up_frames[2] = (fan_rect){
+        (2.0f * citizen_size.x), (3.0f * citizen_size.y), citizen_size.x, citizen_size.y
+    };
+    player_idle_up_frames[3] = (fan_rect){
+        (3.0f * citizen_size.x), (3.0f * citizen_size.y), citizen_size.x, citizen_size.y
+    };
+
+    // WALK
+
+    player_walk_left_frames[0]  = (fan_rect){
+        0,                           (4.0f * citizen_size.y), citizen_size.x, citizen_size.y
+    };
+    player_walk_left_frames[1]  = (fan_rect){
+        citizen_size.x,          (4.0f * citizen_size.y), citizen_size.x, citizen_size.y
+    };
+    player_walk_left_frames[2]  = (fan_rect){
+        (2.0f * citizen_size.x), (4.0f * citizen_size.y), citizen_size.x, citizen_size.y
+    };
+    player_walk_left_frames[3]  = (fan_rect){
+        (3.0f * citizen_size.x), (4.0f * citizen_size.y), citizen_size.x, citizen_size.y
+    };
+
+    player_walk_down_frames[0]  = (fan_rect){
+        0,                           (6.0f * citizen_size.y), citizen_size.x, citizen_size.y
+    };
+    player_walk_down_frames[1]  = (fan_rect){
+        citizen_size.x,          (6.0f * citizen_size.y), citizen_size.x, citizen_size.y
+    };
+    player_walk_down_frames[2]  = (fan_rect){
+        (2.0f * citizen_size.x), (6.0f * citizen_size.y), citizen_size.x, citizen_size.y
+    };
+    player_walk_down_frames[3]  = (fan_rect){
+        (3.0f * citizen_size.x), (6.0f * citizen_size.y), citizen_size.x, citizen_size.y
+    };
+
+    player_walk_right_frames[0]  = (fan_rect){
+        0,                           (5.0f * citizen_size.y), citizen_size.x, citizen_size.y
+    };
+    player_walk_right_frames[1]  = (fan_rect){
+        citizen_size.x,          (5.0f * citizen_size.y), citizen_size.x, citizen_size.y
+    };
+    player_walk_right_frames[2]  = (fan_rect){
+        (2.0f * citizen_size.x), (5.0f * citizen_size.y), citizen_size.x, citizen_size.y
+    };
+    player_walk_right_frames[3]  = (fan_rect){
+        (3.0f * citizen_size.x), (5.0f * citizen_size.y), citizen_size.x, citizen_size.y
+    };
+
+    player_walk_up_frames[0] = (fan_rect){
+        0,                           (7.0f * citizen_size.y), citizen_size.x, citizen_size.y
+    };
+    player_walk_up_frames[1] = (fan_rect){
+        citizen_size.x,          (7.0f * citizen_size.y), citizen_size.x, citizen_size.y
+    };
+    player_walk_up_frames[2] = (fan_rect){
+        (2.0f * citizen_size.x), (7.0f * citizen_size.y), citizen_size.x, citizen_size.y
+    };
+    player_walk_up_frames[3] = (fan_rect){
+        (3.0f * citizen_size.x), (7.0f * citizen_size.y), citizen_size.x, citizen_size.y
+    };
+
+
+    global AnimationData anim_table[] = {
+        { "player_idle_up",    player_idle_up_frames,    .frame_time = 0.4f, .frame_count = 4, true, -1 },
+        { "player_idle_down",  player_idle_down_frames,  .frame_time = 0.4f, .frame_count = 4, true, -1 },
+        { "player_idle_left",  player_idle_left_frames,  .frame_time = 0.4f, .frame_count = 4, true, -1 },
+        { "player_idle_right", player_idle_right_frames, .frame_time = 0.4f, .frame_count = 4, true, -1 },
+        { "player_walk_up",    player_walk_up_frames,    .frame_time = 0.2f, .frame_count = 4, true, -1 },
+        { "player_walk_down",  player_walk_down_frames,  .frame_time = 0.2f, .frame_count = 4, true, -1 },
+        { "player_walk_left",  player_walk_left_frames,  .frame_time = 0.2f, .frame_count = 4, true, -1 },
+        { "player_walk_right", player_walk_right_frames, .frame_time = 0.2f, .frame_count = 4, true, -1 },
+    };
+
+    world->anim_table = anim_table;
 }
 
 void GameInit(fan_allocator *a, World *world, GameState *state) {

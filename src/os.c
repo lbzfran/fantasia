@@ -207,33 +207,28 @@ void fan_str8_println(fan_fbuf8 *b, fan_str8 s) {
     fan_str8_printn(b, s, '\n');
 }
 
-fan_str8 fan_str8_span(uchar8 *beg, uchar8 *end)
-{
+fan_str8 fan_str8_span(uchar8 *beg, uchar8 *end) {
     fan_str8 r = {0};
     r.data = beg;
     r.length  = beg ? end-beg : 0;
     return r;
 }
 
-int fan_str8_equals(fan_str8 a, fan_str8 b)
-{
+int fan_str8_equals(fan_str8 a, fan_str8 b) {
     return a.length==b.length && (!a.length || !memcmp(a.data, b.data, a.length));
 }
 
-fan_str8 fan_str8_triml(fan_str8 s)
-{
+fan_str8 fan_str8_triml(fan_str8 s) {
     for (; s.length && *s.data<=' '; s.data++, s.length--) {}
     return s;
 }
 
-fan_str8 fan_str8_trimr(fan_str8 s)
-{
+fan_str8 fan_str8_trimr(fan_str8 s) {
     for (; s.length && s.data[s.length-1]<=' '; s.length--) {}
     return s;
 }
 
-fan_str8 fan_str8_substr(fan_str8 s, ssize i)
-{
+fan_str8 fan_str8_substr(fan_str8 s, ssize i) {
     if (i) {
         s.data += i;
         s.length  -= i;

@@ -2,6 +2,7 @@
 // #include <pthread.h>
 #include <stdio.h>
 #include <dlfcn.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include "os.h"
 
@@ -27,4 +28,7 @@ void fan_lib_close(void *lib) {
 
 bool32 fan_os_write(fan_pipe pipe, void *data, ssize length) {
     return (bool32)write(pipe, data, length);
+}
+
+bool32 fan_os_file_copy(const char *src, const char *dst) {
 }

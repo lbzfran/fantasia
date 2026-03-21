@@ -422,5 +422,6 @@ typedef struct {
 void GAME_API GameInit(fan_allocator *a, World *world, GameState *state);
 void GAME_API GameUpdateAndRender(fan_allocator *a, World *world, GameState *state, float32 dt);
 void GAME_API GameClose(fan_allocator *a, World *world, GameState *state);
+void GAME_API GameOnReload(World *world, GameState *state);
 
 #endif // FAN_GAME_H
