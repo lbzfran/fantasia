@@ -259,3 +259,7 @@ inline bool32 fan_rect_i32_contains(fan_rect_i32 r, int32 x, int32 y) {
            x <  r.x + r.w &&
            y <  r.y + r.h;
 }
+
+inline float32 fan_f32_atan2(float32 x, float32 y) {
+    return atan2f(x, y);
+}

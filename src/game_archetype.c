@@ -256,8 +256,8 @@ global void SceneMain(World *world) {
     ComponentAddArgs(&world->c_attack,   world->entity_count,
         .arc_angle    = fan_f32_rad(45.0f),
         .swing_time   = 0.2f,
-        .knockback    = 1.0f,
-        .attack_range = 1.5f,
+        .knockback    = 1.5f,
+        .attack_range = 2.0f,
     );
     ComponentAddArgs(&world->c_light,     world->entity_count,
         .color  = (fan_color){ 170, 170, 170, 170 },

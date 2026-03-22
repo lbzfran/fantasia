@@ -214,9 +214,9 @@ void RenderSystem(
     fan_vec2 screen_scale  = fan_vec2_scale(t->scale,  (float32)pixels_per_unit * camera_zoom);
     if (tx is null) {
         if (fan_vec2_length(s->offset) > 0.0f) {
-            fan_draw_rectv(fan_vec2_add(screen_pos, screen_offset), screen_scale, (fan_color){ 50, 50, 50, 255 });
+            fan_draw_rectv(fan_vec2_add(screen_pos, screen_offset), screen_scale, fan_vec2_zero(), 0.0f, (fan_color){ 50, 50, 50, 255 });
         }
-        fan_draw_rectv(screen_pos, screen_scale, s->color);
+        fan_draw_rectv(screen_pos, screen_scale, fan_vec2_zero(), 0.0f, s->color);
     }
     else {
         float32 width  = (tx->rect.w)  ? (float32)tx->rect.w: (float32)tx->texture.width;
@@ -628,7 +628,7 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
             if (attack && attack->attacking && attack->cast_timer <= 0.0f) {
                 fan_vec2 center = fan_vec2_add(transform->position,
                                                (fan_vec2){ transform->scale.x * 0.5f, transform->scale.y * -0.5f });
-                fan_vec2 facing = move->direction;
+                fan_vec2 facing = fan_vec2_normalize(move->direction);
                 float32 length     = attack->attack_range;
                 float32 arc        = attack->arc_angle;
                 float32 half_width = 0.3f; // sword width, adjust as needed
@@ -638,25 +638,28 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
                 // Current swing angle: sweep from -arc/2 to +arc/2 around facing
                 float32 current_angle = -arc * 0.5f + arc * progress;
                 fan_vec2 sword_dir = fan_vec2_rotate(facing, current_angle);
-                fan_vec2 perp = (fan_vec2){ -sword_dir.y, sword_dir.x };
+                sword_dir = fan_vec2_normalize(sword_dir);
 
-                // Rectangle: base at center, tip at center + sword_dir * length, half_width wide
-                fan_vec2 corners[4] = {
-                    { center.x + perp.x * -half_width, center.y + perp.y * -half_width },
-                    { center.x + perp.x *  half_width, center.y + perp.y *  half_width },
-                    { center.x + sword_dir.x * length + perp.x *  half_width, center.y + sword_dir.y * length + perp.y *  half_width },
-                    { center.x + sword_dir.x * length + perp.x * -half_width, center.y + sword_dir.y * length + perp.y * -half_width },
+                // fan_vec2 perp = (fan_vec2){ -sword_dir.y, sword_dir.x };
+
+                float32 rotation = -fan_f32_atan2(sword_dir.y, sword_dir.x);
+                fan_vec2 rect_center = {
+                    center.x + sword_dir.x * (length * 0.5f),
+                    center.y + sword_dir.y * (length * 0.5f),
                 };
 
-                fan_vec2 sc[4];
-                for (int32 i = 0; i < 4; i++) {
-                    sc[i] = WorldToScreen(corners[i], camera_position, camera_zoom, pixels_per_unit, state->render_size);
-                }
+                fan_vec2 rect_pos = WorldToScreen(rect_center, camera_position, camera_zoom, pixels_per_unit, state->render_size);
+                fan_vec2 rect_scale = {
+                    length * camera_zoom * pixels_per_unit,
+                    half_width * 2.0f * camera_zoom * pixels_per_unit,
+                };
 
-                fan_draw_linev(sc[0], sc[1], fan_color_RED);
-                fan_draw_linev(sc[1], sc[2], fan_color_RED);
-                fan_draw_linev(sc[2], sc[3], fan_color_RED);
-                fan_draw_linev(sc[3], sc[0], fan_color_RED);
+
+                fan_draw_rectv(rect_pos, rect_scale, fan_vec2_scale(rect_scale, 0.5f), rotation, fan_color_RED);
+                // fan_draw_linev(sc[0], sc[1], fan_color_RED);
+                // fan_draw_linev(sc[1], sc[2], fan_color_RED);
+                // fan_draw_linev(sc[2], sc[3], fan_color_RED);
+                // fan_draw_linev(sc[3], sc[0], fan_color_RED);
             }
 
             if (state->player_called_object_dump) {

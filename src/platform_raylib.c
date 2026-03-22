@@ -338,8 +338,23 @@ void fan_draw_rect(int32 x, int32 y, int32 w, int32 h, fan_color color) {
     DrawRectangle(x, y, w, h, rl_color);
 }
 
-void fan_draw_rectv(fan_vec2 pos, fan_vec2 scale, fan_color color) {
-    fan_draw_rect((int32)pos.x, (int32)pos.y, (int32)scale.x, (int32)scale.y, color);
+void fan_draw_rectv(fan_vec2 pos, fan_vec2 scale, fan_vec2 origin, float32 rotation, fan_color color) {
+    Vector2 rl_origin = {
+        origin.x,
+        origin.y
+    };
+
+    Rectangle rl_rect = {
+        pos.x,
+        pos.y,
+        scale.x,
+        scale.y
+    };
+
+
+    Color rl_color = fan_color_rl(color);
+
+    DrawRectanglePro(rl_rect, rl_origin, rotation * RAD2DEG, rl_color);
 }
 
 void fan_draw_rectr(fan_rect rect, fan_color color) {

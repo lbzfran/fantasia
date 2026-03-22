@@ -322,7 +322,7 @@ FAN_API void fan_draw_pixel(int32, int32, fan_color color);
 FAN_API void fan_draw_line(int32, int32, int32, int32, fan_color color);
 FAN_API void fan_draw_linev(fan_vec2 start, fan_vec2 end, fan_color color);
 FAN_API void fan_draw_rect(int32 x, int32 y, int32 w, int32 h, fan_color color);
-FAN_API void fan_draw_rectv(fan_vec2 pos, fan_vec2 scale, fan_color color);
+FAN_API void fan_draw_rectv(fan_vec2 pos, fan_vec2 scale, fan_vec2 origin, float32 rotation, fan_color color);
 FAN_API void fan_draw_rectr(fan_rect rect, fan_color color);
 FAN_API void fan_draw_circle(int32 x, int32 y, float32 r, fan_color color);
 FAN_API void fan_draw_circle_grad(int32 x, int32 y, float32 r, fan_color in, fan_color out);
@@ -355,6 +355,7 @@ FAN_API float32 fan_f32_abs(float32);
 FAN_API float32 fan_f32_sin(float32);
 FAN_API float32 fan_f32_cos(float32);
 FAN_API float32 fan_f32_sqrt(float32);
+FAN_API float32 fan_f32_atan2(float32, float32);
 
 FAN_API float32 fan_f32_rad(float32);
 FAN_API float32 fan_f32_deg(float32);
