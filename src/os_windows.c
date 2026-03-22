@@ -88,6 +88,6 @@ bool32 fan_os_file_time_last_written(const char *path, uint64 *last_ms) {
     return 0;
 }
 
-void fan_os_wait(uint64 ms) {
+void fan_os_wait(uint32 ms) {
     Sleep(ms);
 }

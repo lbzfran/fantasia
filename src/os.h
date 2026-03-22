@@ -1,6 +1,7 @@
 #ifndef FAN_OS_H
 #define FAN_OS_H
 
+#define _POSIX_C_SOURCE 199309L
 #include <stddef.h>
 #include <sys/types.h>
 #include <uchar.h>
@@ -8,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 #include <stdalign.h>
 
 #if defined(OS_WINDOWS)
@@ -24,8 +26,13 @@
         #define GAME_API __declspec(dllimport)
     #endif
 #else
+ #if defined(DEBUG)
+    #define GAME_LIB_PATH "bin/libgame.so"
+    #define GAME_LIB_TMP_PATH "bin/dbg_libgame.so"
+ #else
     #define GAME_LIB_PATH "libgame.so"
     #define GAME_LIB_TMP_PATH "dbg_libgame.so"
+ #endif
     #if defined(BUILD_SHARED)
         #define GAME_API __attribute((visibility("default")))
     #endif
@@ -244,7 +251,7 @@ bool32 fan_os_write(fan_pipe pipe, void *data, ssize length);
 bool32 fan_os_file_copy(const char *src, const char *dst);
 bool32 fan_os_file_delete(const char *path);
 bool32 fan_os_file_time_last_written(const char *path, uint64 *last_ms);
-void fan_os_wait(uint64 ms);
+void fan_os_wait(uint32 ms);
 
 // char* LibGetError(void);
 
