@@ -25,7 +25,7 @@
     - [x] Linear Behaviors
 
 ## Phase 2
-- [ ] Hot-reloading
+- [x] Hot-reloading
 - [ ] Loading/Saving Game Data (with versioning)
     - State Dumping
 - [ ] Asynchronous Logging

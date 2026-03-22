@@ -15,7 +15,7 @@ void os_error_get_(void) {
                    0,
                    NULL);
 
-    printf("Error %lu: %s\n", err, msg);
+    printf("OS ERROR %lu: %s\n", err, msg);
     LocalFree(msg);
 }
 
@@ -66,18 +66,18 @@ bool32 fan_os_file_time_last_written(const char *path, uint64 *last_ms) {
     WIN32_FILE_ATTRIBUTE_DATA data;
 
     if (!GetFileAttributesExA(path, GetFileExInfoStandard, &data)) {
-        return -1;
+        os_error_get_();
+        return 0;
     }
 
     ULARGE_INTEGER t;
     t.LowPart  = data.ftLastWriteTime.dwLowDateTime;
     t.HighPart = data.ftLastWriteTime.dwHighDateTime;
-
-    uint64 ms = t.QuadPart / 10000ULL; // 100ns → ms
+    uint64 ms = t.QuadPart / 10000ULL;
 
     if (*last_ms == 0) {
         *last_ms = ms;
-        return 0; // don't trigger on first call
+        return 0;
     }
 
     if (ms != *last_ms) {

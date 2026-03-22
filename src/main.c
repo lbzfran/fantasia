@@ -31,27 +31,44 @@ void GameAPIClose(GameAPI *game) {
 bool32 GameAPILoad(GameAPI *game) {
     if (game->library != nullptr) {
         GameAPIClose(game);
+        game->library = nullptr;
     }
+
     if (!fan_os_file_copy(GAME_LIB_PATH, GAME_LIB_TMP_PATH)) {
         printf("ERROR: DEBUGGING Failed to copy game library!\n");
         return false;
     }
 
-    game->library = fan_lib_open(GAME_LIB_TMP_PATH);
-
-    if (game->library == nullptr) {
+    void *library = fan_lib_open(GAME_LIB_TMP_PATH);
+    if (library == nullptr) {
         printf("ERROR: Failed to load game library!\n");
         return false;
     }
 
-    game->init = fan_lib_load(game->library, "GameInit");
-    game->update_and_render = fan_lib_load(game->library, "GameUpdateAndRender");
-    game->close = fan_lib_load(game->library, "GameClose");
-    game->on_reload = fan_lib_load(game->library, "GameOnReload");
+    GameAPI new_game = {
+        .library = library,
+        .init = fan_lib_load(library, "GameInit"),
+        .update_and_render = fan_lib_load(library, "GameUpdateAndRender"),
+        .close = fan_lib_load(library, "GameClose"),
+        .on_reload = fan_lib_load(library, "GameOnReload")
+    };
 
-    if (game->init == nullptr || game->update_and_render == nullptr || game->close == nullptr || game->on_reload == nullptr) {
+    if (!new_game.init || !new_game.update_and_render || !new_game.close || !new_game.on_reload) {
+        printf("ERROR: Failed to laod game symbols!\n");
+        fan_lib_close(library);
         return false;
     }
+
+    // void *old_library       = game->library;
+    game->library           = new_game.library;
+    game->init              = new_game.init;
+    game->update_and_render = new_game.update_and_render;
+    game->close             = new_game.close;
+    game->on_reload         = new_game.on_reload;
+
+    // if (old_library != nullptr) {
+    //     fan_lib_close(old_library);
+    // }
 
     return true;
 }
@@ -80,7 +97,7 @@ int main(void) {
     bool32 running             = true;
     world.update_entity_split  = true;
     bool32 requested_reload    = false;
-    uint64 last_mod_time        = 0;
+    uint64 last_mod_time       = 0;
     fan_vec2 player_offset   = fan_vec2_zero();
     fan_vec2 player_index    = fan_vec2_zero();
 
@@ -205,15 +222,16 @@ int main(void) {
 
         // printf("DEBUG: MS IS: %zu\n", last_mod_time);
         if (requested_reload) {
-            // printf("DEBUG: Reloading!\n");
-            fan_os_wait(1000);
-            if (!GameAPILoad(&game)) {
+            fan_os_wait(250);
+            printf("DEBUG: Reloading!\n");
+            if (GameAPILoad(&game)) {
+                game.on_reload(&world, &state);
+                requested_reload = false;
+            }
+            else {
+                printf("Failed to Reload!");
                 break;
             }
-            if (game.on_reload) {
-                game.on_reload(&world, &state);
-            }
-            requested_reload = false;
         }
 
         state.player_called_object_dump = false;
