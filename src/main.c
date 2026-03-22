@@ -19,19 +19,19 @@ fan_allocator heap_allocator = {
     .ctx    = null
 };
 
-GameAPI game = {};
+GameAPI game    = {};
 GameState state = {};
-World world = {};
+World world     = {};
 
 void GameAPIClose(GameAPI *game) {
     fan_lib_close(game->library);
     fan_os_file_delete(GAME_LIB_TMP_PATH);
+    game->library = nullptr;
 }
 
 bool32 GameAPILoad(GameAPI *game) {
     if (game->library != nullptr) {
         GameAPIClose(game);
-        game->library = nullptr;
     }
 
     if (!fan_os_file_copy(GAME_LIB_PATH, GAME_LIB_TMP_PATH)) {
@@ -46,11 +46,11 @@ bool32 GameAPILoad(GameAPI *game) {
     }
 
     GameAPI new_game = {
-        .library = library,
-        .init = fan_lib_load(library, "GameInit"),
+        .library           = library,
+        .init              = fan_lib_load(library, "GameInit"),
         .update_and_render = fan_lib_load(library, "GameUpdateAndRender"),
-        .close = fan_lib_load(library, "GameClose"),
-        .on_reload = fan_lib_load(library, "GameOnReload")
+        .close             = fan_lib_load(library, "GameClose"),
+        .on_reload         = fan_lib_load(library, "GameOnReload")
     };
 
     if (!new_game.init || !new_game.update_and_render || !new_game.close || !new_game.on_reload) {
@@ -59,16 +59,11 @@ bool32 GameAPILoad(GameAPI *game) {
         return false;
     }
 
-    // void *old_library       = game->library;
     game->library           = new_game.library;
     game->init              = new_game.init;
     game->update_and_render = new_game.update_and_render;
     game->close             = new_game.close;
     game->on_reload         = new_game.on_reload;
-
-    // if (old_library != nullptr) {
-    //     fan_lib_close(old_library);
-    // }
 
     return true;
 }
@@ -183,23 +178,32 @@ int main(void) {
             player_index.y += 1;
         }
 
+#ifdef DEBUG
         if (fan_key_pressed(FanKey_P)) {
             state.player_called_object_dump = true;
             printf("[[DEBUG INFO]]\n");
         }
-
         if (fan_key_pressed(FanKey_T) ||
             fan_os_file_time_last_written(GAME_LIB_PATH,
                                          &last_mod_time) == 1) {
             requested_reload = true;
         }
+#endif
 
         state.current_time = fan_time_get();
-        // int32 cam_move_idx = world.c_transform.sparse[world.spec_id.camera];
         CTransform *cam_transform = ComponentGet(&world.c_transform, world.spec_id.camera);
         camera.target = fan_vec2_add(cam_transform->position, fan_vec2_scale(cam_transform->scale, 0.5f));
         // camera.offset = (fan_vec2){ FanWindowWidth() / 2.0f, FanWindowHeight() / 2.0f };
 
+        fan_draw_begin();
+            fan_draw_clear(fan_color_WHITE);
+            fan_camera_begin(camera);
+            game.update_and_render(&arena_allocator, &world, &state, dt);
+            fan_camera_end();
+            fan_draw_fps(2, 2);
+        fan_draw_end();
+
+#ifdef DEBUG
         if (state.player_called_object_dump) {
             printf("Total Allocations: %.2f / %.2f KB\n", (float64)world.arena.size / 1000.0, (float64)world.arena.capacity / 1000.0);
             printf("current_time: %.3f\n", state.current_time);
@@ -210,17 +214,9 @@ int main(void) {
             printf("Total Component 'Texture' size/capacity:   \t%td/%td\n", world.c_texture.size,   world.c_texture.capacity);
             printf("Total Component 'Behavior' size/capacity:  \t%td/%td\n", world.c_behavior.size,  world.c_behavior.capacity);
             printf("Total Component 'Animation' size/capacity: \t%td/%td\n", world.c_animation.size, world.c_animation.capacity);
+            state.player_called_object_dump = false;
         }
 
-        fan_draw_begin();
-            fan_draw_clear(fan_color_WHITE);
-            fan_camera_begin(camera);
-            game.update_and_render(&arena_allocator, &world, &state, dt);
-            fan_camera_end();
-            fan_draw_fps(2, 2);
-        fan_draw_end();
-
-        // printf("DEBUG: MS IS: %zu\n", last_mod_time);
         if (requested_reload) {
             fan_os_wait(250);
             printf("DEBUG: Reloading!\n");
@@ -233,9 +229,7 @@ int main(void) {
                 break;
             }
         }
-
-        state.player_called_object_dump = false;
-        world.update_entity_split = false;
+#endif
     }
 
     game.close(&arena_allocator, &world, &state);

@@ -51,5 +51,9 @@ $(BIN_DIR)/$(GAME_LIB): src/game.c $(BIN_DIR)/$(PLATFORM_LIB)
 $(BIN_DIR)/$(PLATFORM_LIB): src/platform.c
 	$(CC) $(CFLAGS) $(LIBFLAGS) -DPLATFORM_BUILD_SHARED -o $(BIN_DIR)/$(PLATFORM_LIB) $< $(PLATFORM_FLAGS)
 
+game:
+	rm $(BIN_DIR)/$(GAME_LIB)
+	$(CC) $(CFLAGS) $(LIBFLAGS) -o $(BIN_DIR)/$(GAME_LIB) src/game.c $(LDFLAGS)
+
 clean:
 	rm -f $(BINARY) $(BIN_DIR)/$(GAME_LIB) $(BIN_DIR)/$(PLATFORM_LIB)
