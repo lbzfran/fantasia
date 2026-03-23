@@ -457,11 +457,10 @@ void UpdateEntities(
                     } break;
                     case BehaviorType_Follow: {
                         if (behavior->updating) {
-                            CTransform *target_transform = &world->c_transform.data[behavior->target_id];
+                            CTransform *target_transform = ComponentGet(&world->c_transform, behavior->target_id);
                             fan_vec2 target_face         = target_transform->position;
 
                             if (id == world->spec_id.camera) {
-                                // CShape *target_shape = &world->c_shape.data[world->spec_id.player];
                                 fan_vec2 target_offset = target_transform->scale;
                                 target_offset.y *= -1.0f;
                                 target_offset = fan_vec2_scale(target_offset, 0.5f);
@@ -488,15 +487,12 @@ void UpdateEntities(
                                     float diagonal_threshold = 0.25f; // tweak: smaller = stricter snapping
 
                                     if (fan_f32_abs(ax - ay) <= diagonal_threshold) {
-                                        // Close enough → keep both axes (diagonal)
                                         direction = (fan_vec2){ signof(face.x), signof(face.y) };
                                     }
                                     else if (ax > ay) {
-                                        // Horizontal dominates
                                         direction = (fan_vec2){ signof(face.x), 0 };
                                     }
                                     else {
-                                        // Vertical dominates
                                         direction = (fan_vec2){ 0, signof(face.y) };
                                     }
                                 }

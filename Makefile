@@ -10,7 +10,7 @@ LIBEXT :=
 BUILD_DIR := build
 BIN_DIR := bin
 
-CC := gcc
+CC := ccache gcc
 
 CFLAGS := -std=c23 -Wall -Wextra -I include -L lib -g3 -O1 -Wconversion -Wdouble-promotion -Wno-unused-parameter -Wno-unused-function -Wno-sign-conversion -fno-trapping-math -fno-math-errno
 LDFLAGS := -L bin -lplatform
@@ -29,7 +29,7 @@ ifeq ($(PLATFORM),linux)
 endif
 
 ifeq ($(PLATFORM),windows)
-	CC := x86_64-w64-mingw32-gcc
+	CC := ccache x86_64-w64-mingw32-gcc
 	CFLAGS += -DOS_WINDOWS
 	PLATFORM_FLAGS := -lraylib -lgdi32 -lwinmm
 	LIBFLAGS := -shared
