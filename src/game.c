@@ -591,26 +591,26 @@ void UpdateEntities(
                     }
 
                     if (magic) {
-                        int32 magic_type = MagicType_None;
-                        bool32 casting = false;
-                        if (state->player_input.actions[5]) {
-                            magic_type = MagicType_Mana;
-                            state->player_input.actions[5] = 0;
-                        }
-                        else if (state->player_input.actions[6]) {
-                            magic_type = MagicType_Energy;
-                            state->player_input.actions[6] = 0;
-                        }
-                        else if (state->player_input.actions[7]) {
-                            magic_type = MagicType_Soul;
-                            state->player_input.actions[7] = 0;
-                        }
-                        else if (state->player_input.actions[2]) {
-                            casting = true;
-                            state->player_input.actions[2] = 0;
-                            SpawnBullet(world, transform->position, state->player_input.direction);
-                        }
-                        MagicSystem(magic, magic_type, casting, fixed_dt);
+                        // int32 magic_type = MagicType_None;
+                        // bool32 casting = false;
+                        // if (state->player_input.actions[5]) {
+                        //     magic_type = MagicType_Mana;
+                        //     state->player_input.actions[5] = 0;
+                        // }
+                        // else if (state->player_input.actions[6]) {
+                        //     magic_type = MagicType_Energy;
+                        //     state->player_input.actions[6] = 0;
+                        // }
+                        // else if (state->player_input.actions[7]) {
+                        //     magic_type = MagicType_Soul;
+                        //     state->player_input.actions[7] = 0;
+                        // }
+                        // else if (state->player_input.actions[2]) {
+                            // casting = true;
+                            // state->player_input.actions[2] = 0;
+                            // SpawnBullet(world, transform->position, state->player_input.direction);
+                        // }
+                        // MagicSystem(magic, magic_type, casting, fixed_dt);
                     }
 
                     CollisionSystem(transform, move, other_transform, other_move, fixed_dt);
