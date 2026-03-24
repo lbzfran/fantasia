@@ -169,17 +169,20 @@ typedef struct {
 
 #define FAN_ARRAY_INITIAL_CAPACITY 32
 #define fan_array_append(allocator, arr, x) do{                                             \
-    assume(allocator.resize != null && "allocator 'resize' must be defined.");              \
-    if (arr.size + 1 >= arr.capacity) {                                                     \
-        ssize new_capacity = max(arr.capacity * 2, FAN_ARRAY_INITIAL_CAPACITY);             \
-        arr.data = allocator.resize(allocator.ctx, arr.capacity, sizeof(x) * new_capacity); \
-        arr.capacity = new_capacity;                                                        \
+    assume((allocator)->resize != null && "allocator 'resize' must be defined.");              \
+    assume(typeof(*(arr).data) == typeof(x) && "array's data type must match.");        \
+    if ((arr).size >= (arr).capacity) {                                                     \
+        ssize new_capacity = max((arr).capacity * 2, FAN_ARRAY_INITIAL_CAPACITY);             \
+        void *new_data = allocator->resize((allocator)->ctx, (arr).data, (arr).capacity, sizeof(*(arr).data) * new_capacity); \
+        assume(new_data != nullptr); \
+        (arr).data = new_data; \
+        (arr).capacity = new_capacity;                                                        \
     }                                                                                       \
-    assume(typeof(*allocator.data) == typeof(x) && "array's data type must match.");        \
-    arr.data[arr.size] = x;                                                                 \
-    arr.size++;                                                                             \
+    (arr).data[(arr).size] = x;                                                                 \
+    (arr).size++;                                                                             \
 }while(0)
 
+// NOTE(liam): array definitions
 #define fan_array_clear(allocator, arr) do{                                \
     assume(allocator.free != null && "allocator 'free' must be defined."); \
     allocator.free(allocator.ctx, arr.data, arr.capacity);                 \
@@ -214,6 +217,7 @@ void fan_fbuf8_append_double(fan_fbuf8 *, double);
         default:            (void)0                   \
 )(b, x)
 
+// NOTE(liam): string definitions
 void fan_str8_print(fan_fbuf8 *, fan_str8);
 void fan_str8_printn(fan_fbuf8 *, fan_str8, uchar8);
 void fan_str8_println(fan_fbuf8 *, fan_str8);
@@ -242,11 +246,12 @@ void *fan_arena_resize(void *ctx, void *ptr, ssize old, ssize new);
 
 void  fan_arena_clear(Arena *a);
 
-void *fan_lib_open(const char* path);
+void *fan_lib_open(const char *path);
 void *fan_lib_load(void *lib, const char *name);
 void  fan_lib_close(void *lib);
 
 bool32 fan_os_write(fan_pipe pipe, void *data, ssize length);
+fan_str8 fan_os_read(fan_allocator *mem, const char *path);
 
 bool32 fan_os_file_copy(const char *src, const char *dst);
 bool32 fan_os_file_delete(const char *path);

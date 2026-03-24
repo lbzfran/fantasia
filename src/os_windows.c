@@ -91,3 +91,58 @@ bool32 fan_os_file_time_last_written(const char *path, uint64 *last_ms) {
 void fan_os_wait(uint32 ms) {
     Sleep(ms);
 }
+
+fan_str8 fan_os_read(fan_allocator *mem, const char *path) {
+    fan_str8 result = {};
+    HANDLE file = CreateFileA(path,
+                              GENERIC_READ,
+                              FILE_SHARE_READ,
+                              NULL,
+                              OPEN_EXISTING,
+                              FILE_ATTRIBUTE_NORMAL,
+                              NULL);
+    if (file == INVALID_HANDLE_VALUE) {
+        return result;
+    }
+
+    LARGE_INTEGER size;
+    if (!GetFileSizeEx(file, &size)) {
+        CloseHandle(file);
+        return result;
+    }
+
+    if (size.QuadPart == 0) {
+        CloseHandle(file);
+        return result;
+    }
+
+    uint8 *buf = mem->make(mem->ctx, (ssize)size.QuadPart);
+    if (!buf) {
+        CloseHandle(file);
+        return result;
+    }
+
+    DWORD total_read = 0;
+
+    while (total_read < (DWORD)size.QuadPart) {
+        DWORD bytes_read = 0;
+
+        if (!ReadFile(file,
+                      buf + total_read,
+                      (DWORD)size.QuadPart - total_read,
+                      &bytes_read,
+                      NULL) || bytes_read == 0) {
+            mem->free(mem->ctx, buf, (ssize)size.QuadPart);
+            CloseHandle(file);
+            return result;
+        }
+        total_read += bytes_read;
+    }
+
+    CloseHandle(file);
+
+    result.data = buf;
+    result.length = (ssize)size.QuadPart;
+
+    return result;
+}

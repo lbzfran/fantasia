@@ -414,6 +414,35 @@ FAN_API fan_matrix fan_matrix_create_(ssize, ssize, int32 *);
 FAN_API void fan_matrix_fill(fan_matrix, int32);
 FAN_API void fan_matrix_randomize(fan_matrix, int32, int32);
 
-// threading
+// DSL parsing
+typedef enum {
+    FanToken_NULL = 1,
+    FanToken_TYPE,
+    FanToken_NAME,
+    FanToken_LBRACKET,
+    FanToken_RBRACKET,
+    FanToken_FIELD,
+    FanToken_VALUE_STRING,
+    FanToken_VALUE_NUMBER,
+} fan_dsl_token_type, fan_token_type;
+
+typedef struct {
+    fan_dsl_token_type type;
+    fan_str8 literal;
+} fan_dsl_token;
+
+typedef struct {
+    fan_dsl_token *data;
+    ssize size;
+    ssize capacity;
+} fan_dsl_token_array;
+
+typedef struct {
+    uint8 key[32];
+    uint8 values[8][64];
+    int32 value_count;
+} fan_dsl_field;
+
+FAN_API fan_dsl_token_array fan_dsl_tokenize(fan_allocator *mem, fan_str8 buf);
 
 #endif // FAN_PLATFORM_H

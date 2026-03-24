@@ -188,7 +188,7 @@ void fan_rect_f32_print_(fan_rect_f32 r, const char8 *name) {
 
 fan_matrix fan_matrix_create_(ssize rows, ssize cols, int32 *data) {
     fan_matrix mat = { .cols = cols, .rows = rows, .V = data };
-    return mat;
+return mat;
 }
 
 void fan_matrix_fill(fan_matrix mat, int32 x) {
@@ -262,4 +262,64 @@ inline bool32 fan_rect_i32_contains(fan_rect_i32 r, int32 x, int32 y) {
 
 inline float32 fan_f32_atan2(float32 x, float32 y) {
     return atan2f(x, y);
+}
+
+inline void fan_dsl_array_append(fan_allocator *mem, fan_dsl_token_array *arr, fan_dsl_token x) {
+    assume(mem->resize != nullptr);
+    if (arr->size >= arr->capacity) {
+        ssize new_cap = max(arr->capacity * 2, FAN_ARRAY_INITIAL_CAPACITY) * sizeof(fan_dsl_token);
+        fan_dsl_token *new_data = mem->resize(mem->ctx, arr->data, arr->capacity, new_cap);
+        assume(new_data != nullptr);
+        arr->data = new_data;
+        arr->capacity = new_cap;
+    }
+    arr->data[arr->size++] = x;
+}
+
+fan_dsl_token_array fan_dsl_tokenize(fan_allocator *mem, fan_str8 buf) {
+    fan_dsl_token_array result = {};
+    ssize i = 0;
+    while (true) {
+        buf = fan_str8_triml(buf);
+        fan_cutstr8 cut;
+
+        cut = fan_str8_cut(buf, ' ');
+        if (!cut.ok) break;
+        fan_dsl_token type = { FanToken_TYPE, cut.head };
+        buf = fan_str8_triml(cut.tail);
+
+        fan_dsl_array_append(mem, &result, type);
+
+        cut = fan_str8_cut(buf, ' ');
+        if (!cut.ok) break;
+        fan_dsl_token name = { FanToken_NAME, cut.head };
+        buf = fan_str8_triml(cut.tail);
+
+        fan_dsl_array_append(mem, &result, name);
+
+        cut = fan_str8_cut(buf, ' ');
+        if (!cut.ok) break;
+        assume(fan_str8_equals(cut.head, fan_str8_cstr('{')));
+        fan_dsl_token lb = { FanToken_LBRACKET, cut.head };
+        buf = fan_str8_triml(cut.tail);
+
+        fan_dsl_array_append(mem, &result, lb);
+
+        cut = fan_str8_cut(buf, ' ');
+        if (!cut.ok) break;
+        assume(fan_str8_equals(cut.head, fan_str8_cstr('{')));
+        fan_dsl_token rb = { FanToken_RBRACKET, cut.head };
+        buf = fan_str8_triml(cut.tail);
+
+        fan_dsl_array_append(mem, &result, rb);
+
+        break;
+    }
+
+    for (ssize i = 0; i < result.size; i++) {
+        fan_str8 dat = result.data[i].literal;
+        printf("LITERAL: %.*s\n", (int32)dat.length, dat.data);
+    }
+
+    return result;
 }
