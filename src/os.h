@@ -193,16 +193,16 @@ typedef struct {
 
 #define fan_str8_cstr(s)    (fan_str8){ (uchar8 *)s, sizeof(s) - 1 }
 
-void fan_fbuf8_flush(fan_fbuf8 *);
-void fan_fbuf8_append(fan_fbuf8 *, uchar8 *, ssize);
+GAME_API void fan_fbuf8_flush(fan_fbuf8 *);
+GAME_API void fan_fbuf8_append(fan_fbuf8 *, uchar8 *, ssize);
 
-void fan_fbuf8_append_char(fan_fbuf8 *, uchar8);
-void fan_fbuf8_append_cstr(fan_fbuf8 *, const char8 *);
-void fan_fbuf8_append_str8(fan_fbuf8 *, fan_str8);
-void fan_fbuf8_append_ptr(fan_fbuf8  *, void *);
+GAME_API void fan_fbuf8_append_char(fan_fbuf8 *, uchar8);
+GAME_API void fan_fbuf8_append_cstr(fan_fbuf8 *, const char8 *);
+GAME_API void fan_fbuf8_append_str8(fan_fbuf8 *, fan_str8);
+GAME_API void fan_fbuf8_append_ptr(fan_fbuf8  *, void *);
 
-void fan_fbuf8_append_long(fan_fbuf8   *, long);
-void fan_fbuf8_append_double(fan_fbuf8 *, double);
+GAME_API void fan_fbuf8_append_long(fan_fbuf8   *, long);
+GAME_API void fan_fbuf8_append_double(fan_fbuf8 *, double);
 
 #define fan_fbuf8_append_derive_(b, x) _Generic((x),  \
         int32:              fan_fbuf8_append_long,    \
@@ -218,45 +218,45 @@ void fan_fbuf8_append_double(fan_fbuf8 *, double);
 )(b, x)
 
 // NOTE(liam): string definitions
-void fan_str8_print(fan_fbuf8 *, fan_str8);
-void fan_str8_printn(fan_fbuf8 *, fan_str8, uchar8);
-void fan_str8_println(fan_fbuf8 *, fan_str8);
+GAME_API void fan_str8_print(fan_fbuf8 *, fan_str8);
+GAME_API void fan_str8_printn(fan_fbuf8 *, fan_str8, uchar8);
+GAME_API void fan_str8_println(fan_fbuf8 *, fan_str8);
 
-fan_str8 fan_str8_span(uchar8 *, uchar8 *);
-int32 fan_str8_equals(fan_str8, fan_str8);
+GAME_API fan_str8 fan_str8_span(uchar8 *, uchar8 *);
+GAME_API int32 fan_str8_equals(fan_str8, fan_str8);
 // trims spaces
-fan_str8 fan_str8_triml(fan_str8);
-fan_str8 fan_str8_trimr(fan_str8);
-fan_str8 fan_str8_substr(fan_str8, ssize);
+GAME_API fan_str8 fan_str8_triml(fan_str8);
+GAME_API fan_str8 fan_str8_trimr(fan_str8);
+GAME_API fan_str8 fan_str8_substr(fan_str8, ssize);
 
-fan_cutstr8 fan_str8_cut(fan_str8, uchar8);
+GAME_API fan_cutstr8 fan_str8_cut(fan_str8, uchar8);
 
 
 inline uintptr fan_align_forward(uintptr ptr, ssize alignment) {
     return (ptr + (alignment - 1)) & ~(alignment - 1);
 }
 
-void *fan_heap_make(void *ctx, ssize size);
-void  fan_heap_free(void *ctx, void *ptr, ssize size);
-void *fan_heap_resize(void *ctx, void *ptr, ssize old, ssize new);
+GAME_API void *fan_heap_make(void *ctx, ssize size);
+GAME_API void  fan_heap_free(void *ctx, void *ptr, ssize size);
+GAME_API void *fan_heap_resize(void *ctx, void *ptr, ssize old, ssize new);
 
-void *fan_arena_make(void *ctx, ssize size);
-void  fan_arena_free(void *ctx, void *ptr, ssize size);
-void *fan_arena_resize(void *ctx, void *ptr, ssize old, ssize new);
+GAME_API void *fan_arena_make(void *ctx, ssize size);
+GAME_API void  fan_arena_free(void *ctx, void *ptr, ssize size);
+GAME_API void *fan_arena_resize(void *ctx, void *ptr, ssize old, ssize new);
 
-void  fan_arena_clear(Arena *a);
+GAME_API void  fan_arena_clear(Arena *a);
 
-void *fan_lib_open(const char *path);
-void *fan_lib_load(void *lib, const char *name);
-void  fan_lib_close(void *lib);
+GAME_API void *fan_lib_open(const char *path);
+GAME_API void *fan_lib_load(void *lib, const char *name);
+GAME_API void  fan_lib_close(void *lib);
 
-bool32 fan_os_write(fan_pipe pipe, void *data, ssize length);
-fan_str8 fan_os_read(fan_allocator *mem, const char *path);
+GAME_API bool32 fan_os_write(fan_pipe pipe, void *data, ssize length);
+GAME_API fan_str8 fan_os_read(fan_allocator *mem, const char *path);
 
-bool32 fan_os_file_copy(const char *src, const char *dst);
-bool32 fan_os_file_delete(const char *path);
-bool32 fan_os_file_time_last_written(const char *path, uint64 *last_ms);
-void fan_os_wait(uint32 ms);
+GAME_API bool32 fan_os_file_copy(const char *src, const char *dst);
+GAME_API bool32 fan_os_file_delete(const char *path);
+GAME_API bool32 fan_os_file_time_last_written(const char *path, uint64 *last_ms);
+GAME_API void fan_os_wait(uint32 ms);
 
 // char* LibGetError(void);
 
