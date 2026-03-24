@@ -443,6 +443,7 @@ typedef struct {
     int32 value_count;
 } fan_dsl_field;
 
+FAN_API void fan_dsl_array_append(fan_allocator *mem, fan_dsl_token_array *arr, fan_dsl_token x);
 FAN_API fan_dsl_token_array fan_dsl_tokenize(fan_allocator *mem, fan_str8 buf);
 
 #endif // FAN_PLATFORM_H

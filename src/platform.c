@@ -299,15 +299,16 @@ fan_dsl_token_array fan_dsl_tokenize(fan_allocator *mem, fan_str8 buf) {
 
         cut = fan_str8_cut(buf, ' ');
         if (!cut.ok) break;
-        assume(fan_str8_equals(cut.head, fan_str8_cstr('{')));
+        assume(fan_str8_equals(cut.head, fan_str8_cstr("{")));
         fan_dsl_token lb = { FanToken_LBRACKET, cut.head };
         buf = fan_str8_triml(cut.tail);
 
         fan_dsl_array_append(mem, &result, lb);
 
+        // TODO(liam): below cut fails to find end of file.
         cut = fan_str8_cut(buf, ' ');
         if (!cut.ok) break;
-        assume(fan_str8_equals(cut.head, fan_str8_cstr('{')));
+        assume(fan_str8_equals(cut.head, fan_str8_cstr("}")));
         fan_dsl_token rb = { FanToken_RBRACKET, cut.head };
         buf = fan_str8_triml(cut.tail);
 
