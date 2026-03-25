@@ -43,13 +43,13 @@ GAME_LIB := libgame$(LIBEXT)
 PLATFORM_LIB := libplatform$(LIBEXT)
 
 all: src/main.c $(BIN_DIR)/$(GAME_LIB) $(BIN_DIR)/$(PLATFORM_LIB)
-	$(CC) $(CFLAGS) -DUSE_SHARED -o $(BINARY) ./src/main.c $(LDFLAGS) $(MAIN_FLAGS)
+	$(CC) $(CFLAGS) -o $(BINARY) ./src/main.c $(LDFLAGS) $(MAIN_FLAGS)
 
 $(BIN_DIR)/$(GAME_LIB): src/game.c $(BIN_DIR)/$(PLATFORM_LIB)
 	$(CC) $(CFLAGS) $(LIBFLAGS) -o $(BIN_DIR)/$(GAME_LIB) $< $(LDFLAGS)
 
 $(BIN_DIR)/$(PLATFORM_LIB): src/platform.c
-	$(CC) $(CFLAGS) $(LIBFLAGS) -DBUILD_SHARED -DPLATFORM_BUILD_SHARED -o $(BIN_DIR)/$(PLATFORM_LIB) src/platform.c src/os.c $(PLATFORM_FLAGS)
+	$(CC) $(CFLAGS) $(LIBFLAGS) -DPLATFORM_BUILD_SHARED -o $(BIN_DIR)/$(PLATFORM_LIB) src/platform.c src/os.c $(PLATFORM_FLAGS)
 
 game:
 	rm $(BIN_DIR)/$(GAME_LIB)

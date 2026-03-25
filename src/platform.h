@@ -3,26 +3,6 @@
 
 #include "os.h"
 
-#if defined(PLATFORM_BUILD_SHARED)
-    #if defined(OS_WINDOWS)
-        #define FAN_API __declspec(dllexport)
-    #elif defined(OS_LINUX)
-        #define FAN_API __attribute__ ((visibility ("default")))
-    #else
-        #define FAN_API
-    #endif
-#else
-    #if defined(OS_WINDOWS)
-        #define FAN_API __declspec(dllimport)
-    #else
-        #define FAN_API
-    #endif
-#endif
-
-# ifndef FAN_API
-    #define FAN_API extern
-# endif
-
 typedef struct {
     float32 x;
     float32 y;

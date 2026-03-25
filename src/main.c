@@ -77,7 +77,7 @@ int main(void) {
     fan_window_create(800, 600, "Fantasia");
     fan_dev_audio_create();
 
-    world.arena = (Arena){
+    world.arena = (fan_arena){
         .data     = heap_allocator.make(null, megabytes(1)),
         .size     = 0,
         .capacity = megabytes(1)

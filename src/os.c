@@ -41,7 +41,7 @@ void *fan_heap_resize(void *ctx, void *ptr, ssize old, ssize new) {
 }
 
 void *fan_arena_make(void *ctx, ssize size) {
-    Arena *a = (Arena *)ctx;
+    fan_arena *a = (fan_arena *)ctx;
 
     uintptr base = (uintptr)(a->data + a->size);
     uintptr alignment = fan_align_forward(base, ARENA_ALIGNMENT);
@@ -56,7 +56,7 @@ void *fan_arena_make(void *ctx, ssize size) {
 }
 
 void fan_arena_free(void *ctx, void *ptr, ssize size) {
-    Arena *a = (Arena *)ctx;
+    fan_arena *a = (fan_arena *)ctx;
 
     uintptr ptr_val = (uintptr)ptr;
     uintptr base_val = (uintptr)a->data;
@@ -69,12 +69,12 @@ void fan_arena_free(void *ctx, void *ptr, ssize size) {
     }
 }
 
-void fan_arena_clear(Arena *a) {
+void fan_arena_clear(fan_arena *a) {
     a->size = 0;
 }
 
 void *fan_arena_resize(void *ctx, void *ptr, ssize old, ssize new) {
-    Arena *a = (Arena *)ctx;
+    fan_arena *a = (fan_arena *)ctx;
 
     if (new == old) {
         return ptr;
@@ -219,19 +219,19 @@ int fan_str8_equals(fan_str8 a, fan_str8 b) {
 }
 
 fan_str8 fan_str8_triml(fan_str8 s) {
-    for (; s.length && *s.data<=' '; s.data++, s.length--) {}
+    for (; s.length && *s.data <= ' '; s.data++, s.length--) {}
     return s;
 }
 
 fan_str8 fan_str8_trimr(fan_str8 s) {
-    for (; s.length && s.data[s.length-1]<=' '; s.length--) {}
+    for (; s.length && s.data[s.length-1] <= ' '; s.length--) {}
     return s;
 }
 
 fan_str8 fan_str8_substr(fan_str8 s, ssize i) {
     if (i) {
-        s.data += i;
-        s.length  -= i;
+        s.data   += i;
+        s.length -= i;
     }
     return s;
 }
@@ -242,7 +242,7 @@ fan_cutstr8 fan_str8_cut(fan_str8 s, uchar8 c) {
     uchar8 *beg = s.data;
     uchar8 *end = s.data + s.length;
     uchar8 *cut = beg;
-    for (; cut<end && *cut!=c; cut++) {}
+    for (; cut<end && *cut != c; cut++) {}
     r.ok   = cut < end;
     r.head = fan_str8_span(beg, cut);
     r.tail = fan_str8_span(cut+r.ok, end);

@@ -383,7 +383,7 @@ ComponentDeclare(CBackgroundTag, uint8);
 
 
 typedef struct {
-    Arena                  arena;
+    fan_arena              arena;
 
     uint8                  entity_count;
     SpecialEntityID        spec_id;
@@ -419,9 +419,9 @@ typedef struct {
     CBackgroundTagStorage  c_tag_background;
 } World;
 
-void GAME_API GameInit(fan_allocator *a, World *world, GameState *state);
-void GAME_API GameUpdateAndRender(fan_allocator *a, World *world, GameState *state, float32 dt);
-void GAME_API GameClose(fan_allocator *a, World *world, GameState *state);
-void GAME_API GameOnReload(World *world, GameState *state);
+void GameInit(fan_allocator *a, World *world, GameState *state);
+void GameUpdateAndRender(fan_allocator *a, World *world, GameState *state, float32 dt);
+void GameClose(fan_allocator *a, World *world, GameState *state);
+void GameOnReload(World *world, GameState *state);
 
 #endif // FAN_GAME_H

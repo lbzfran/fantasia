@@ -20,26 +20,28 @@
   #define GAME_LIB_PATH "libgame.dll"
   #define GAME_LIB_TMP_PATH "dbg_libgame.dll"
  #endif
-    #if defined(BUILD_SHARED)
-        #define GAME_API __declspec(dllexport)
-    #elif defined(USE_SHARED)
-        #define GAME_API __declspec(dllimport)
-    #endif
-#else
- #if defined(DEBUG)
-    #define GAME_LIB_PATH "bin/libgame.so"
-    #define GAME_LIB_TMP_PATH "bin/dbg_libgame.so"
+ #if defined(PLATFORM_BUILD_SHARED)
+  #define FAN_API __declspec(dllexport)
  #else
-    #define GAME_LIB_PATH "libgame.so"
-    #define GAME_LIB_TMP_PATH "dbg_libgame.so"
+  #define FAN_API __declspec(dllimport)
  #endif
-    #if defined(BUILD_SHARED)
-        #define GAME_API __attribute((visibility("default")))
-    #endif
+#else // OS_LINUX implied
+ #if defined(DEBUG)
+  #define GAME_LIB_PATH "bin/libgame.so"
+  #define GAME_LIB_TMP_PATH "bin/dbg_libgame.so"
+ #else
+  #define GAME_LIB_PATH "libgame.so"
+  #define GAME_LIB_TMP_PATH "dbg_libgame.so"
+ #endif
+ #if defined(PLATFORM_BUILD_SHARED)
+  #define FAN_API __attribute((visibility("default")))
+ #else
+  #define FAN_API
+ #endif
 #endif
 
-#ifndef GAME_API
-    #define GAME_API
+#ifndef FAN_API
+    #define FAN_API extern
 #endif
 
 typedef unsigned char uchar8;
@@ -135,11 +137,11 @@ typedef struct fan_allocator {
     void *ctx;
 } fan_allocator;
 
-typedef struct Arena {
+typedef struct fan_arena {
     uint8 *data;
     ssize  size;
     ssize  capacity;
-} Arena;
+} fan_arena;
 #define ARENA_ALIGNMENT 16
 
 typedef enum {
@@ -193,16 +195,16 @@ typedef struct {
 
 #define fan_str8_cstr(s)    (fan_str8){ (uchar8 *)s, sizeof(s) - 1 }
 
-GAME_API void fan_fbuf8_flush(fan_fbuf8 *);
-GAME_API void fan_fbuf8_append(fan_fbuf8 *, uchar8 *, ssize);
+FAN_API void fan_fbuf8_flush(fan_fbuf8 *);
+FAN_API void fan_fbuf8_append(fan_fbuf8 *, uchar8 *, ssize);
 
-GAME_API void fan_fbuf8_append_char(fan_fbuf8 *, uchar8);
-GAME_API void fan_fbuf8_append_cstr(fan_fbuf8 *, const char8 *);
-GAME_API void fan_fbuf8_append_str8(fan_fbuf8 *, fan_str8);
-GAME_API void fan_fbuf8_append_ptr(fan_fbuf8  *, void *);
+FAN_API void fan_fbuf8_append_char(fan_fbuf8 *, uchar8);
+FAN_API void fan_fbuf8_append_cstr(fan_fbuf8 *, const char8 *);
+FAN_API void fan_fbuf8_append_str8(fan_fbuf8 *, fan_str8);
+FAN_API void fan_fbuf8_append_ptr(fan_fbuf8  *, void *);
 
-GAME_API void fan_fbuf8_append_long(fan_fbuf8   *, long);
-GAME_API void fan_fbuf8_append_double(fan_fbuf8 *, double);
+FAN_API void fan_fbuf8_append_long(fan_fbuf8   *, long);
+FAN_API void fan_fbuf8_append_double(fan_fbuf8 *, double);
 
 #define fan_fbuf8_append_derive_(b, x) _Generic((x),  \
         int32:              fan_fbuf8_append_long,    \
@@ -218,45 +220,45 @@ GAME_API void fan_fbuf8_append_double(fan_fbuf8 *, double);
 )(b, x)
 
 // NOTE(liam): string definitions
-GAME_API void fan_str8_print(fan_fbuf8 *, fan_str8);
-GAME_API void fan_str8_printn(fan_fbuf8 *, fan_str8, uchar8);
-GAME_API void fan_str8_println(fan_fbuf8 *, fan_str8);
+FAN_API void fan_str8_print(fan_fbuf8 *, fan_str8);
+FAN_API void fan_str8_printn(fan_fbuf8 *, fan_str8, uchar8);
+FAN_API void fan_str8_println(fan_fbuf8 *, fan_str8);
 
-GAME_API fan_str8 fan_str8_span(uchar8 *, uchar8 *);
-GAME_API int32 fan_str8_equals(fan_str8, fan_str8);
+FAN_API fan_str8 fan_str8_span(uchar8 *, uchar8 *);
+FAN_API int32 fan_str8_equals(fan_str8, fan_str8);
 // trims spaces
-GAME_API fan_str8 fan_str8_triml(fan_str8);
-GAME_API fan_str8 fan_str8_trimr(fan_str8);
-GAME_API fan_str8 fan_str8_substr(fan_str8, ssize);
+FAN_API fan_str8 fan_str8_triml(fan_str8);
+FAN_API fan_str8 fan_str8_trimr(fan_str8);
+FAN_API fan_str8 fan_str8_substr(fan_str8, ssize);
 
-GAME_API fan_cutstr8 fan_str8_cut(fan_str8, uchar8);
+FAN_API fan_cutstr8 fan_str8_cut(fan_str8, uchar8);
 
 
 inline uintptr fan_align_forward(uintptr ptr, ssize alignment) {
     return (ptr + (alignment - 1)) & ~(alignment - 1);
 }
 
-GAME_API void *fan_heap_make(void *ctx, ssize size);
-GAME_API void  fan_heap_free(void *ctx, void *ptr, ssize size);
-GAME_API void *fan_heap_resize(void *ctx, void *ptr, ssize old, ssize new);
+FAN_API void *fan_heap_make(void *ctx, ssize size);
+FAN_API void  fan_heap_free(void *ctx, void *ptr, ssize size);
+FAN_API void *fan_heap_resize(void *ctx, void *ptr, ssize old, ssize new);
 
-GAME_API void *fan_arena_make(void *ctx, ssize size);
-GAME_API void  fan_arena_free(void *ctx, void *ptr, ssize size);
-GAME_API void *fan_arena_resize(void *ctx, void *ptr, ssize old, ssize new);
+FAN_API void *fan_arena_make(void *ctx, ssize size);
+FAN_API void  fan_arena_free(void *ctx, void *ptr, ssize size);
+FAN_API void *fan_arena_resize(void *ctx, void *ptr, ssize old, ssize new);
 
-GAME_API void  fan_arena_clear(Arena *a);
+FAN_API void  fan_arena_clear(fan_arena *a);
 
-GAME_API void *fan_lib_open(const char *path);
-GAME_API void *fan_lib_load(void *lib, const char *name);
-GAME_API void  fan_lib_close(void *lib);
+FAN_API void *fan_lib_open(const char *path);
+FAN_API void *fan_lib_load(void *lib, const char *name);
+FAN_API void  fan_lib_close(void *lib);
 
-GAME_API bool32 fan_os_write(fan_pipe pipe, void *data, ssize length);
-GAME_API fan_str8 fan_os_read(fan_allocator *mem, const char *path);
+FAN_API bool32 fan_os_write(fan_pipe pipe, void *data, ssize length);
+FAN_API fan_str8 fan_os_read(fan_allocator *mem, const char *path);
 
-GAME_API bool32 fan_os_file_copy(const char *src, const char *dst);
-GAME_API bool32 fan_os_file_delete(const char *path);
-GAME_API bool32 fan_os_file_time_last_written(const char *path, uint64 *last_ms);
-GAME_API void fan_os_wait(uint32 ms);
+FAN_API bool32 fan_os_file_copy(const char *src, const char *dst);
+FAN_API bool32 fan_os_file_delete(const char *path);
+FAN_API bool32 fan_os_file_time_last_written(const char *path, uint64 *last_ms);
+FAN_API void fan_os_wait(uint32 ms);
 
 // char* LibGetError(void);
 
