@@ -404,7 +404,7 @@ typedef enum {
     FanToken_FIELD,
     FanToken_VALUE_STRING,
     FanToken_VALUE_NUMBER,
-} fan_dsl_token_type, fan_token_type;
+} fan_dsl_token_type;
 
 typedef struct {
     fan_dsl_token_type type;
@@ -425,5 +425,60 @@ typedef struct {
 
 FAN_API void fan_dsl_array_append(fan_allocator *mem, fan_dsl_token_array *arr, fan_dsl_token x);
 FAN_API fan_dsl_token_array fan_dsl_tokenize(fan_allocator *mem, fan_str8 buf);
+
+// Components
+#define fan_component_declare(name, T)  \
+    typedef struct name##Storage { \
+         ssize *sparse;            \
+         ssize *dense;             \
+             T *data;              \
+         ssize  size;              \
+         ssize  capacity;          \
+    } name##Storage
+
+#define fan_component_has(storage, id) ((storage)->sparse[id] != -1)
+
+#define fan_component_get_value_or_else(storage, id, default_value) \
+    (fan_component_has(storage, id) ? (storage)->data[(storage)->sparse[(id)]] : (default_value))
+#define fan_component_get_value(storage, id) fan_component_get_value_or_else(storage, id, 0)
+
+#define fan_component_get_or_else(storage, id, default_value) \
+    (fan_component_has(storage, id) ? &(storage)->data[(storage)->sparse[(id)]] : (default_value))
+#define fan_component_get(storage, id) fan_component_get_or_else(storage, id, null)
+
+// NOTE(liam): 'Fast' includes optimizations in 'release' build.
+#define fan_component_get_value_fast(storage, id) \
+    (assume(fan_component_has(storage, id)), (storage)->data[(storage)->sparse[(id)]])
+#define fan_component_get_fast(storage, id) \
+    (assume(fan_component_has(storage, id)), &(storage)->data[(storage)->sparse[(id)]])
+
+#define fan_component_create(storage, mem, cap) do{                                                    \
+    (storage)->sparse   = (mem)->make((mem)->ctx, sizeof(*(storage)->sparse) * (MAX_ENTITY_CAP)); \
+    (storage)->dense    = (mem)->make((mem)->ctx, sizeof(*(storage)->dense)  * (cap));            \
+    (storage)->data     = (mem)->make((mem)->ctx, sizeof(*(storage)->data)   * (cap));            \
+    (storage)->capacity = (cap);                                                                  \
+    (storage)->size = 0;                                                                          \
+    memset((storage)->sparse, -1, sizeof(*(storage)->sparse) * (cap));                            \
+}while(0);
+
+#define fan_component_add(storage, id, ...) do{                                       \
+    assert((storage)->size < (storage)->capacity);                                    \
+    assert(!fan_component_has(storage,id));                                           \
+    ssize i = (storage)->size++;                                                      \
+    (storage)->dense[i] = (id);                                                       \
+    (storage)->sparse[id] = i;                                                        \
+    (storage)->data[(storage)->sparse[id]] = (typeof(*(storage)->data)){__VA_ARGS__}; \
+}while(0);
+
+#define fan_component_delete(storage, id) do{          \
+    ssize i = (storage)->sparse[id];              \
+    assert(i != -1);                              \
+    ssize last_i = --(storage)->size;             \
+    ssize last_entity = (storage)->dense[last_i]; \
+    (storage)->dense[i] = last_entity;            \
+    (storage)->sparse[last_entity] = i;           \
+    (storage)->data[i] = (storage)->data[last_i]; \
+    (storage)->sparse[id] = -1;                   \
+}while(0);
 
 #endif // FAN_PLATFORM_H

@@ -8,65 +8,6 @@
 #define TILE_SIZE 64
 #define MAX_ENTITY_CAP kilobytes(2)
 
-#define ComponentDeclare(name, T)  \
-    typedef struct name##Storage { \
-         ssize *sparse;            \
-         ssize *dense;             \
-             T *data;              \
-         ssize  size;              \
-         ssize  capacity;          \
-    } name##Storage
-
-#define ComponentHas(storage, id) ((storage)->sparse[id] != -1)
-
-#define ComponentGetValueOrElse(storage, id, default_value) \
-    (ComponentHas(storage, id) ? (storage)->data[(storage)->sparse[(id)]] : (default_value))
-#define ComponentGetValue(storage, id) ComponentGetValueOrElse(storage, id, 0)
-
-#define ComponentGetOrElse(storage, id, default_value) \
-    (ComponentHas(storage, id) ? &(storage)->data[(storage)->sparse[(id)]] : (default_value))
-#define ComponentGet(storage, id) ComponentGetOrElse(storage, id, null)
-
-// NOTE(liam): 'Fast' includes optimizations in 'release' build.
-#define ComponentGetValueFast(storage, id) \
-    (assume(ComponentHas(storage, id)), (storage)->data[(storage)->sparse[(id)]])
-#define ComponentGetFast(storage, id) \
-    (assume(ComponentHas(storage, id)), &(storage)->data[(storage)->sparse[(id)]])
-
-#define ComponentCreate(storage, mem, cap) do{                                                    \
-    (storage)->sparse   = (mem)->make((mem)->ctx, sizeof(*(storage)->sparse) * (MAX_ENTITY_CAP)); \
-    (storage)->dense    = (mem)->make((mem)->ctx, sizeof(*(storage)->dense)  * (cap));            \
-    (storage)->data     = (mem)->make((mem)->ctx, sizeof(*(storage)->data)   * (cap));            \
-    (storage)->capacity = (cap);                                                                  \
-    (storage)->size = 0;                                                                          \
-    memset((storage)->sparse, -1, sizeof(*(storage)->sparse) * (cap));                            \
-}while(0);
-
-// WARN: assert on fail
-#define ComponentAdd(storage, id) do{              \
-    assert((storage)->size < (storage)->capacity); \
-    assert(!ComponentHas(storage,id));             \
-    ssize i = (storage)->size++;                   \
-    (storage)->dense[i] = (id);                    \
-    (storage)->sparse[id] = i;                     \
-}while(0);
-
-#define ComponentAddArgs(storage, id, ...) do{                                        \
-    ComponentAdd(storage, id);                                                        \
-    (storage)->data[(storage)->sparse[id]] = (typeof(*(storage)->data)){__VA_ARGS__}; \
-}while(0);
-
-#define ComponentDelete(storage, id) do{          \
-    ssize i = (storage)->sparse[id];              \
-    assert(i != -1);                              \
-    ssize last_i = --(storage)->size;             \
-    ssize last_entity = (storage)->dense[last_i]; \
-    (storage)->dense[i] = last_entity;            \
-    (storage)->sparse[last_entity] = i;           \
-    (storage)->data[i] = (storage)->data[last_i]; \
-    (storage)->sparse[id] = -1;                   \
-}while(0);
-
 typedef enum {
     MovementFlag_Immovable     = (1 << 0),
     MovementFlag_NoCollision   = (1 << 1),
@@ -361,26 +302,25 @@ typedef enum {
     AnimationFlag_DisableLoop      = (1 << 1),
 } AnimationFlags;
 
-ComponentDeclare(CTransform, CTransform);
-ComponentDeclare(CShape,     CShape);
-ComponentDeclare(CMovement,  CMovement);
-ComponentDeclare(CTexture,   CTexture);
+fan_component_declare(CTransform, CTransform);
+fan_component_declare(CShape,     CShape);
+fan_component_declare(CMovement,  CMovement);
+fan_component_declare(CTexture,   CTexture);
 
-ComponentDeclare(CBehavior,  CBehavior);
-ComponentDeclare(CAnimation, CAnimation);
-ComponentDeclare(CPhysics,   CPhysics);
-ComponentDeclare(CSound,     CSound);
-ComponentDeclare(CLight,     CLight);
+fan_component_declare(CBehavior,  CBehavior);
+fan_component_declare(CAnimation, CAnimation);
+fan_component_declare(CPhysics,   CPhysics);
+fan_component_declare(CSound,     CSound);
+fan_component_declare(CLight,     CLight);
 
-ComponentDeclare(CInteraction,  bool32);
-ComponentDeclare(CInteractable, bool32);
-ComponentDeclare(CZone,         fan_rect_f32);
-ComponentDeclare(CAttack,       CAttack);
-ComponentDeclare(CMagic,        CMagic);
+fan_component_declare(CInteraction,  bool32);
+fan_component_declare(CInteractable, bool32);
+fan_component_declare(CZone,         fan_rect_f32);
+fan_component_declare(CAttack,       CAttack);
+fan_component_declare(CMagic,        CMagic);
 
-ComponentDeclare(CEnemyTag,      uint8);
-ComponentDeclare(CBackgroundTag, uint8);
-
+fan_component_declare(CEnemyTag,      uint8);
+fan_component_declare(CBackgroundTag, uint8);
 
 typedef struct {
     fan_arena              arena;

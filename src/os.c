@@ -44,7 +44,7 @@ void *fan_arena_make(void *ctx, ssize size) {
     fan_arena *a = (fan_arena *)ctx;
 
     uintptr base = (uintptr)(a->data + a->size);
-    uintptr alignment = fan_align_forward(base, ARENA_ALIGNMENT);
+    uintptr alignment = fan_align_forward(base, FAN_ARENA_ALIGNMENT);
     ssize offset = alignment - (uintptr)a->data;
 
     assert(size + offset <= a->capacity && "ERROR: Reached Out-Of-Memory state.");

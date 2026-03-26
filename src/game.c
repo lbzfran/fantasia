@@ -409,14 +409,14 @@ void UpdateEntities(
             if (id == -1)
                 continue;
 
-            CMovement    *move      = ComponentGet(&world->c_movement,  id);
-            CTransform   *transform = ComponentGet(&world->c_transform, id);
-            CBehavior    *behavior  = ComponentGet(&world->c_behavior,  id);
-            CAttack      *attack    = ComponentGet(&world->c_attack,    id);
-            CAnimation   *anim      = ComponentGet(&world->c_animation, id);
+            CMovement    *move      = fan_component_get(&world->c_movement,  id);
+            CTransform   *transform = fan_component_get(&world->c_transform, id);
+            CBehavior    *behavior  = fan_component_get(&world->c_behavior,  id);
+            CAttack      *attack    = fan_component_get(&world->c_attack,    id);
+            CAnimation   *anim      = fan_component_get(&world->c_animation, id);
 
-            bool32 *interact   = ComponentGet(&world->c_interaction, id);
-            bool32 *interacted = ComponentGet(&world->c_interactable, id);
+            bool32 *interact   = fan_component_get(&world->c_interaction, id);
+            bool32 *interacted = fan_component_get(&world->c_interactable, id);
 
             fan_vec2 direction = fan_vec2_zero();
 
@@ -457,7 +457,7 @@ void UpdateEntities(
                     } break;
                     case BehaviorType_Follow: {
                         if (behavior->updating) {
-                            CTransform *target_transform = ComponentGet(&world->c_transform, behavior->target_id);
+                            CTransform *target_transform = fan_component_get(&world->c_transform, behavior->target_id);
                             fan_vec2 target_face         = target_transform->position;
 
                             if (id == world->spec_id.camera) {
@@ -536,13 +536,13 @@ void UpdateEntities(
         for (ssize i = 0; i < split->dynamic_count; i++) {
             ssize id = split->dynamic_entities[i];
 
-            CMovement     *move      = ComponentGetFast(&world->c_movement,    id);
-            CTransform    *transform = ComponentGetFast(&world->c_transform,   id);
-            CAttack       *attack    = ComponentGet(&world->c_attack,          id);
-            CMagic        *magic     = ComponentGet(&world->c_magic,           id);
-            bool32        *interact  = ComponentGet(&world->c_interaction,     id);
-            ssize          tag_enemy = ComponentGetValue(&world->c_tag_enemy,  id);
-            fan_rect_f32   zone      = ComponentGetValueOrElse(&world->c_zone, id, (fan_rect_f32){ 0 });
+            CMovement     *move      = fan_component_get_fast(&world->c_movement,    id);
+            CTransform    *transform = fan_component_get_fast(&world->c_transform,   id);
+            CAttack       *attack    = fan_component_get(&world->c_attack,          id);
+            CMagic        *magic     = fan_component_get(&world->c_magic,           id);
+            bool32        *interact  = fan_component_get(&world->c_interaction,     id);
+            ssize          tag_enemy = fan_component_get_value(&world->c_tag_enemy,  id);
+            fan_rect_f32   zone      = fan_component_get_value_or_else(&world->c_zone, id, (fan_rect_f32){ 0 });
 
             if (fan_rect_f32_isempty(zone)) {
                 zone = (fan_rect_f32) {
@@ -561,11 +561,11 @@ void UpdateEntities(
                 for (ssize j = i + 1; j < split->dynamic_count; j++) {
                     ssize other_id = split->dynamic_entities[j];
 
-                    CTransform    *other_transform  = ComponentGetFast(&world->c_transform,   other_id);
-                    CMovement     *other_move       = ComponentGetFast(&world->c_movement,    other_id);
-                    bool32        *other_interacted = ComponentGet(&world->c_interactable,    other_id);
-                    fan_rect_f32   other_zone       = ComponentGetValueOrElse(&world->c_zone, other_id, (fan_rect_f32) { 0 });
-                    ssize          other_tag_enemy  = ComponentGetValue(&world->c_tag_enemy,  other_id);
+                    CTransform    *other_transform  = fan_component_get_fast(&world->c_transform,   other_id);
+                    CMovement     *other_move       = fan_component_get_fast(&world->c_movement,    other_id);
+                    bool32        *other_interacted = fan_component_get(&world->c_interactable,    other_id);
+                    fan_rect_f32   other_zone       = fan_component_get_value_or_else(&world->c_zone, other_id, (fan_rect_f32) { 0 });
+                    ssize          other_tag_enemy  = fan_component_get_value(&world->c_tag_enemy,  other_id);
 
                     if (fan_rect_f32_isempty(other_zone)) {
                         other_zone = (fan_rect_f32) {
@@ -630,11 +630,11 @@ void UpdateEntities(
                 for (ssize i = 0; i < split->static_count; i++) {
                     ssize other_id = split->static_entities[i];
 
-                    CTransform     *other_transform  = ComponentGetFast(&world->c_transform,   other_id);
-                    CMovement      *other_move       = ComponentGetFast(&world->c_movement,    other_id);
-                    bool32         *other_interacted = ComponentGet(&world->c_interactable,    other_id);
-                    fan_rect_f32    other_zone       = ComponentGetValueOrElse(&world->c_zone, other_id, (fan_rect_f32) { 0 });
-                    ssize           other_tag_enemy  = ComponentGetValue(&world->c_tag_enemy,  other_id);
+                    CTransform     *other_transform  = fan_component_get_fast(&world->c_transform,   other_id);
+                    CMovement      *other_move       = fan_component_get_fast(&world->c_movement,    other_id);
+                    bool32         *other_interacted = fan_component_get(&world->c_interactable,    other_id);
+                    fan_rect_f32    other_zone       = fan_component_get_value_or_else(&world->c_zone, other_id, (fan_rect_f32) { 0 });
+                    ssize           other_tag_enemy  = fan_component_get_value(&world->c_tag_enemy,  other_id);
 
                     if (fan_rect_f32_isempty(other_zone)) {
                         other_zone = (fan_rect_f32) {
@@ -700,9 +700,9 @@ void UpdateEntities(
         if (id == -1)
             continue;
 
-        CAnimation *anim    = ComponentGet(&world->c_animation, id);
-        CTexture   *texture = ComponentGet(&world->c_texture,   id);
-        CMovement  *move    = ComponentGet(&world->c_movement,  id);
+        CAnimation *anim    = fan_component_get(&world->c_animation, id);
+        CTexture   *texture = fan_component_get(&world->c_texture,   id);
+        CMovement  *move    = fan_component_get(&world->c_movement,  id);
         (void)move;
 
         fan_vec2 direction = move->direction;
@@ -923,24 +923,24 @@ void GameInit(fan_allocator *a, World *world, GameState *state) {
     ssize split_size      = kilobytes(1);
     ssize component_size  = kilobytes(1);
 
-    ComponentCreate(&world->c_transform,      a, component_size);
-    ComponentCreate(&world->c_shape,          a, component_size);
-    ComponentCreate(&world->c_movement,       a, component_size);
-    ComponentCreate(&world->c_texture,        a, component_size);
-    ComponentCreate(&world->c_behavior,       a, component_size);
-    ComponentCreate(&world->c_animation,      a, component_size);
-    ComponentCreate(&world->c_physics,        a, component_size);
-    ComponentCreate(&world->c_sound,          a, component_size);
-    ComponentCreate(&world->c_light,          a, component_size);
+    fan_component_create(&world->c_transform,      a, component_size);
+    fan_component_create(&world->c_shape,          a, component_size);
+    fan_component_create(&world->c_movement,       a, component_size);
+    fan_component_create(&world->c_texture,        a, component_size);
+    fan_component_create(&world->c_behavior,       a, component_size);
+    fan_component_create(&world->c_animation,      a, component_size);
+    fan_component_create(&world->c_physics,        a, component_size);
+    fan_component_create(&world->c_sound,          a, component_size);
+    fan_component_create(&world->c_light,          a, component_size);
 
-    ComponentCreate(&world->c_interaction,    a, component_size);
-    ComponentCreate(&world->c_interactable,   a, component_size);
-    ComponentCreate(&world->c_zone,           a, component_size);
-    ComponentCreate(&world->c_attack,         a, component_size);
-    ComponentCreate(&world->c_magic,          a, component_size);
+    fan_component_create(&world->c_interaction,    a, component_size);
+    fan_component_create(&world->c_interactable,   a, component_size);
+    fan_component_create(&world->c_zone,           a, component_size);
+    fan_component_create(&world->c_attack,         a, component_size);
+    fan_component_create(&world->c_magic,          a, component_size);
 
-    ComponentCreate(&world->c_tag_background, a, component_size);
-    ComponentCreate(&world->c_tag_enemy,      a, component_size);
+    fan_component_create(&world->c_tag_background, a, component_size);
+    fan_component_create(&world->c_tag_enemy,      a, component_size);
 
     world->split.dynamic_entities = a->make(a->ctx, split_size);
     world->split.dynamic_capacity = split_size;

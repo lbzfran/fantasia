@@ -8,29 +8,68 @@
 #include "os.h"
 #include "platform.h"
 
+static inline int32 SpawnPlayer(World *world, fan_vec2 position, fan_vec2 direction) {
+    fan_texture tex_girl_01 = fan_texture_load("./resources/Citizens/Female/Hana/Hana.png");
+    fan_vec2 citizen_size = (fan_vec2){ (float32)16.0f, (float32)16.0f };
+
+    fan_component_add(&world->c_transform, world->entity_count,
+                     .position = position);
+    fan_component_add(&world->c_shape,         world->entity_count);
+    fan_component_add(&world->c_movement,  world->entity_count,
+        .direction = direction
+        // .flags = MovementFlag_CollideSoftly
+    );
+    fan_component_add(&world->c_texture,   world->entity_count,
+        .texture = tex_girl_01,
+        // .rect = player_idle_down_frames[0],
+        // .rect = (fan_rect_i32){ 0, 0, tex_link.width / 10.0f, tex_link.height / 8.0f }
+        .rect = { .x = 0, .y = 0, .w = citizen_size.x, .h = citizen_size.y },
+        // .rect = { .width = 36, .height = 36 },
+    );
+    fan_component_add(&world->c_animation, world->entity_count);
+    fan_component_add(&world->c_interaction,  world->entity_count);
+    fan_component_add(&world->c_interactable, world->entity_count);
+    fan_component_add(&world->c_attack,   world->entity_count,
+        .arc_angle    = fan_f32_rad(45.0f),
+        .swing_time   = 0.2f,
+        .knockback    = 1.5f,
+        .attack_range = 2.0f,
+    );
+    fan_component_add(&world->c_light,     world->entity_count,
+        .color  = (fan_color){ 170, 170, 170, 170 },
+        .radius = 200.0f,
+    );
+    fan_component_add(&world->c_magic, world->entity_count);
+
+    world->spec_id.player = world->entity_count;
+    world->entity_count++;
+    world->update_entity_split = true;
+
+    return world->spec_id.player;
+}
 // TODO(liam):
 // - Transform scales less than 1 have scaling issues with their hitbox.
 // - Having less components causes issues with interactivity (likely a bounds error during iterations).
-void SpawnBullet(World *world, fan_vec2 position, fan_vec2 direction) {
+static inline void SpawnBullet(World *world, fan_vec2 position, fan_vec2 direction) {
     // TODO(liam): dynamically added entity not properly initializing.
-    ComponentAddArgs(&world->c_transform, world->entity_count,
+    fan_component_add(&world->c_transform, world->entity_count,
         .position = position,
         .scale = fan_vec2_one()
     );
-    ComponentAddArgs(&world->c_shape, world->entity_count,
+    fan_component_add(&world->c_shape, world->entity_count,
         .color = (fan_color){ 50, 50, 50, 255 },
     );
-    ComponentAddArgs(&world->c_movement,  world->entity_count,
+    fan_component_add(&world->c_movement,  world->entity_count,
         .flags = MovementFlag_Ghost
     );
-    ComponentAddArgs(&world->c_behavior, world->entity_count,
+    fan_component_add(&world->c_behavior, world->entity_count,
         .target_id = world->spec_id.player,
         .type      = BehaviorType_Follow
     );
-    ComponentAdd(&world->c_interaction,  world->entity_count);
-    ComponentAdd(&world->c_interactable, world->entity_count);
+    fan_component_add(&world->c_interaction,  world->entity_count);
+    fan_component_add(&world->c_interactable, world->entity_count);
     // TODO(liam): add a lifetime component
-    // ComponentAddArgs(&world->c_life, world->entity_count,
+    // fan_component_add(&world->c_life, world->entity_count,
     //     .time = 5.0f
     // );
 
@@ -58,30 +97,30 @@ void SceneSolo(World *world) {
     // player_idle_right_frames[2] = (fan_rect_i32){ 2.0f * sprite_link_size.x, 3.0f * sprite_link_size.y, 0, 0 };
 
 
-    ComponentAdd(&world->c_transform,     world->entity_count);
-    ComponentAdd(&world->c_shape,         world->entity_count);
-    ComponentAddArgs(&world->c_movement,  world->entity_count,
+    fan_component_add(&world->c_transform,     world->entity_count);
+    fan_component_add(&world->c_shape,         world->entity_count);
+    fan_component_add(&world->c_movement,  world->entity_count,
         // .flags = MovementFlag_CollideSoftly
     );
-    ComponentAddArgs(&world->c_texture,   world->entity_count,
+    fan_component_add(&world->c_texture,   world->entity_count,
         .texture = tex_link,
         .rect    = { 0, 0, (float32)tex_link.width / 10.0f, (float32)tex_link.height / 8.0f }
     );
-    // ComponentAddArgs(&world->c_animation, world->entity_count);
+    // fan_component_add(&world->c_animation, world->entity_count);
     world->spec_id.player = world->entity_count;
     world->entity_count++;
 
-    // ComponentAddArgs(&world->c_transform,  world->entity_count,
+    // fan_component_add(&world->c_transform,  world->entity_count,
     //     .scale = (fan_vec2){ (float32)render_width, (float32)render_height },
     // );
-    ComponentAddArgs(&world->c_shape,      world->entity_count,
+    fan_component_add(&world->c_shape,      world->entity_count,
         .layer = 1,
         .color = (fan_color){ 155, 155, 155, 255 },
     );
-    ComponentAddArgs(&world->c_movement,   world->entity_count,
+    fan_component_add(&world->c_movement,   world->entity_count,
         .flags = MovementFlag_NoCollision,
     );
-    ComponentAdd(&world->c_tag_background, world->entity_count);
+    fan_component_add(&world->c_tag_background, world->entity_count);
     world->entity_count++;
 }
 
@@ -237,42 +276,14 @@ global void SceneMain(World *world) {
     // what tile to render based on its four neighbors from
     // the world grid.
 
+    SpawnPlayer(world, fan_vec2_zero(), fan_vec2_one());
 
-    ComponentAdd(&world->c_transform,     world->entity_count);
-    ComponentAdd(&world->c_shape,         world->entity_count);
-    ComponentAddArgs(&world->c_movement,  world->entity_count,
-        // .flags = MovementFlag_CollideSoftly
-    );
-    ComponentAddArgs(&world->c_texture,   world->entity_count,
-        .texture = tex_girl_01,
-        // .rect = player_idle_down_frames[0],
-        // .rect = (fan_rect_i32){ 0, 0, tex_link.width / 10.0f, tex_link.height / 8.0f }
-        .rect = { .x = 0, .y = 0, .w = citizen_size.x, .h = citizen_size.y },
-        // .rect = { .width = 36, .height = 36 },
-    );
-    ComponentAddArgs(&world->c_animation, world->entity_count);
-    ComponentAdd(&world->c_interaction,  world->entity_count);
-    ComponentAdd(&world->c_interactable, world->entity_count);
-    ComponentAddArgs(&world->c_attack,   world->entity_count,
-        .arc_angle    = fan_f32_rad(45.0f),
-        .swing_time   = 0.2f,
-        .knockback    = 1.5f,
-        .attack_range = 2.0f,
-    );
-    ComponentAddArgs(&world->c_light,     world->entity_count,
-        .color  = (fan_color){ 170, 170, 170, 170 },
-        .radius = 200.0f,
-    );
-    ComponentAdd(&world->c_magic, world->entity_count);
-    world->spec_id.player = world->entity_count;
-    world->entity_count++;
-
-    ComponentAdd(&world->c_transform,    world->entity_count);
-    ComponentAddArgs(&world->c_movement, world->entity_count,
+    fan_component_add(&world->c_transform,    world->entity_count);
+    fan_component_add(&world->c_movement, world->entity_count,
         .speed = 5.0f,
         .flags = MovementFlag_NoCollision,
     );
-    ComponentAddArgs(&world->c_behavior, world->entity_count,
+    fan_component_add(&world->c_behavior, world->entity_count,
         .type = BehaviorType_Follow,
         .target_id = world->spec_id.player,
     );
@@ -280,102 +291,102 @@ global void SceneMain(World *world) {
     world->entity_count++;
 
     // fan_texture tex_mewee = fan_texture_load("./resources/mewee.png");
-    ComponentAdd(&world->c_transform,    world->entity_count);
-    ComponentAddArgs(&world->c_shape,    world->entity_count,
+    fan_component_add(&world->c_transform,    world->entity_count);
+    fan_component_add(&world->c_shape,    world->entity_count,
         .color = (fan_color){ 50, 255, 255, 255 },
     );
-    ComponentAddArgs(&world->c_movement, world->entity_count, .speed = 1.0f);
-    ComponentAddArgs(&world->c_texture,  world->entity_count,
+    fan_component_add(&world->c_movement, world->entity_count, .speed = 1.0f);
+    fan_component_add(&world->c_texture,  world->entity_count,
         .texture = tex_girl_02,
         .rect = { .x = 0, .y = 0, .w = citizen_size.x, .h = citizen_size.y },
     );
-    ComponentAddArgs(&world->c_animation, world->entity_count);
-    ComponentAddArgs(&world->c_behavior, world->entity_count,
+    fan_component_add(&world->c_animation, world->entity_count);
+    fan_component_add(&world->c_behavior, world->entity_count,
         .type = BehaviorType_Random,
         .update_time = 60.0f,
     );
-    ComponentAdd(&world->c_interaction,  world->entity_count);
-    ComponentAdd(&world->c_interactable, world->entity_count);
-    // ComponentAddArgs(&world->c_zone,     world->entity_count,
+    fan_component_add(&world->c_interaction,  world->entity_count);
+    fan_component_add(&world->c_interactable, world->entity_count);
+    // fan_component_add(&world->c_zone,     world->entity_count,
     //     .x = 0, .y = 0, .width = 1, .height = 1,
     // );
-    ComponentAdd(&world->c_tag_enemy,    world->entity_count);
+    fan_component_add(&world->c_tag_enemy,    world->entity_count);
     world->entity_count++;
 
-    // ComponentAdd(&world->c_transform,    world->entity_count);
-    // ComponentAddArgs(&world->c_shape,    world->entity_count,
+    // fan_component_add(&world->c_transform,    world->entity_count);
+    // fan_component_add(&world->c_shape,    world->entity_count,
         // .color = (fan_color){ 255, 50, 255, 255 },
     // );
-    // ComponentAddArgs(&world->c_movement, world->entity_count, .speed = 2.0f);
-    // ComponentAddArgs(&world->c_texture,  world->entity_count,
+    // fan_component_add(&world->c_movement, world->entity_count, .speed = 2.0f);
+    // fan_component_add(&world->c_texture,  world->entity_count,
     //     .texture = tex_girl_03,
     //     .rect = { .x = 0, .y = 0, .width = citizen_size.x, .height = citizen_size.y },
     // );
-    // ComponentAddArgs(&world->c_animation, world->entity_count);
-    // ComponentAddArgs(&world->c_behavior, world->entity_count,
+    // fan_component_add(&world->c_animation, world->entity_count);
+    // fan_component_add(&world->c_behavior, world->entity_count,
     //     .type = BehaviorType_Follow,
     //     .target_id = world->spec_id.player,
     // );
-    // ComponentAdd(&world->c_interaction,  world->entity_count);
-    // ComponentAdd(&world->c_interactable, world->entity_count);
-    // ComponentAdd(&world->c_tag_enemy,    world->entity_count);
+    // fan_component_add(&world->c_interaction,  world->entity_count);
+    // fan_component_add(&world->c_interactable, world->entity_count);
+    // fan_component_add(&world->c_tag_enemy,    world->entity_count);
     // world->entity_count++;
     //
-    ComponentAddArgs(&world->c_transform,  world->entity_count,
+    fan_component_add(&world->c_transform,  world->entity_count,
         .position = (fan_vec2){  0, 5 },
         .scale    = (fan_vec2){ 10, 6 },
     );
-    ComponentAddArgs(&world->c_shape,      world->entity_count,
+    fan_component_add(&world->c_shape,      world->entity_count,
         .layer = 1,
         .color = (fan_color){ 155, 155, 155, 255 },
     );
-    ComponentAddArgs(&world->c_movement,   world->entity_count,
+    fan_component_add(&world->c_movement,   world->entity_count,
         .flags = MovementFlag_NoCollision,
     );
-    ComponentAdd(&world->c_tag_background, world->entity_count);
+    fan_component_add(&world->c_tag_background, world->entity_count);
     world->spec_id.tilemap = world->entity_count;
     world->entity_count++;
     //
-    // ComponentAddArgs(&world->c_transform, world->entity_count,
+    // fan_component_add(&world->c_transform, world->entity_count,
     //     .position = (fan_vec2){ 200.0f, 300.0f },
     //     .scale = (fan_vec2){ 400.0f, 150.0f }
     // );
-    // ComponentAddArgs(&world->c_shape,     world->entity_count,
+    // fan_component_add(&world->c_shape,     world->entity_count,
     //     .color = (fan_color){ 200, 165, 175, 255 },
     //     .layer = 3,
     // );
-    // ComponentAddArgs(&world->c_movement,  world->entity_count,
+    // fan_component_add(&world->c_movement,  world->entity_count,
     //     .flags = MovementFlag_NoCollision,
     // );
     // world->entity_count++;
 
-    // ComponentAddArgs(&world->c_transform, world->entity_count,
+    // fan_component_add(&world->c_transform, world->entity_count,
     //     .position = (fan_vec2){ 200, 100 },
     // );
-    // ComponentAddArgs(&world->c_shape,     world->entity_count,
+    // fan_component_add(&world->c_shape,     world->entity_count,
     //     .color = (fan_color){ 50, 255, 255, 255 },
     // );
-    // ComponentAddArgs(&world->c_movement,  world->entity_count,
+    // fan_component_add(&world->c_movement,  world->entity_count,
     //     .flags = MovementFlag_Immovable,
     // );
     // world->entity_count++;
 
-    // ComponentAddArgs(&world->c_transform, world->entity_count,
+    // fan_component_add(&world->c_transform, world->entity_count,
     //     .position = (fan_vec2){ 5, 2 },
     // );
-    // ComponentAddArgs(&world->c_shape,     world->entity_count,
+    // fan_component_add(&world->c_shape,     world->entity_count,
     //     .color = (fan_color){ 50, 255, 255, 255 },
     // );
-    // ComponentAddArgs(&world->c_movement,  world->entity_count,
+    // fan_component_add(&world->c_movement,  world->entity_count,
     //     .flags = MovementFlag_Immovable,
     // );
     // world->entity_count++;
     //
-    // ComponentAddArgs(&world->c_transform, world->entity_count,
+    // fan_component_add(&world->c_transform, world->entity_count,
     //     .position = (fan_vec2){ 5, 3 },
     // );
-    // ComponentAdd(&world->c_movement,  world->entity_count);
-    // ComponentAddArgs(&world->c_shape, world->entity_count,
+    // fan_component_add(&world->c_movement,  world->entity_count);
+    // fan_component_add(&world->c_shape, world->entity_count,
     //     .color = (fan_color){ 50, 255, 50, 255 },
     // );
     // world->entity_count++;

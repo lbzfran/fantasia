@@ -50,7 +50,7 @@ bool32 fan_os_write(fan_pipe pipe, void *data, ssize length) {
     return (bool32)WriteFile(ctx_handle, data, (DWORD)length, null, null);
 }
 
-bool32 fan_os_file_copy(const char *src, const char *dst) {
+bool32 fan_file_copy(const char *src, const char *dst) {
     if (CopyFile(src, dst, FALSE)) {
         return true;
     }
@@ -58,11 +58,11 @@ bool32 fan_os_file_copy(const char *src, const char *dst) {
     return false;
 }
 
-bool32 fan_os_file_delete(const char *path) {
+bool32 fan_file_delete(const char *path) {
     return (bool32)DeleteFile(path);
 }
 
-bool32 fan_os_file_time_last_written(const char *path, uint64 *last_ms) {
+bool32 fan_file_time_last_written(const char *path, uint64 *last_ms) {
     WIN32_FILE_ATTRIBUTE_DATA data;
 
     if (!GetFileAttributesExA(path, GetFileExInfoStandard, &data)) {

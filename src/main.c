@@ -25,7 +25,7 @@ World world     = {};
 
 void GameAPIClose(GameAPI *game) {
     fan_lib_close(game->library);
-    fan_os_file_delete(GAME_LIB_TMP_PATH);
+    fan_file_delete(GAME_LIB_TMP_PATH);
     game->library = nullptr;
 }
 
@@ -34,7 +34,7 @@ bool32 GameAPILoad(GameAPI *game) {
         GameAPIClose(game);
     }
 
-    if (!fan_os_file_copy(GAME_LIB_PATH, GAME_LIB_TMP_PATH)) {
+    if (!fan_file_copy(GAME_LIB_PATH, GAME_LIB_TMP_PATH)) {
         printf("ERROR: DEBUGGING Failed to copy game library!\n");
         return false;
     }
@@ -189,14 +189,14 @@ int main(void) {
             printf("[[DEBUG INFO]]\n");
         }
         if (fan_key_pressed(FanKey_T) ||
-            fan_os_file_time_last_written(GAME_LIB_PATH,
+            fan_file_time_last_written(GAME_LIB_PATH,
                                          &last_mod_time) == 1) {
             requested_reload = true;
         }
 #endif
 
         state.current_time = fan_time_get();
-        CTransform *cam_transform = ComponentGet(&world.c_transform, world.spec_id.camera);
+        CTransform *cam_transform = fan_component_get(&world.c_transform, world.spec_id.camera);
         camera.target = fan_vec2_add(cam_transform->position, fan_vec2_scale(cam_transform->scale, 0.5f));
         // camera.offset = (fan_vec2){ FanWindowWidth() / 2.0f, FanWindowHeight() / 2.0f };
 

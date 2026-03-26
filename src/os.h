@@ -142,7 +142,7 @@ typedef struct fan_arena {
     ssize  size;
     ssize  capacity;
 } fan_arena;
-#define ARENA_ALIGNMENT 16
+#define FAN_ARENA_ALIGNMENT 16
 
 typedef enum {
     fan_pipe_stdout = 0,
@@ -193,7 +193,6 @@ typedef struct {
 #define fan_fbuf8_mem(buf, cap)    { buf, 0, cap, -1, 0 }
 #define fan_fbuf8_fd(fd, buf, cap) { buf, 0, cap, fd, 0 }
 
-#define fan_str8_cstr(s)    (fan_str8){ (uchar8 *)s, sizeof(s) - 1 }
 
 FAN_API void fan_fbuf8_flush(fan_fbuf8 *);
 FAN_API void fan_fbuf8_append(fan_fbuf8 *, uchar8 *, ssize);
@@ -220,6 +219,8 @@ FAN_API void fan_fbuf8_append_double(fan_fbuf8 *, double);
 )(b, x)
 
 // NOTE(liam): string definitions
+#define fan_str8_cstr(s) (fan_str8){ (uchar8 *)s, sizeof(s) - 1 }
+
 FAN_API void fan_str8_print(fan_fbuf8 *, fan_str8);
 FAN_API void fan_str8_printn(fan_fbuf8 *, fan_str8, uchar8);
 FAN_API void fan_str8_println(fan_fbuf8 *, fan_str8);
@@ -252,13 +253,13 @@ FAN_API void *fan_lib_open(const char *path);
 FAN_API void *fan_lib_load(void *lib, const char *name);
 FAN_API void  fan_lib_close(void *lib);
 
-FAN_API bool32 fan_os_write(fan_pipe pipe, void *data, ssize length);
+FAN_API bool32   fan_os_write(fan_pipe pipe, void *data, ssize length);
 FAN_API fan_str8 fan_os_read(fan_allocator *mem, const char *path);
+FAN_API void     fan_os_wait(uint32 ms);
 
-FAN_API bool32 fan_os_file_copy(const char *src, const char *dst);
-FAN_API bool32 fan_os_file_delete(const char *path);
-FAN_API bool32 fan_os_file_time_last_written(const char *path, uint64 *last_ms);
-FAN_API void fan_os_wait(uint32 ms);
+FAN_API bool32 fan_file_copy(const char *src, const char *dst);
+FAN_API bool32 fan_file_delete(const char *path);
+FAN_API bool32 fan_file_time_last_written(const char *path, uint64 *last_ms);
 
 // char* LibGetError(void);
 

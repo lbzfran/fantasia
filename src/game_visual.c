@@ -482,8 +482,8 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
         if (id == -1)
             continue;
 
-        CShape *shape         = ComponentGetFast(&world->c_shape, id);
-        CTransform *transform = ComponentGet(&world->c_transform, id);
+        CShape *shape         = fan_component_get_fast(&world->c_shape, id);
+        CTransform *transform = fan_component_get(&world->c_transform, id);
         if (transform == null)
             continue;
 
@@ -525,16 +525,16 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
 
             // (void)tag_bg;
 
-            CShape         *shape       =  ComponentGetFast(&world->c_shape, id);
-            CTransform     *transform   =  ComponentGetFast(&world->c_transform, id);
-            CMovement      *move        =  ComponentGet(&world->c_movement, id);
-            CTexture       *texture     =  ComponentGet(&world->c_texture, id);
-            CAnimation     *animation   =  ComponentGet(&world->c_animation, id);
-            CAttack        *attack      =  ComponentGet(&world->c_attack, id);
-            bool32          interacting =  ComponentGetValue(&world->c_interaction, id);
-            bool32          interacted  =  ComponentGetValue(&world->c_interactable, id);
-            fan_rect        zone        =  ComponentGetValueOrElse(&world->c_zone, id, (fan_rect){ 0 });
-            // ssize           tag_bg      = *ComponentGet(&world->c_tag_background, id);
+            CShape         *shape       =  fan_component_get_fast(&world->c_shape, id);
+            CTransform     *transform   =  fan_component_get_fast(&world->c_transform, id);
+            CMovement      *move        =  fan_component_get(&world->c_movement, id);
+            CTexture       *texture     =  fan_component_get(&world->c_texture, id);
+            CAnimation     *animation   =  fan_component_get(&world->c_animation, id);
+            CAttack        *attack      =  fan_component_get(&world->c_attack, id);
+            bool32          interacting =  fan_component_get_value(&world->c_interaction, id);
+            bool32          interacted  =  fan_component_get_value(&world->c_interactable, id);
+            fan_rect        zone        =  fan_component_get_value_or_else(&world->c_zone, id, (fan_rect){ 0 });
+            // ssize           tag_bg      = *fan_component_get(&world->c_tag_background, id);
 
             if (not shape->visible) {
                 continue;
