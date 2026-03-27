@@ -68,7 +68,7 @@ bool32 GameAPILoad(GameAPI *game) {
     return true;
 }
 
-int main(void) {
+int GameMain(void) {
     if (!GameAPILoad(&game)) {
         return 1;
     }
@@ -243,4 +243,14 @@ int main(void) {
     fan_window_close();
     GameAPIClose(&game);
     return 0;
+}
+
+int TestMain(void) {
+    return 0;
+}
+
+int main(int argc, char **argv) {
+    (void)argc;
+    (void)argv;
+    return GameMain();
 }
