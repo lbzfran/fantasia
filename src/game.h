@@ -212,6 +212,22 @@ typedef struct {
     int32     actions[8];
 } PlayerInput;
 
+/*
+ * Basic plan is that when player triggers
+ * the 'answer' button, their next directional
+ * input is processed as an answer.
+ * Depending on the context, this answer affects
+ * the surroundings.
+ *
+ */
+typedef enum {
+    PlayerAnswer_NONE = 0,
+    PlayerAnswer_A,
+    PlayerAnswer_B,
+    PlayerAnswer_C,
+    PlayerAnswer_D,
+} PlayerAnswer;
+
 typedef struct {
     SystemMode   mode;
     fan_music    music;

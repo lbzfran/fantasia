@@ -159,12 +159,12 @@ int GameMain(void) {
 
         p_input->actions[0] = fan_key_pressed(FanKey_E);
         p_input->actions[1] = fan_key_pressed(FanKey_R) ? not p_input->actions[1] : p_input->actions[1];
-        p_input->actions[2] = fan_key_pressed(FanKey_J);
-        p_input->actions[3] = fan_key_pressed(FanKey_K);
-        p_input->actions[4] = fan_key_pressed(FanKey_L);
-        p_input->actions[5] = fan_key_pressed(FanKey_U);
-        p_input->actions[6] = fan_key_pressed(FanKey_I);
-        p_input->actions[7] = fan_key_pressed(FanKey_O);
+        p_input->actions[2] = fan_key_pressed(FanKey_F);
+        // p_input->actions[3] = fan_key_pressed(FanKey_K);
+        // p_input->actions[4] = fan_key_pressed(FanKey_L);
+        // p_input->actions[5] = fan_key_pressed(FanKey_U);
+        // p_input->actions[6] = fan_key_pressed(FanKey_I);
+        // p_input->actions[7] = fan_key_pressed(FanKey_O);
 
         // if (fan_key_down(FanKey_O)) {
         //     player_offset = fan_vec2_zero();
