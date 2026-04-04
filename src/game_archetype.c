@@ -39,7 +39,6 @@ static inline int32 SpawnPlayer(World *world, fan_vec2 position, fan_vec2 direct
         .color  = (fan_color){ 170, 170, 170, 170 },
         .radius = 200.0f,
     );
-    fan_component_add(&world->c_magic, world->entity_count);
 
     world->spec_id.player = world->entity_count;
     world->entity_count++;

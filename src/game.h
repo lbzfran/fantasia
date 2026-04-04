@@ -154,28 +154,6 @@ typedef struct {
     bool32  attacking;
 } CAttack;
 
-/*
- * Mana: external force
- * Energy: bodily force
- * Soul: internal force
- *
- */
-typedef enum {
-    MagicType_None = 0,
-    MagicType_Mana = 1,
-    MagicType_Energy,
-    MagicType_Soul,
-} MagicType;
-
-typedef struct {
-    int32 damage;
-} MagicData;
-
-typedef struct {
-    MagicType cast[8]; // ring buffer
-    int32 index;
-} CMagic;
-
 typedef struct {
     int32 player;
     int32 camera;
@@ -317,7 +295,6 @@ fan_component_declare(CInteraction,  bool32);
 fan_component_declare(CInteractable, bool32);
 fan_component_declare(CZone,         fan_rect_f32);
 fan_component_declare(CAttack,       CAttack);
-fan_component_declare(CMagic,        CMagic);
 
 fan_component_declare(CEnemyTag,      uint8);
 fan_component_declare(CBackgroundTag, uint8);
@@ -353,7 +330,6 @@ typedef struct {
     CInteractableStorage   c_interactable;
     CZoneStorage           c_zone;
     CAttackStorage         c_attack;
-    CMagicStorage          c_magic;
 
     CEnemyTagStorage       c_tag_enemy;
     CBackgroundTagStorage  c_tag_background;

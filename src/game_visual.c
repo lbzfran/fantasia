@@ -679,28 +679,28 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
     fan_color ambient = { 255, 255, 255, 255 };
     fan_mode_texture_begin(state->lightmap);
         fan_draw_clear(ambient);
-        // for (ssize i = 0; i < world->c_light.size; i++) {
-        //     ssize id = world->c_light.dense[i];
-        //
-        //     ssize transform_idx   = world->c_transform.sparse[id];
-        //     ssize shape_idx       = world->c_shape.sparse[id];
-        //
-        //     CLight       *light     = &world->c_light.data[i];
-        //     CTransform   *transform = &world->c_transform.data[transform_idx];
-        //     CShape       *shape     = &world->c_shape.data[shape_idx];
-        //
-        //     LightSystem(
-        //         light,
-        //         transform,
-        //         shape,
-        //         state->lightmap,
-        //         camera_position,
-        //         camera_zoom,
-        //         pixels_per_unit,
-        //         state->render_size,
-        //         dt
-        //     );
-        // }
+        for (ssize i = 0; i < world->c_light.size; i++) {
+            ssize id = world->c_light.dense[i];
+
+            ssize transform_idx   = world->c_transform.sparse[id];
+            ssize shape_idx       = world->c_shape.sparse[id];
+
+            CLight       *light     = &world->c_light.data[i];
+            CTransform   *transform = &world->c_transform.data[transform_idx];
+            CShape       *shape     = &world->c_shape.data[shape_idx];
+
+            LightSystem(
+                light,
+                transform,
+                shape,
+                state->lightmap,
+                camera_position,
+                camera_zoom,
+                pixels_per_unit,
+                state->render_size,
+                dt
+            );
+        }
     fan_mode_texture_end();
 
     LightingProcessPost(state->lightmap, state->window_width, state->window_height);

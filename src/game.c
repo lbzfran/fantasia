@@ -284,61 +284,6 @@ void AttackSystem(CAttack *a, CMovement *m, CTransform *t, CMovement *o_m, CTran
     }
 }
 
-void MagicUpdate(CMagic *ma, int32 value, int32 count) {
-    int32 iterations = fan_i32_clamp(count, 0, 8);
-    for (ssize i = 0; i < iterations; i++) {
-        ma->index = (ma->index + 1) & 7;
-        ma->cast[ma->index] = value;
-    }
-}
-
-void MagicSystem(CMagic *ma, int32 input, bool32 casting, float32 dt) {
-    if (input >= 1 and input <= 3) {
-        MagicUpdate(ma, input, 1);
-    }
-
-    if (not casting) {
-        return;
-    }
-
-    int32 code = ma->cast[ma->index] +
-        ma->cast[(ma->index + 8 - 1) % 8] * 10 +
-        ma->cast[(ma->index + 8 - 2) % 8] * 100 +
-        ma->cast[(ma->index + 8 - 3) % 8] * 1000;
-
-    printf("cast: %04d\n", code);
-
-    switch (code) {
-        case 11: {
-            printf("casting: bat!\n");
-            break;
-        };
-        case 112: {
-            printf("casting: pop!\n");
-            break;
-        };
-        case 221: {
-            printf("casting: slice!\n");
-            break;
-        };
-        case 121: {
-            printf("casting: spread!\n");
-            break;
-        };
-        case 333: {
-            printf("casting: heal!\n");
-            break;
-        };
-
-        default:
-            // printf("casting: not found...\n");
-            break;
-    }
-
-    // null out last 4 code
-    MagicUpdate(ma, 0, 4);
-}
-
 // NOTE(liam): must call whenever entities are added/removed
 global void UpdateEntitySplit(World *world) {
     EntitySplit *split = &world->split;
@@ -539,7 +484,6 @@ void UpdateEntities(
             CMovement     *move      = fan_component_get_fast(&world->c_movement,    id);
             CTransform    *transform = fan_component_get_fast(&world->c_transform,   id);
             CAttack       *attack    = fan_component_get(&world->c_attack,          id);
-            CMagic        *magic     = fan_component_get(&world->c_magic,           id);
             bool32        *interact  = fan_component_get(&world->c_interaction,     id);
             ssize          tag_enemy = fan_component_get_value(&world->c_tag_enemy,  id);
             fan_rect_f32   zone      = fan_component_get_value_or_else(&world->c_zone, id, (fan_rect_f32){ 0 });
@@ -588,29 +532,6 @@ void UpdateEntities(
                         if (move->lock_time <= 0.0f) {
                             AttackSystem(attack, move, transform, other_move, other_transform, fixed_dt);
                         }
-                    }
-
-                    if (magic) {
-                        // int32 magic_type = MagicType_None;
-                        // bool32 casting = false;
-                        // if (state->player_input.actions[5]) {
-                        //     magic_type = MagicType_Mana;
-                        //     state->player_input.actions[5] = 0;
-                        // }
-                        // else if (state->player_input.actions[6]) {
-                        //     magic_type = MagicType_Energy;
-                        //     state->player_input.actions[6] = 0;
-                        // }
-                        // else if (state->player_input.actions[7]) {
-                        //     magic_type = MagicType_Soul;
-                        //     state->player_input.actions[7] = 0;
-                        // }
-                        // else if (state->player_input.actions[2]) {
-                            // casting = true;
-                            // state->player_input.actions[2] = 0;
-                            // SpawnBullet(world, transform->position, state->player_input.direction);
-                        // }
-                        // MagicSystem(magic, magic_type, casting, fixed_dt);
                     }
 
                     CollisionSystem(transform, move, other_transform, other_move, fixed_dt);
@@ -937,7 +858,6 @@ void GameInit(fan_allocator *a, World *world, GameState *state) {
     fan_component_create(&world->c_interactable,   a, component_size);
     fan_component_create(&world->c_zone,           a, component_size);
     fan_component_create(&world->c_attack,         a, component_size);
-    fan_component_create(&world->c_magic,          a, component_size);
 
     fan_component_create(&world->c_tag_background, a, component_size);
     fan_component_create(&world->c_tag_enemy,      a, component_size);
