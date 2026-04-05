@@ -14,22 +14,19 @@ static inline int32 SpawnPlayer(World *world, fan_vec2 position, fan_vec2 direct
 
     fan_component_add(&world->c_transform, world->entity_count,
                      .position = position);
-    fan_component_add(&world->c_shape,         world->entity_count);
+    fan_component_add(&world->c_shape,     world->entity_count);
     fan_component_add(&world->c_movement,  world->entity_count,
         .direction = direction
         // .flags = MovementFlag_CollideSoftly
     );
     fan_component_add(&world->c_texture,   world->entity_count,
         .texture = tex_girl_01,
-        // .rect = player_idle_down_frames[0],
-        // .rect = (fan_rect_i32){ 0, 0, tex_link.width / 10.0f, tex_link.height / 8.0f }
         .rect = { .x = 0, .y = 0, .w = citizen_size.x, .h = citizen_size.y },
-        // .rect = { .width = 36, .height = 36 },
     );
-    fan_component_add(&world->c_animation, world->entity_count);
+    fan_component_add(&world->c_animation,    world->entity_count);
     fan_component_add(&world->c_interaction,  world->entity_count);
     fan_component_add(&world->c_interactable, world->entity_count);
-    fan_component_add(&world->c_attack,   world->entity_count,
+    fan_component_add(&world->c_attack,       world->entity_count,
         .arc_angle    = fan_f32_rad(45.0f),
         .swing_time   = 0.2f,
         .knockback    = 1.5f,
@@ -39,6 +36,7 @@ static inline int32 SpawnPlayer(World *world, fan_vec2 position, fan_vec2 direct
         .color  = (fan_color){ 170, 170, 170, 170 },
         .radius = 200.0f,
     );
+    fan_component_add(&world->c_tag_answer, world->entity_count);
 
     world->spec_id.player = world->entity_count;
     world->entity_count++;
@@ -58,7 +56,7 @@ static inline void SpawnBullet(World *world, fan_vec2 position, fan_vec2 directi
     fan_component_add(&world->c_shape, world->entity_count,
         .color = (fan_color){ 50, 50, 50, 255 },
     );
-    fan_component_add(&world->c_movement,  world->entity_count,
+    fan_component_add(&world->c_movement, world->entity_count,
         .flags = MovementFlag_Ghost
     );
     fan_component_add(&world->c_behavior, world->entity_count,
@@ -310,6 +308,7 @@ global void SceneMain(World *world) {
     //     .x = 0, .y = 0, .width = 1, .height = 1,
     // );
     fan_component_add(&world->c_tag_enemy,    world->entity_count);
+    fan_component_add(&world->c_tag_question, world->entity_count);
     world->entity_count++;
 
     // fan_component_add(&world->c_transform,    world->entity_count);

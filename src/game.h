@@ -212,21 +212,21 @@ typedef struct {
     int32     actions[8];
 } PlayerInput;
 
+typedef int32 CQuestion;
 /*
  * Basic plan is that when player triggers
  * the 'answer' button, their next directional
  * input is processed as an answer.
  * Depending on the context, this answer affects
  * the surroundings.
- *
  */
 typedef enum {
-    PlayerAnswer_NONE = 0,
-    PlayerAnswer_A,
-    PlayerAnswer_B,
-    PlayerAnswer_C,
-    PlayerAnswer_D,
-} PlayerAnswer;
+    CAnswer_NONE = 0,
+    CAnswer_A,
+    CAnswer_B,
+    CAnswer_C,
+    CAnswer_D,
+} CAnswer;
 
 typedef struct {
     SystemMode   mode;
@@ -315,6 +315,9 @@ fan_component_declare(CAttack,       CAttack);
 fan_component_declare(CEnemyTag,      uint8);
 fan_component_declare(CBackgroundTag, uint8);
 
+fan_component_declare(CQuestionTag, CQuestion);
+fan_component_declare(CAnswerTag,   CAnswer);
+
 typedef struct {
     fan_arena              arena;
 
@@ -349,6 +352,8 @@ typedef struct {
 
     CEnemyTagStorage       c_tag_enemy;
     CBackgroundTagStorage  c_tag_background;
+    CQuestionTagStorage    c_tag_question;
+    CAnswerTagStorage      c_tag_answer;
 } World;
 
 void GameInit(fan_allocator *a, World *world, GameState *state);

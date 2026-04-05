@@ -284,6 +284,11 @@ void AttackSystem(CAttack *a, CMovement *m, CTransform *t, CMovement *o_m, CTran
     }
 }
 
+void QuestionSystem(CQuestion question_id, CAnswer answer) {
+    if (answer)
+        printf("NOTICE: Question '%d' triggered with answer '%d'.\n", question_id, answer);
+}
+
 // NOTE(liam): must call whenever entities are added/removed
 global void UpdateEntitySplit(World *world) {
     EntitySplit *split = &world->split;
@@ -343,6 +348,8 @@ void UpdateEntities(
         world->update_entity_split = false;
     }
 
+    bool32 player_answered = false;
+    bool32 player_asks = false;
     accumulator += dt;
     while (accumulator >= fixed_dt) {
         bool32 last_iter = false;
@@ -360,8 +367,10 @@ void UpdateEntities(
             CAttack      *attack    = fan_component_get(&world->c_attack,    id);
             CAnimation   *anim      = fan_component_get(&world->c_animation, id);
 
-            bool32 *interact   = fan_component_get(&world->c_interaction, id);
+            bool32 *interact   = fan_component_get(&world->c_interaction,  id);
             bool32 *interacted = fan_component_get(&world->c_interactable, id);
+
+            // CAnswer *answer = fan_component_get(&world->c_tag_answer, id);
 
             fan_vec2 direction = fan_vec2_zero();
 
@@ -376,8 +385,8 @@ void UpdateEntities(
             if (id == world->spec_id.player) {
                 if ((attack is null) or (attack and not attack->attacking)) {
                     direction = state->player_input.direction;
-
                 }
+
             }
             else if (behavior) {
                 behavior->updating = false;
@@ -488,6 +497,22 @@ void UpdateEntities(
             ssize          tag_enemy = fan_component_get_value(&world->c_tag_enemy,  id);
             fan_rect_f32   zone      = fan_component_get_value_or_else(&world->c_zone, id, (fan_rect_f32){ 0 });
 
+            CAnswer *answer = fan_component_get(&world->c_tag_answer, id);
+
+            if (answer exists and id == world->spec_id.player) {
+                *answer = CAnswer_NONE;
+                if (state->player_input.actions[3])
+                    *answer = CAnswer_A;
+                else if (state->player_input.actions[4])
+                    *answer = CAnswer_B;
+                else if (state->player_input.actions[5])
+                    *answer = CAnswer_C;
+                else if (state->player_input.actions[6])
+                    *answer = CAnswer_D;
+
+                player_asks = state->player_input.actions[2];
+            }
+
             if (fan_rect_f32_isempty(zone)) {
                 zone = (fan_rect_f32) {
                     .x = transform->position.x,
@@ -505,11 +530,12 @@ void UpdateEntities(
                 for (ssize j = i + 1; j < split->dynamic_count; j++) {
                     ssize other_id = split->dynamic_entities[j];
 
-                    CTransform    *other_transform  = fan_component_get_fast(&world->c_transform,   other_id);
-                    CMovement     *other_move       = fan_component_get_fast(&world->c_movement,    other_id);
-                    bool32        *other_interacted = fan_component_get(&world->c_interactable,    other_id);
+                    CTransform    *other_transform  = fan_component_get_fast(&world->c_transform,     other_id);
+                    CMovement     *other_move       = fan_component_get_fast(&world->c_movement,      other_id);
+                    bool32        *other_interacted = fan_component_get(&world->c_interactable,       other_id);
                     fan_rect_f32   other_zone       = fan_component_get_value_or_else(&world->c_zone, other_id, (fan_rect_f32) { 0 });
-                    ssize          other_tag_enemy  = fan_component_get_value(&world->c_tag_enemy,  other_id);
+                    ssize          other_tag_enemy  = fan_component_get_value(&world->c_tag_enemy,    other_id);
+                    CQuestion     *other_question   = fan_component_get(&world->c_tag_question, other_id);
 
                     if (fan_rect_f32_isempty(other_zone)) {
                         other_zone = (fan_rect_f32) {
@@ -546,6 +572,13 @@ void UpdateEntities(
                         *interact = true;
                         *other_interacted = true;
 
+                        if (player_asks and player_answered is false and
+                            answer exists and other_question exists) {
+                            QuestionSystem(*other_question, *answer);
+
+                            *answer = 0;
+                            player_answered = true;
+                        }
                     }
                 }
                 for (ssize i = 0; i < split->static_count; i++) {
@@ -553,7 +586,7 @@ void UpdateEntities(
 
                     CTransform     *other_transform  = fan_component_get_fast(&world->c_transform,   other_id);
                     CMovement      *other_move       = fan_component_get_fast(&world->c_movement,    other_id);
-                    bool32         *other_interacted = fan_component_get(&world->c_interactable,    other_id);
+                    bool32         *other_interacted = fan_component_get(&world->c_interactable,     other_id);
                     fan_rect_f32    other_zone       = fan_component_get_value_or_else(&world->c_zone, other_id, (fan_rect_f32) { 0 });
                     ssize           other_tag_enemy  = fan_component_get_value(&world->c_tag_enemy,  other_id);
 
@@ -861,6 +894,8 @@ void GameInit(fan_allocator *a, World *world, GameState *state) {
 
     fan_component_create(&world->c_tag_background, a, component_size);
     fan_component_create(&world->c_tag_enemy,      a, component_size);
+    fan_component_create(&world->c_tag_question,   a, component_size);
+    fan_component_create(&world->c_tag_answer,     a, component_size);
 
     world->split.dynamic_entities = a->make(a->ctx, split_size);
     world->split.dynamic_capacity = split_size;

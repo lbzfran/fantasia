@@ -110,6 +110,7 @@ typedef nullptr_t nullptr;
 #define isnt    !=
 #define and     &&
 #define or      ||
+#define exists  != nullptr
 
 #define local   static
 #define global  static
