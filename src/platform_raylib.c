@@ -481,7 +481,8 @@ void fan_draw_circle_grad(int32 x, int32 y, float32 r, fan_color in, fan_color o
     Color rl_in = fan_color_rl(in);
     Color rl_out = fan_color_rl(out);
 
-    DrawCircleGradient(x, y, r, rl_in, rl_out);
+    // DrawCircleGradient(x, y, r, rl_in, rl_out);
+    DrawCircleGradient((Vector2){ x, y }, r, rl_in, rl_out);
 }
 
 void fan_fps_target(int32 fps) {

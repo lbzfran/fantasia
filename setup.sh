@@ -4,7 +4,7 @@
 # usage: ./setup.sh <TARGET_OR_NONE_SPECIFIED>
 
 TARGET=${1:-$(uname | tr '[:upper:]' '[:lower:]')}
-RAYLIB_VERSION=5.5
+RAYLIB_VERSION=6.0
 
 mkdir -p bin
 
