@@ -288,8 +288,8 @@ global void SceneMain(World *world) {
     world->entity_count++;
 
     // fan_texture tex_mewee = fan_texture_load("./resources/mewee.png");
-    fan_component_add(&world->c_transform,    world->entity_count);
-    fan_component_add(&world->c_shape,    world->entity_count,
+    fan_component_add(&world->c_transform, world->entity_count);
+    fan_component_add(&world->c_shape,     world->entity_count,
         .color = (fan_color){ 50, 255, 255, 255 },
     );
     fan_component_add(&world->c_movement, world->entity_count, .speed = 1.0f);

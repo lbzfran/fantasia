@@ -221,6 +221,7 @@ int GameMain(void) {
             printf("Total Component 'Texture' size/capacity:   \t%td/%td\n", world.c_texture.size,   world.c_texture.capacity);
             printf("Total Component 'Behavior' size/capacity:  \t%td/%td\n", world.c_behavior.size,  world.c_behavior.capacity);
             printf("Total Component 'Animation' size/capacity: \t%td/%td\n", world.c_animation.size, world.c_animation.capacity);
+            printf("Total Component 'Question' size/capacity: \t%td/%td\n", world.c_tag_question.size, world.c_tag_question.capacity);
             state.player_called_object_dump = false;
         }
 
