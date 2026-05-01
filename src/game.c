@@ -284,9 +284,19 @@ void AttackSystem(CAttack *a, CMovement *m, CTransform *t, CMovement *o_m, CTran
     }
 }
 
-void QuestionSystem(CQuestion question_id, CAnswer answer) {
-    if (answer)
-        printf("NOTICE: Question '%d' triggered with answer '%d'.\n", question_id, answer);
+void QuestionSystem(CQuestion *question, CAnswer answer, float32 dt) {
+    if (question and answer and not question->answered) {
+        printf("NOTICE: Question '%d' triggered with answer '%d'.\n", question->id, answer);
+        question->answered = true;
+        question->timer = max(question->cooldown_time, 5.0f);
+    }
+    else {
+        // question->timer -= dt;
+        // if (question->timer <= 0.0f) {
+        //     question->timer = 0.0f;
+        //     question->answered = false;
+        // }
+    }
 }
 
 // NOTE(liam): must call whenever entities are added/removed
@@ -497,6 +507,7 @@ void UpdateEntities(
             ssize          tag_enemy = fan_component_get_value(&world->c_tag_enemy,  id);
             fan_rect_f32   zone      = fan_component_get_value_or_else(&world->c_zone, id, (fan_rect_f32){ 0 });
 
+            CQuestion *question = fan_component_get(&world->c_tag_question, id);
             CAnswer *answer = fan_component_get(&world->c_tag_answer, id);
 
             if (answer exists and id == world->spec_id.player) {
@@ -511,6 +522,14 @@ void UpdateEntities(
                     *answer = CAnswer_D;
 
                 player_asks = state->player_input.actions[2];
+            }
+
+            if (question exists and question->answered) {
+                question->timer -= fixed_dt;
+                if (question->timer <= 0.0f) {
+                    question->timer = 0.0f;
+                    question->answered = false;
+                }
             }
 
             if (fan_rect_f32_isempty(zone)) {
@@ -535,7 +554,7 @@ void UpdateEntities(
                     bool32        *other_interacted = fan_component_get(&world->c_interactable,       other_id);
                     fan_rect_f32   other_zone       = fan_component_get_value_or_else(&world->c_zone, other_id, (fan_rect_f32) { 0 });
                     ssize          other_tag_enemy  = fan_component_get_value(&world->c_tag_enemy,    other_id);
-                    CQuestion     *other_question   = fan_component_get(&world->c_tag_question, other_id);
+                    CQuestion     *other_question   = fan_component_get(&world->c_tag_question,       other_id);
 
                     if (fan_rect_f32_isempty(other_zone)) {
                         other_zone = (fan_rect_f32) {
@@ -562,22 +581,26 @@ void UpdateEntities(
 
                     CollisionSystem(transform, move, other_transform, other_move, fixed_dt);
                     if (
-                            interact and
-                            other_interacted and
-                            CollisionCheckR(zone, other_zone)
-                            // and not (istagged(tag_enemy) and istagged(other_tag_enemy))
-                        ) {
+                        interact and
+                        other_interacted and
+                        CollisionCheckR(zone, other_zone)
+                        // and not (istagged(tag_enemy) and istagged(other_tag_enemy))
+                       ) {
                         // FanRectInt32Print(zone);
                         // FanRectInt32Print(other_zone);
                         *interact = true;
-                        *other_interacted = true;
+                        *other_interacted = true; // NOTE: does nothing
 
-                        if (player_asks and player_answered is false and
-                            answer exists and other_question exists) {
-                            QuestionSystem(*other_question, *answer);
+                        if (
+                            player_asks and
+                            answer exists and
+                            other_question exists and
+                            other_question->answered is false
+                           ) {
+                            QuestionSystem(other_question, *answer, fixed_dt);
 
                             *answer = 0;
-                            player_answered = true;
+                            // player_answered = true;
                         }
                     }
                 }

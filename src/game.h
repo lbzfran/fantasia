@@ -212,7 +212,14 @@ typedef struct {
     int32     actions[8];
 } PlayerInput;
 
-typedef int32 CQuestion;
+// typedef int32 CQuestion;
+typedef struct {
+    int32 id;
+    bool32 answered;
+
+    float32 timer;
+    float32 cooldown_time;
+} CQuestion;
 /*
  * Basic plan is that when player triggers
  * the 'answer' button, their next directional

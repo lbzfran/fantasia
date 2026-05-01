@@ -615,7 +615,7 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
                 transform,
                 texture,
                 move,
-                interacting,
+                interacting || interacted,
                 zone,
                 camera_position,
                 camera_zoom,
