@@ -37,7 +37,7 @@ static inline int32 SpawnWanderer(World *world, fan_vec2 position, fan_vec2 dire
     //     .x = 0, .y = 0, .width = 1, .height = 1,
     // );
     fan_component_add(&world->c_tag_enemy,    world->entity_count);
-    fan_component_add(&world->c_tag_question, world->entity_count, .id = question_id);
+    fan_component_add(&world->c_question, world->entity_count, .id = question_id);
 
     int32 id = world->entity_count;
     world->entity_count++;
@@ -91,6 +91,7 @@ static inline int32 SpawnPlayer(World *world, fan_vec2 position, fan_vec2 direct
         .radius = 200.0f,
     );
     fan_component_add(&world->c_tag_answer, world->entity_count);
+    fan_component_add(&world->c_text, world->entity_count);
 
     world->spec_id.player = world->entity_count;
     world->entity_count++;

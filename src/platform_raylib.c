@@ -67,6 +67,7 @@ RenderTexture fan_rtexture_rl(fan_rtexture rtx) {
 }
 
 void fan_window_create(int32 width, int32 height, const char *title) {
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
     InitWindow(width, height, title);
 }
 
@@ -397,6 +398,13 @@ void fan_draw_texture(fan_texture texture, fan_rect src, fan_rect dst, fan_vec2 
     };
     Color rl_color = fan_color_rl(color);
     DrawTexturePro(rl_texture, rl_src, rl_dst, rl_origin, angle, rl_color);
+}
+
+void fan_draw_text(const char *buf, fan_vec2 origin, fan_color text_color, fan_color background_color) {
+    // DrawTextPro();
+    (void)background_color;
+    Color rl_text_color = fan_color_rl(text_color);
+    DrawText(buf, origin.x, origin.y, 14, rl_text_color);
 }
 
 void fan_camera_begin(fan_camera2D camera) {

@@ -195,6 +195,7 @@ void RenderSystem(
 	    CTransform *t,
 	    CTexture *tx,
 	    CMovement *m,
+        CText *ts,
 	    bool32 interacting,
 	    fan_rect_f32 zone,
         fan_vec2 camera_position,
@@ -273,6 +274,20 @@ void RenderSystem(
             0.0f,
             s->color
         );
+    }
+
+    if (ts) {
+        // TODO: add api call here
+        fan_draw_text(
+            "TESTING",
+            (fan_vec2) {
+                fan_f32_round(screen_pos.x),
+                fan_f32_round(screen_pos.y - (screen_scale.y * 0.25))
+            },
+            fan_color_BLACK,
+            fan_color_WHITE
+        );
+
     }
 }
 
@@ -534,6 +549,7 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
             bool32          interacting =  fan_component_get_value(&world->c_interaction, id);
             bool32          interacted  =  fan_component_get_value(&world->c_interactable, id);
             fan_rect        zone        =  fan_component_get_value_or_else(&world->c_zone, id, (fan_rect){ 0 });
+            CText          *text        =  fan_component_get(&world->c_text, id);
             // ssize           tag_bg      = *fan_component_get(&world->c_tag_background, id);
 
             if (not shape->visible) {
@@ -615,6 +631,7 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
                 transform,
                 texture,
                 move,
+                text,
                 interacting || interacted,
                 zone,
                 camera_position,

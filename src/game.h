@@ -125,6 +125,15 @@ typedef struct {
     float32    intensity;
 } CLight;
 
+typedef struct {
+    fan_str8 buf;
+    fan_vec2 origin; // center of draw
+    bool32   visible;
+
+    fan_color text_color;
+    fan_color background_color;
+} CText;
+
 // typedef struct {
 //     int32 id;
 //     const char *name;
@@ -313,6 +322,7 @@ fan_component_declare(CAnimation, CAnimation);
 fan_component_declare(CPhysics,   CPhysics);
 fan_component_declare(CSound,     CSound);
 fan_component_declare(CLight,     CLight);
+fan_component_declare(CText,      CText);
 
 fan_component_declare(CInteraction,  bool32);
 fan_component_declare(CInteractable, bool32);
@@ -322,7 +332,7 @@ fan_component_declare(CAttack,       CAttack);
 fan_component_declare(CEnemyTag,      uint8);
 fan_component_declare(CBackgroundTag, uint8);
 
-fan_component_declare(CQuestionTag, CQuestion);
+fan_component_declare(CQuestion, CQuestion);
 fan_component_declare(CAnswerTag,   CAnswer);
 
 typedef struct {
@@ -351,15 +361,16 @@ typedef struct {
     CPhysicsStorage        c_physics;
     CSoundStorage          c_sound;
     CLightStorage          c_light;
+    CTextStorage           c_text;
 
     CInteractionStorage    c_interaction;
     CInteractableStorage   c_interactable;
     CZoneStorage           c_zone;
     CAttackStorage         c_attack;
+    CQuestionStorage       c_question;
 
     CEnemyTagStorage       c_tag_enemy;
     CBackgroundTagStorage  c_tag_background;
-    CQuestionTagStorage    c_tag_question;
     CAnswerTagStorage      c_tag_answer;
 } World;
 

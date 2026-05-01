@@ -507,8 +507,8 @@ void UpdateEntities(
             ssize          tag_enemy = fan_component_get_value(&world->c_tag_enemy,  id);
             fan_rect_f32   zone      = fan_component_get_value_or_else(&world->c_zone, id, (fan_rect_f32){ 0 });
 
-            CQuestion *question = fan_component_get(&world->c_tag_question, id);
-            CAnswer *answer = fan_component_get(&world->c_tag_answer, id);
+            CQuestion *question = fan_component_get(&world->c_question, id);
+            CAnswer *answer = fan_component_get(&world->c_tag_answer,   id);
 
             if (answer exists and id == world->spec_id.player) {
                 *answer = CAnswer_NONE;
@@ -554,7 +554,7 @@ void UpdateEntities(
                     bool32        *other_interacted = fan_component_get(&world->c_interactable,       other_id);
                     fan_rect_f32   other_zone       = fan_component_get_value_or_else(&world->c_zone, other_id, (fan_rect_f32) { 0 });
                     ssize          other_tag_enemy  = fan_component_get_value(&world->c_tag_enemy,    other_id);
-                    CQuestion     *other_question   = fan_component_get(&world->c_tag_question,       other_id);
+                    CQuestion     *other_question   = fan_component_get(&world->c_question,           other_id);
 
                     if (fan_rect_f32_isempty(other_zone)) {
                         other_zone = (fan_rect_f32) {
@@ -909,6 +909,7 @@ void GameInit(fan_allocator *a, World *world, GameState *state) {
     fan_component_create(&world->c_physics,        a, component_size);
     fan_component_create(&world->c_sound,          a, component_size);
     fan_component_create(&world->c_light,          a, component_size);
+    fan_component_create(&world->c_text,           a, component_size);
 
     fan_component_create(&world->c_interaction,    a, component_size);
     fan_component_create(&world->c_interactable,   a, component_size);
@@ -917,7 +918,7 @@ void GameInit(fan_allocator *a, World *world, GameState *state) {
 
     fan_component_create(&world->c_tag_background, a, component_size);
     fan_component_create(&world->c_tag_enemy,      a, component_size);
-    fan_component_create(&world->c_tag_question,   a, component_size);
+    fan_component_create(&world->c_question,       a, component_size);
     fan_component_create(&world->c_tag_answer,     a, component_size);
 
     world->split.dynamic_entities = a->make(a->ctx, split_size);
