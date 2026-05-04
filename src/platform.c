@@ -337,3 +337,31 @@ fan_dsl_token_array fan_dsl_tokenize(fan_allocator *mem, fan_str8 buf) {
 
     return result;
 }
+
+// NOTE(liam): loads all assets within a directory AS sprites.
+void fan_sprite_load(fan_asset_sprite_entry *sprites, fan_allocator *mem, char8 *const path) {
+    fan_ht_hmdefault(sprites, fan_texture_load("404.png"));
+
+    struct dirent *dp;
+    DIR *dir = opendir(path);
+    assert(dir);
+
+    char8 full_path[262];
+
+    uint32 i = 0;
+    while ((dp = readdir(dir))) {
+        if (i > 1) {
+            snprintf(full_path, sizeof(full_path), "%s/%s", path, dp->d_name);
+            char8 name[262];
+            strncpy(name, dp->d_name, sizeof(name));
+            name[sizeof(name) - 1] = '\0';
+            char *asset_name = strtok(name, ".");
+            fan_ht_shput(sprites, strdup(name), fan_texture_load(full_path));
+        }
+        i++;
+    }
+}
+
+static inline fan_texture fan_sprite_get(fan_asset_sprite_entry *sprites, char8 *const name) {
+    return fan_ht_shget(sprites, name);
+}

@@ -72,6 +72,15 @@ typedef struct {
     void             *ctx_data;
 } fan_music;
 
+typedef struct {
+    char8 *key;
+    fan_texture value;
+} fan_asset_sprite_entry;
+
+typedef struct {
+    fan_asset_sprite_entry *sprites;
+} fan_asset;
+
 typedef enum {
     FanKey_NULL            = 0,        // Key: NULL, used for no key pressed
     // Alphanumeric keys
