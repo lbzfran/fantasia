@@ -1,10 +1,23 @@
 
 #include "os.h"
 #include "platform.h"
+#include <dirent.h>
 
 #define FAN_PLATFORM_RAYLIB
 #ifdef  FAN_PLATFORM_RAYLIB
 # include "platform_raylib.c"
+#endif
+
+// NOTE(liam): internal-only import of stbds.
+#define FAN_PLATFORM_STBDS
+#ifdef  FAN_PLATFORM_STBDS
+# define STBDS_NO_SHORT_NAMES
+# define STBDS_SIPHASH_2_4
+# define STB_DS_IMPLEMENTATION
+# include "stb_ds.h"
+# define fan_ht_hmdefault stbds_hmdefault
+# define fan_ht_shput stbds_shput
+# define fan_ht_shget stbds_shget
 #endif
 
 #include <math.h>

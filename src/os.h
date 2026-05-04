@@ -12,6 +12,7 @@
 #include <stdint.h>
 #include <stdalign.h>
 
+
 #if defined(OS_WINDOWS)
  #if defined(DEBUG)
   #define GAME_LIB_PATH "bin/libgame.dll"

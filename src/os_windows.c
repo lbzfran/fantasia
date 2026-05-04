@@ -146,3 +146,4 @@ fan_str8 fan_os_read(fan_allocator *mem, const char *path) {
 
     return result;
 }
+

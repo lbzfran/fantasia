@@ -3,6 +3,7 @@
 #include "os.h"
 #include "platform.h"
 
+
 fan_vec2 WorldToScreen(
     fan_vec2 world_coord,
     fan_vec2 camera_position,
