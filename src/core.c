@@ -1,60 +1,30 @@
 
-#include "os.h"
-#include "platform.h"
-#include <dirent.h>
+#include "core.h"
 
-#define FAN_PLATFORM_RAYLIB
-#ifdef  FAN_PLATFORM_RAYLIB
- # include "platform_raylib.c"
-#endif
+#include <math.h>
 
-#include "os.c"
-#include "core.c"
-
-// NOTE(liam): internal-only import of stbds.
-#define FAN_PLATFORM_STBDS
-#ifdef  FAN_PLATFORM_STBDS
-# define STBDS_NO_SHORT_NAMES
-# define STBDS_SIPHASH_2_4
-# define STB_DS_IMPLEMENTATION
-# include "stb_ds.h"
-# define fan_ht_hmdefault stbds_hmdefault
-# define fan_ht_shput stbds_shput
-# define fan_ht_shget stbds_shget
-#endif
-
-#if 0
 int32 fan_i32_clamp(int32 v, int32 min, int32 max) {
     return v < min ? min : ((v > max) ? max : v);
 }
 
-bool32 fan_rect_i32_isempty(fan_rect_i32 rect) {
-    bool32 result = true;
-    if (rect.x || rect.y || rect.w || rect.h) {
-        result = false;
-    }
-    return result;
+int32 fan_rect_i32_isempty(fan_rect_i32 rect) {
+    return !(rect.x || rect.y || rect.w || rect.h);
 }
 
-bool32 fan_rect_f32_isempty(fan_rect_f32 rect) {
-    bool32 result = false;
-    if (fan_f32_equals(rect.x,      0.0f) &&
-        fan_f32_equals(rect.y,      0.0f) &&
-        fan_f32_equals(rect.w,      0.0f) &&
-        fan_f32_equals(rect.h,      0.0f)) {
-        result = true;
-    }
-    return result;
+int32 fan_rect_f32_isempty(fan_rect_f32 rect) {
+    return fan_f32_equals(rect.x, 0.0f) &&
+           fan_f32_equals(rect.y, 0.0f) &&
+           fan_f32_equals(rect.w, 0.0f) &&
+           fan_f32_equals(rect.h, 0.0f);
 }
 
 float32 fan_f32_lerp(float32 a, float32 t, float32 b) {
-    return  a + (b - a) * t;
+    return a + (b - a) * t;
 }
 
-bool32 fan_f32_equals(float32 x, float32 y) {
+int32 fan_f32_equals(float32 x, float32 y) {
     float32 epsilon = 0.000001f;
-    int result = (fabsf(x - y)) <= (epsilon*fmaxf(1.0f, fmaxf(fabsf(x), fabsf(y))));
-    return result;
+    return (fabsf(x - y)) <= (epsilon * fmaxf(1.0f, fmaxf(fabsf(x), fabsf(y))));
 }
 
 fan_vec2 fan_vec2_zero(void) {
@@ -69,30 +39,30 @@ fan_vec2 fan_vec2_add(fan_vec2 v1, fan_vec2 v2) {
     return (fan_vec2){ v1.x + v2.x, v1.y + v2.y };
 }
 
-fan_vec2 fan_vec2_addf(fan_vec2 v, float32 x) {
+fan_vec2 fan_vec2_addv(fan_vec2 v, float32 x) {
     return (fan_vec2){ v.x + x, v.y + x };
 }
 
 fan_vec2 fan_vec2_sub(fan_vec2 v1, fan_vec2 v2) {
     return (fan_vec2){ v1.x - v2.x, v1.y - v2.y };
 }
-fan_vec2 fan_vec2_subf(fan_vec2 v, float32 x) {
+
+fan_vec2 fan_vec2_subv(fan_vec2 v, float32 x) {
     return (fan_vec2){ v.x - x, v.y - x };
 }
 
 fan_vec2 fan_vec2_normalize(fan_vec2 v) {
     float32 magnitude = fan_vec2_length(v);
-
-    fan_vec2 result = fan_vec2_zero();
     if (!fan_f32_equals(magnitude, 0.0f)) {
-        result = (fan_vec2){ v.x / magnitude, v.y / magnitude };
+        return (fan_vec2){ v.x / magnitude, v.y / magnitude };
     }
-    return result;
+    return fan_vec2_zero();
 }
 
 float32 fan_vec2_length(fan_vec2 v) {
     return sqrtf(v.x * v.x + v.y * v.y);
 }
+
 float32 fan_vec2_lengthsqr(fan_vec2 v) {
     return v.x * v.x + v.y * v.y;
 }
@@ -100,6 +70,7 @@ float32 fan_vec2_lengthsqr(fan_vec2 v) {
 fan_vec2 fan_vec2_scale(fan_vec2 v, float32 scale) {
     return (fan_vec2){ v.x * scale, v.y * scale };
 }
+
 fan_vec2 fan_vec2_negate(fan_vec2 v) {
     return (fan_vec2){ -v.x, -v.y };
 }
@@ -118,7 +89,7 @@ fan_vec2 fan_vec2_hadamard(fan_vec2 v1, fan_vec2 v2) {
 
 fan_vec2 fan_vec2_round(fan_vec2 v) {
     return (fan_vec2){ fan_f32_round(v.x), fan_f32_round(v.y) };
-};
+}
 
 float32 fan_inf(void) {
     union { uint32 i; float32 f; } u = { 0x7F800000 };
@@ -142,7 +113,6 @@ float32 fan_f32_abs(float32 x) {
     return fabsf(x);
 }
 
-
 float32 fan_f32_exp(float32 x) {
     union { float32 f; int32 i; } u;
     u.i = (int32)(12102203 * x) + 127 * (1 << 23);
@@ -161,9 +131,14 @@ float32 fan_f32_sqrt(float32 x) {
     return sqrtf(x);
 }
 
+float32 fan_f32_atan2(float32 x, float32 y) {
+    return atan2f(x, y);
+}
+
 float32 fan_f32_rad(float32 deg) {
     return deg * (PI / 180.0f);
 }
+
 float32 fan_f32_deg(float32 rad) {
     return rad * (180.0f / PI);
 }
@@ -172,14 +147,14 @@ fan_vec2 fan_vec2_rotate(fan_vec2 v, float32 angle) {
     float32 cos_a = fan_f32_cos(angle);
     float32 sin_a = fan_f32_sin(angle);
 
-    return (fan_vec2) {
+    return (fan_vec2){
         v.x * cos_a - v.y * sin_a,
         v.x * sin_a + v.y * cos_a
     };
 }
 
 fan_vec2 fan_vec2_lerp(fan_vec2 v1, float32 t, fan_vec2 v2) {
-    return (fan_vec2) {
+    return (fan_vec2){
         fan_f32_lerp(v1.x, t, v2.x),
         fan_f32_lerp(v1.y, t, v2.y)
     };
@@ -203,7 +178,7 @@ void fan_rect_f32_print_(fan_rect_f32 r, const char8 *name) {
 
 fan_matrix fan_matrix_create_(ssize rows, ssize cols, int32 *data) {
     fan_matrix mat = { .cols = cols, .rows = rows, .V = data };
-return mat;
+    return mat;
 }
 
 void fan_matrix_fill(fan_matrix mat, int32 x) {
@@ -224,7 +199,7 @@ void fan_matrix_randomize(fan_matrix mat, int32 start, int32 end) {
     }
 }
 
-inline bool32 fan_rect_i32_valid(fan_rect_i32 rect) {
+bool32 fan_rect_i32_valid(fan_rect_i32 rect) {
     return rect.x >= 0 && rect.y >= 0 && rect.w >= 0 && rect.h >= 0;
 }
 
@@ -261,109 +236,10 @@ fan_rect_i32 fan_rect_i32_bounding(fan_rect_i32 a, fan_rect_i32 b) {
     };
 }
 
-inline bool32 fan_rect_i32_equals(fan_rect_i32 a, fan_rect_i32 b) {
-    return a.x == b.x &&
-           a.y == b.y &&
-           a.w == b.w &&
-           a.h == b.h;
+bool32 fan_rect_i32_equals(fan_rect_i32 a, fan_rect_i32 b) {
+    return a.x == b.x && a.y == b.y && a.w == b.w && a.h == b.h;
 }
 
-inline bool32 fan_rect_i32_contains(fan_rect_i32 r, int32 x, int32 y) {
-    return x >= r.x &&
-           y >= r.y &&
-           x <  r.x + r.w &&
-           y <  r.y + r.h;
-}
-
-float32 fan_f32_atan2(float32 x, float32 y) {
-    return atan2f(x, y);
-}
-#endif
-
-inline void fan_dsl_array_append(fan_allocator *mem, fan_dsl_token_array *arr, fan_dsl_token x) {
-    assume(mem->resize != nullptr);
-    if (arr->size >= arr->capacity) {
-        ssize new_cap = max(arr->capacity * 2, FAN_ARRAY_INITIAL_CAPACITY) * sizeof(fan_dsl_token);
-        fan_dsl_token *new_data = mem->resize(mem->ctx, arr->data, arr->capacity, new_cap);
-        assume(new_data != nullptr);
-        arr->data = new_data;
-        arr->capacity = new_cap;
-    }
-    arr->data[arr->size++] = x;
-}
-
-fan_dsl_token_array fan_dsl_tokenize(fan_allocator *mem, fan_str8 buf) {
-    fan_dsl_token_array result = {};
-    while (true) {
-        buf = fan_str8_triml(buf);
-        fan_cutstr8 cut;
-
-        cut = fan_str8_cut(buf, ' ');
-        if (!cut.ok) break;
-        fan_dsl_token type = { FanToken_TYPE, cut.head };
-        buf = fan_str8_triml(cut.tail);
-
-        fan_dsl_array_append(mem, &result, type);
-
-        cut = fan_str8_cut(buf, ' ');
-        if (!cut.ok) break;
-        fan_dsl_token name = { FanToken_NAME, cut.head };
-        buf = fan_str8_triml(cut.tail);
-
-        fan_dsl_array_append(mem, &result, name);
-
-        cut = fan_str8_cut(buf, ' ');
-        if (!cut.ok) break;
-        assume(fan_str8_equals(cut.head, fan_str8_cstr("{")));
-        fan_dsl_token lb = { FanToken_LBRACKET, cut.head };
-        buf = fan_str8_triml(cut.tail);
-
-        fan_dsl_array_append(mem, &result, lb);
-
-        // TODO(liam): below cut fails to find end of file.
-        cut = fan_str8_cut(buf, ' ');
-        if (!cut.ok) break;
-        assume(fan_str8_equals(cut.head, fan_str8_cstr("}")));
-        fan_dsl_token rb = { FanToken_RBRACKET, cut.head };
-        buf = fan_str8_triml(cut.tail);
-
-        fan_dsl_array_append(mem, &result, rb);
-
-        break;
-    }
-
-    for (ssize i = 0; i < result.size; i++) {
-        fan_str8 dat = result.data[i].literal;
-        printf("LITERAL: %.*s\n", (int32)dat.length, dat.data);
-    }
-
-    return result;
-}
-
-// NOTE(liam): loads all assets within a directory AS sprites.
-void fan_sprite_load(fan_asset_sprite_entry *sprites, fan_allocator *mem, char8 *const path) {
-    fan_ht_hmdefault(sprites, fan_texture_load("404.png"));
-
-    struct dirent *dp;
-    DIR *dir = opendir(path);
-    assert(dir);
-
-    char8 full_path[262];
-
-    uint32 i = 0;
-    while ((dp = readdir(dir))) {
-        if (i > 1) {
-            snprintf(full_path, sizeof(full_path), "%s/%s", path, dp->d_name);
-            char8 name[262];
-            strncpy(name, dp->d_name, sizeof(name));
-            name[sizeof(name) - 1] = '\0';
-            strtok(name, ".");
-            fan_ht_shput(sprites, strdup(name), fan_texture_load(full_path));
-        }
-        i++;
-    }
-}
-
-static inline fan_texture fan_sprite_get(fan_asset_sprite_entry *sprites, char8 *const name) {
-    return fan_ht_shget(sprites, name);
+bool32 fan_rect_i32_contains(fan_rect_i32 r, int32 x, int32 y) {
+    return x >= r.x && y >= r.y && x < r.x + r.w && y < r.y + r.h;
 }

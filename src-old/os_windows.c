@@ -1,11 +1,5 @@
 
-#define CloseWindow WinCloseWindow
-#define ShowCursor WinShowCursor
-#define Rectangle WinRectangle
 #include <windows.h>
-#undef CloseWindow
-#undef ShowCursor
-#undef Rectangle
 #include <stdio.h>
 #include "os.h"
 
@@ -94,6 +88,10 @@ bool32 fan_file_time_last_written(const char *path, uint64 *last_ms) {
     return 0;
 }
 
+void fan_os_wait(uint32 ms) {
+    Sleep(ms);
+}
+
 fan_str8 fan_os_read(fan_allocator *mem, const char *path) {
     fan_str8 result = {};
     HANDLE file = CreateFileA(path,
@@ -148,3 +146,4 @@ fan_str8 fan_os_read(fan_allocator *mem, const char *path) {
 
     return result;
 }
+

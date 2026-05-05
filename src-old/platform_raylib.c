@@ -75,10 +75,6 @@ void fan_window_close(void) {
     CloseWindow();
 }
 
-void fan_os_wait(uint32 ms) {
-    WaitTime((float)ms / 1000.0f);
-}
-
 int32 fan_window_shouldclose(void) {
     int32 result = WindowShouldClose();
     return result;
