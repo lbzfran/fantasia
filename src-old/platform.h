@@ -3,10 +3,6 @@
 
 #include "os.h"
 
-#include "core.h"
-
-#if 0
-
 typedef struct {
     float32 x;
     float32 y;
@@ -54,8 +50,6 @@ typedef struct {
     float32  zoom;
 } fan_camera2D;
 
-#endif
-
 typedef struct {
     void *buffer;
     void *processor;
@@ -77,6 +71,15 @@ typedef struct {
     int32             ctx_type;
     void             *ctx_data;
 } fan_music;
+
+typedef struct {
+    char8 *key;
+    fan_texture value;
+} fan_asset_sprite_entry;
+
+typedef struct {
+    fan_asset_sprite_entry *sprites;
+} fan_asset;
 
 typedef enum {
     FanKey_NULL            = 0,        // Key: NULL, used for no key pressed

@@ -32,7 +32,7 @@ bool32 fan_os_write(fan_pipe pipe, void *data, ssize length) {
     return (bool32)write(pipe, data, length);
 }
 
-bool32 fan_file_copy(const char *src, const char *dst) {
+bool32 fan_os_file_copy(const char *src, const char *dst) {
     int32 fd_src = open(src, O_RDONLY);
     if (fd_src == -1) {
         return false;
@@ -70,14 +70,14 @@ bool32 fan_file_copy(const char *src, const char *dst) {
     return bytes_read == 0; // success if EOF, failure if -1
 }
 
-bool32 fan_file_delete(const char *path) {
+bool32 fan_os_file_delete(const char *path) {
     if (remove(path)) {
         return true;
     }
     return false;
 }
 
-bool32 fan_file_time_last_written(const char *path, uint64 *last_ms) {
+bool32 fan_os_file_time_last_written(const char *path, uint64 *last_ms) {
     struct stat st;
 
     if (stat(path, &st) != 0) {
@@ -97,4 +97,21 @@ bool32 fan_file_time_last_written(const char *path, uint64 *last_ms) {
     }
 
     return 0;
+}
+
+void fan_os_wait(uint32 ms) {
+    struct timespec ts;
+    int res;
+
+    if (ms < 0) {
+        // errno = EINVAL;
+        // return -1;
+    }
+
+    ts.tv_sec = ms / 1000;
+    ts.tv_nsec = (ms % 1000) * 1000000;
+
+    do {
+        res = nanosleep(&ts, &ts);
+    } while (res);
 }

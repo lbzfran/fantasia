@@ -7,6 +7,9 @@ BIN := fantasia
 EXT :=
 LIBEXT :=
 
+SRC_DIR := src
+APP_SRC := $(SRC_DIR)/main.c $(SRC_DIR)/runtime.c
+
 BUILD_DIR := build
 BIN_DIR := bin
 
@@ -42,18 +45,18 @@ BINARY := $(BIN_DIR)/$(BIN)$(EXT)
 GAME_LIB := libgame$(LIBEXT)
 PLATFORM_LIB := libplatform$(LIBEXT)
 
-all: src/main.c $(BIN_DIR)/$(GAME_LIB) $(BIN_DIR)/$(PLATFORM_LIB)
-	$(CC) $(CFLAGS) -o $(BINARY) ./src/main.c $(LDFLAGS) $(MAIN_FLAGS)
+all: $(APP_SRC) $(BIN_DIR)/$(GAME_LIB) $(BIN_DIR)/$(PLATFORM_LIB)
+	$(CC) $(CFLAGS) -o $(BINARY) ./$(SRC_DIR)/main.c ./$(SRC_DIR)/runtime.c $(LDFLAGS) $(MAIN_FLAGS)
 
-$(BIN_DIR)/$(GAME_LIB): src/game.c $(BIN_DIR)/$(PLATFORM_LIB)
+$(BIN_DIR)/$(GAME_LIB): $(SRC_DIR)/game.c $(BIN_DIR)/$(PLATFORM_LIB)
 	$(CC) $(CFLAGS) $(LIBFLAGS) -o $(BIN_DIR)/$(GAME_LIB) $< $(LDFLAGS)
 
-$(BIN_DIR)/$(PLATFORM_LIB): src/platform.c
-	$(CC) $(CFLAGS) $(LIBFLAGS) -DPLATFORM_BUILD_SHARED -o $(BIN_DIR)/$(PLATFORM_LIB) src/platform.c src/os.c $(PLATFORM_FLAGS)
+$(BIN_DIR)/$(PLATFORM_LIB): $(SRC_DIR)/platform.c
+	$(CC) $(CFLAGS) $(LIBFLAGS) -DPLATFORM_BUILD_SHARED -o $(BIN_DIR)/$(PLATFORM_LIB) $(SRC_DIR)/platform.c $(PLATFORM_FLAGS)
 
 game:
 	rm $(BIN_DIR)/$(GAME_LIB)
-	$(CC) $(CFLAGS) $(LIBFLAGS) -o $(BIN_DIR)/$(GAME_LIB) src/game.c $(LDFLAGS)
+	$(CC) $(CFLAGS) $(LIBFLAGS) -o $(BIN_DIR)/$(GAME_LIB) $(SRC_DIR)/game.c $(LDFLAGS)
 
 clean:
 	rm -f $(BINARY) $(BIN_DIR)/$(GAME_LIB) $(BIN_DIR)/$(PLATFORM_LIB)
