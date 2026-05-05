@@ -57,6 +57,7 @@ typedef struct {
 
 typedef struct {
     fan_asset_sprite_entry *sprites;
+    fan_texture             default_sprite;
 } fan_asset;
 
 #define fan_color_WHITE   (fan_color){ 210, 210, 210, 255 }

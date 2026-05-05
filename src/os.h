@@ -228,6 +228,7 @@ FAN_API void fan_str8_printn(fan_fbuf8 *, fan_str8, uchar8);
 FAN_API void fan_str8_println(fan_fbuf8 *, fan_str8);
 
 FAN_API fan_str8 fan_str8_span(uchar8 *, uchar8 *);
+FAN_API fan_str8 fan_str8_cstrv(const char8 *);
 FAN_API int32 fan_str8_equals(fan_str8, fan_str8);
 // trims spaces
 FAN_API fan_str8 fan_str8_triml(fan_str8);

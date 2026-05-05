@@ -9,7 +9,7 @@
 #include "platform.h"
 
 static inline int32 SpawnWanderer(World *world, fan_vec2 position, fan_vec2 direction, int32 question_id) {
-    fan_texture tex_girl_02 = fan_texture_load("./resources/Citizens/Female/Khali/Khali.png");
+    fan_texture tex_girl_02 = fan_sprite_get(&world->assets, "Khali");
     fan_vec2 citizen_size = (fan_vec2){ (float32)16.0f, (float32)16.0f };
 
     fan_component_add(&world->c_transform, world->entity_count,
@@ -46,7 +46,7 @@ static inline int32 SpawnWanderer(World *world, fan_vec2 position, fan_vec2 dire
     return id;
 }
 
-static inline int32 SpawnCamera(World *world, fan_vec2 position, int32 target_id) {
+static inline void SpawnCamera(World *world, fan_vec2 position, int32 target_id) {
     fan_component_add(&world->c_transform, world->entity_count,
         .position = position,
     );
@@ -63,7 +63,7 @@ static inline int32 SpawnCamera(World *world, fan_vec2 position, int32 target_id
 }
 
 static inline int32 SpawnPlayer(World *world, fan_vec2 position, fan_vec2 direction) {
-    fan_texture tex_girl_01 = fan_texture_load("./resources/Citizens/Female/Hana/Hana.png");
+    fan_texture tex_girl_01 = fan_sprite_get(&world->assets, "Hana");
     fan_vec2 citizen_size = (fan_vec2){ (float32)16.0f, (float32)16.0f };
 
     fan_component_add(&world->c_transform, world->entity_count,
@@ -132,12 +132,6 @@ static inline void SpawnBullet(World *world, fan_vec2 position, fan_vec2 directi
 }
 
 global void SceneMain(World *world) {
-    fan_texture tex_sprite = fan_texture_load("./resources/Sprite-0001.png");
-
-    fan_texture tex_girl_01 = fan_texture_load("./resources/Citizens/Female/Hana/Hana.png");
-    fan_texture tex_girl_02 = fan_texture_load("./resources/Citizens/Female/Khali/Khali.png");
-    fan_texture tex_girl_03 = fan_texture_load("./resources/Citizens/Male/Artun/Artun.png");
-
     world->tilesets[0] = fan_texture_load("./resources/tileset_01.png");
     // TODO(liam): initialize a basic tilemap.
     // world->map.tiles = ...;

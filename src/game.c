@@ -927,7 +927,10 @@ void GameInit(fan_allocator *a, World *world, GameState *state) {
     world->split.static_entities  = a->make(a->ctx, split_size);
     world->split.static_capacity  = split_size;
 
+    fan_sprite_init(&world->assets, fan_texture_load("./resources/Citizens/Male/Artun/Artun.png"));
     world->tilesets = a->make(a->ctx, sizeof(fan_texture) * 2);
+
+    fan_sprite_load(&world->assets, a, "./resources/Citizens/Female");
 
 	int32 map_size_x = 8;
     int32 map_size_y = 8;

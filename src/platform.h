@@ -5,57 +5,6 @@
 
 #include "core.h"
 
-#if 0
-
-typedef struct {
-    float32 x;
-    float32 y;
-} fan_vec2, fan_vec2_f32;
-
-typedef struct {
-    int32 r;
-    int32 g;
-    int32 b;
-    int32 a;
-} fan_color;
-
-typedef struct {
-    int32 x, y, w, h;
-} fan_rect_int32, fan_rect_i32;
-
-typedef struct {
-    float32 x, y, w, h;
-} fan_rect, fan_rect_float32, fan_rect_f32;
-
-typedef struct {
-    ssize  rows;
-    ssize  cols;
-    int32 *V;
-} fan_matrix, fan_matrix_i32;
-
-typedef struct {
-    uint32 id;
-    int32  width;
-    int32  height;
-    int32  mipmaps;
-    int32  format;
-} fan_texture;
-
-typedef struct {
-    int32       id;
-    fan_texture texture;
-    fan_texture depth;
-} fan_rtexture;
-
-typedef struct {
-    fan_vec2 target;
-    fan_vec2 offset;
-    float32  rotation;
-    float32  zoom;
-} fan_camera2D;
-
-#endif
-
 typedef struct {
     void *buffer;
     void *processor;
@@ -77,6 +26,10 @@ typedef struct {
     int32             ctx_type;
     void             *ctx_data;
 } fan_music;
+
+FAN_API void fan_sprite_load(fan_asset *assets, fan_allocator *mem, char8 *const path);
+FAN_API void fan_sprite_init(fan_asset *assets, fan_texture fallback);
+FAN_API fan_texture fan_sprite_get(fan_asset *assets, char8 *const name);
 
 typedef enum {
     FanKey_NULL            = 0,        // Key: NULL, used for no key pressed

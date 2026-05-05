@@ -214,6 +214,10 @@ fan_str8 fan_str8_span(uchar8 *beg, uchar8 *end) {
     return r;
 }
 
+fan_str8 fan_str8_cstrv(const char8 *s) {
+    return (fan_str8){ (uchar8 *)s, (ssize)strlen(s) };
+}
+
 int fan_str8_equals(fan_str8 a, fan_str8 b) {
     return a.length==b.length && (!a.length || !memcmp(a.data, b.data, a.length));
 }
@@ -248,4 +252,3 @@ fan_cutstr8 fan_str8_cut(fan_str8 s, uchar8 c) {
     r.tail = fan_str8_span(cut+r.ok, end);
     return r;
 }
-

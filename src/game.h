@@ -344,6 +344,8 @@ typedef struct {
     AnimationData         *anim_table;
     ssize                  anim_table_size;
 
+    fan_asset               assets;
+
     EntitySplit            split;
 	bool32                 update_entity_split;
 

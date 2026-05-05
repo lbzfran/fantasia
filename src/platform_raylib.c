@@ -67,7 +67,6 @@ RenderTexture fan_rtexture_rl(fan_rtexture rtx) {
 }
 
 void fan_window_create(int32 width, int32 height, const char *title) {
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
     InitWindow(width, height, title);
 }
 
