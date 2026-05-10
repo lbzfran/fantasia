@@ -274,15 +274,13 @@ bool32 AttackInArc(fan_vec2 target, fan_vec2 facing, float32 arc_angle, float32 
 }
 
 void AttackSystem(CAttack *a, CMovement *m, CTransform *t, CMovement *o_m, CTransform *o_t, float32 dt) {
+    (void)dt;
     if (not a->attacking) return;
 
     if (a->cast_timer > 0.0f) {
-        // printf("cast_timer: %f\n", a->cast_timer);
-        a->cast_timer = max(a->cast_timer - dt, 0.0f);
         return;
     }
 
-    a->timer += dt;
     float32 progress = a->timer / a->swing_time;
 
     if (progress >= 1.0f) {
@@ -312,6 +310,22 @@ void AttackSystem(CAttack *a, CMovement *m, CTransform *t, CMovement *o_m, CTran
                 o_t->rotation = fan_vec2_dot(knockback_dir, m->direction) >= 0.0f ? knockback_rotation : -knockback_rotation;
             }
         }
+    }
+}
+
+void AttackTick(CAttack *a, CMovement *m, float32 dt) {
+    if (not a->attacking) return;
+
+    if (a->cast_timer > 0.0f) {
+        a->cast_timer = max(a->cast_timer - dt, 0.0f);
+        return;
+    }
+
+    a->timer += dt;
+    if (a->timer / a->swing_time >= 1.0f) {
+        a->attacking = false;
+        a->timer = 0.0f;
+        m->lock_time = coalesce(a->cooldown_time, 0.2f);
     }
 }
 
@@ -562,6 +576,15 @@ void UpdateEntities(
                 }
             }
 
+            if (attack and id == world->spec_id.player and state->player_input.actions[0] and not attack->attacking) {
+                attack->attacking = true;
+                attack->cast_timer = 0.2f;
+            }
+
+            if (attack) {
+                AttackTick(attack, move, fixed_dt);
+            }
+
             if (fan_rect_f32_isempty(zone)) {
                 zone = (fan_rect_f32) {
                     .x = transform->position.x,
@@ -602,10 +625,6 @@ void UpdateEntities(
                     }
 
                     if (attack) {
-                        if (id == world->spec_id.player and state->player_input.actions[0] and not attack->attacking) {
-                            attack->attacking = true;
-                            attack->cast_timer = 0.2f;
-                        }
                         if (move->lock_time <= 0.0f) {
                             AttackSystem(attack, move, transform, other_move, other_transform, fixed_dt);
                         }
@@ -661,9 +680,6 @@ void UpdateEntities(
                     }
 
                     if (attack) {
-                        if (id == world->spec_id.player and state->player_input.actions[0]) {
-                            attack->attacking = true;
-                        }
                         AttackSystem(attack, move, transform, other_move, other_transform, fixed_dt);
                     }
 
