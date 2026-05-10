@@ -38,6 +38,7 @@ typedef struct {
 typedef struct {
     fan_vec2   velocity_input;
     fan_vec2   velocity_force;
+    fan_vec2   knockback_force;
 
     fan_vec2   direction;
 

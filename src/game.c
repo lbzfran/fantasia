@@ -32,25 +32,31 @@ void MovementSystem(CMovement *m, CTransform *t, fan_vec2 direction, fan_rect_i3
         m->initialized = true;
     }
 
-    fan_vec2 velocity;
+    fan_vec2 velocity = fan_vec2_zero();
+
+    if (fan_vec2_length(m->knockback_force) > 0.0f) {
+        m->velocity_force = fan_vec2_add(m->velocity_force, m->knockback_force);
+        m->knockback_force = fan_vec2_zero();
+    }
+
     if (fan_vec2_length(m->velocity_force) > 0.001f) {
-        velocity            = m->velocity_force;
-        float32 damp_factor = 0.98f;
-        m->velocity_force   = fan_vec2_scale(m->velocity_force, damp_factor);
-        m->lock_time        = 0.15f;
+        velocity            = fan_vec2_add(velocity, m->velocity_force);
+        float32 damp_factor = 8.0f;
+        m->velocity_force   = fan_vec2_lerp(m->velocity_force, damp_factor * dt, fan_vec2_zero());
     }
-    else {
-        m->velocity_input = fan_vec2_zero();
-        if (m->lock_time > 0.0f) {
-            m->lock_time = max(m->lock_time - dt, 0.0f);
-        }
-        else if (fan_vec2_length(direction) > 0.0f) {
-            m->direction      = direction;
-            direction         = fan_vec2_normalize(direction);
-            m->velocity_input = fan_vec2_scale(direction, m->speed);
-        }
-        velocity = m->velocity_input;
+
+    m->velocity_input = fan_vec2_zero();
+
+    if (m->lock_time > 0.0f) {
+        m->lock_time = max(m->lock_time - dt, 0.0f);
     }
+
+    if (fan_vec2_length(direction) > 0.0f) {
+        m->direction      = direction;
+        direction         = fan_vec2_normalize(direction);
+        m->velocity_input = fan_vec2_scale(direction, m->speed);
+    }
+    velocity = fan_vec2_add(velocity, m->velocity_input);
 
     t->position = fan_vec2_add(t->position, fan_vec2_scale(velocity, dt));
 
@@ -295,15 +301,15 @@ void AttackSystem(CAttack *a, CMovement *m, CTransform *t, CMovement *o_m, CTran
     if (dist_squared <= a->attack_range * a->attack_range) {
         if (AttackInArc(target_dist, m->direction, a->arc_angle, progress)) {
             if (dist_squared > 0.000001f) {
-                float32 knockback_base_factor = 0.5f;
                 fan_vec2 knockback_dir  = fan_vec2_scale(target_dist, 1.0f / fan_f32_sqrt(dist_squared));
-                fan_vec2 knockback_dist = fan_vec2_scale(knockback_dir, a->knockback * knockback_base_factor);
-                o_m->velocity_force = fan_vec2_add(o_m->velocity_force, knockback_dist);
+                fan_vec2 knockback_dist = fan_vec2_scale(knockback_dir, a->knockback * 0.1f);
+                o_m->knockback_force = fan_vec2_add(o_m->knockback_force, knockback_dist);
 
                 // :knockback animation
-                // o_t->scale = fan_vec2_scale(o_t->default_scale, 1.1f);
-                float32 other_rotation_table[2] = { -25.0f, 25.0f };
-                o_t->rotation = other_rotation_table[fan_random_int(0, 1)];
+                o_t->scale = fan_vec2_scale(o_t->default_scale, 0.9f);
+                float32 distance_ratio = clamp(fan_f32_sqrt(dist_squared), 0.0f, 1.0f);
+                float32 knockback_rotation = 45.0f * (1.0f - distance_ratio);
+                o_t->rotation = fan_vec2_dot(knockback_dir, m->direction) >= 0.0f ? knockback_rotation : -knockback_rotation;
             }
         }
     }
@@ -377,7 +383,7 @@ void UpdateEntities(
         }
 
         // NOTE(liam): unconditional transform system for dynamic entities.
-        transform->scale    = fan_vec2_lerp(transform->scale,   dt, transform->default_scale);
+        transform->scale    = fan_vec2_lerp(transform->scale,   7.5f * dt, transform->default_scale);
         transform->rotation = fan_f32_lerp(transform->rotation, 15.0f * dt, transform->default_rotation);
     }
 
