@@ -3,6 +3,9 @@
 
 #include "os.h"
 
+#define coalesce(a, b)      ((a) ? (a) : (b))
+#define init_if_null(a, x)  ((a) = coalesce((a), (x)))
+
 typedef struct {
     float32 x;
     float32 y;
@@ -79,6 +82,7 @@ FAN_API int32 fan_f32_equals(float32 x, float32 y);
 FAN_API float32 fan_inf(void);
 FAN_API float32 fan_neg_inf(void);
 FAN_API float32 fan_f32_exp(float32);
+FAN_API bool32 fan_f32_isvalid(float32);
 
 FAN_API float32 fan_f32_round(float32);
 FAN_API int32 fan_f32_truncate(float32);

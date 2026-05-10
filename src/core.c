@@ -3,51 +3,55 @@
 
 #include <math.h>
 
-int32 fan_i32_clamp(int32 v, int32 min, int32 max) {
+inline bool32 fan_f32_isvalid(float32 value) {
+    return value == value && value != fan_inf() && value != fan_neg_inf();
+}
+
+inline int32 fan_i32_clamp(int32 v, int32 min, int32 max) {
     return v < min ? min : ((v > max) ? max : v);
 }
 
-int32 fan_rect_i32_isempty(fan_rect_i32 rect) {
+inline int32 fan_rect_i32_isempty(fan_rect_i32 rect) {
     return !(rect.x || rect.y || rect.w || rect.h);
 }
 
-int32 fan_rect_f32_isempty(fan_rect_f32 rect) {
+inline int32 fan_rect_f32_isempty(fan_rect_f32 rect) {
     return fan_f32_equals(rect.x, 0.0f) &&
            fan_f32_equals(rect.y, 0.0f) &&
            fan_f32_equals(rect.w, 0.0f) &&
            fan_f32_equals(rect.h, 0.0f);
 }
 
-float32 fan_f32_lerp(float32 a, float32 t, float32 b) {
+inline float32 fan_f32_lerp(float32 a, float32 t, float32 b) {
     return a + (b - a) * t;
 }
 
-int32 fan_f32_equals(float32 x, float32 y) {
+inline int32 fan_f32_equals(float32 x, float32 y) {
     float32 epsilon = 0.000001f;
     return (fabsf(x - y)) <= (epsilon * fmaxf(1.0f, fmaxf(fabsf(x), fabsf(y))));
 }
 
-fan_vec2 fan_vec2_zero(void) {
+inline fan_vec2 fan_vec2_zero(void) {
     return (fan_vec2){ 0.0f, 0.0f };
 }
 
-fan_vec2 fan_vec2_one(void) {
+inline fan_vec2 fan_vec2_one(void) {
     return (fan_vec2){ 1.0f, 1.0f };
 }
 
-fan_vec2 fan_vec2_add(fan_vec2 v1, fan_vec2 v2) {
+inline fan_vec2 fan_vec2_add(fan_vec2 v1, fan_vec2 v2) {
     return (fan_vec2){ v1.x + v2.x, v1.y + v2.y };
 }
 
-fan_vec2 fan_vec2_addv(fan_vec2 v, float32 x) {
+inline fan_vec2 fan_vec2_addv(fan_vec2 v, float32 x) {
     return (fan_vec2){ v.x + x, v.y + x };
 }
 
-fan_vec2 fan_vec2_sub(fan_vec2 v1, fan_vec2 v2) {
+inline fan_vec2 fan_vec2_sub(fan_vec2 v1, fan_vec2 v2) {
     return (fan_vec2){ v1.x - v2.x, v1.y - v2.y };
 }
 
-fan_vec2 fan_vec2_subv(fan_vec2 v, float32 x) {
+inline fan_vec2 fan_vec2_subv(fan_vec2 v, float32 x) {
     return (fan_vec2){ v.x - x, v.y - x };
 }
 

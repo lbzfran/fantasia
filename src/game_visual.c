@@ -221,8 +221,8 @@ void RenderSystem(
         fan_draw_rectv(screen_pos, screen_scale, fan_vec2_zero(), 0.0f, s->color);
     }
     else {
-        float32 width  = (tx->rect.w)  ? (float32)tx->rect.w: (float32)tx->texture.width;
-        float32 height = (tx->rect.h) ? (float32)tx->rect.h: (float32)tx->texture.height;
+        float32 width  = (tx->rect.w) ? (float32)tx->rect.w : (float32)tx->texture.width;
+        float32 height = (tx->rect.h) ? (float32)tx->rect.h : (float32)tx->texture.height;
 
         if (m) {
             if (flags & RenderFlag_FlipX) {
@@ -272,7 +272,7 @@ void RenderSystem(
             src,
             dst,
             fan_vec2_zero(),
-            0.0f,
+            t->rotation,
             s->color
         );
     }
@@ -520,7 +520,9 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
         };
     }
 
-    SortRender(render_array, 0, world->c_shape.size - 1);
+    if (render_entry_count > 1) {
+        SortRender(render_array, 0, render_entry_count - 1);
+    }
 
     fan_mode_texture_begin(state->rendermap);
         fan_draw_clear(fan_color_WHITE);
@@ -532,15 +534,6 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
             if (id == -1)
                 continue;
 
-            // ssize shape_idx        = world->c_shape.sparse[id];
-            // ssize transform_idx    = world->c_transform.sparse[id];
-            // ssize move_idx         = world->c_movement.sparse[id];
-            // ssize animation_idx    = world->c_animation.sparse[id];
-            // ssize texture_idx      = world->c_texture.sparse[id];
-            // ssize attack_idx       = world->c_attack.sparse[id];
-
-            // (void)tag_bg;
-
             CShape         *shape       =  fan_component_get_fast(&world->c_shape, id);
             CTransform     *transform   =  fan_component_get_fast(&world->c_transform, id);
             CMovement      *move        =  fan_component_get(&world->c_movement, id);
@@ -551,7 +544,6 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
             bool32          interacted  =  fan_component_get_value(&world->c_interactable, id);
             fan_rect        zone        =  fan_component_get_value_or_else(&world->c_zone, id, (fan_rect){ 0 });
             CText          *text        =  fan_component_get(&world->c_text, id);
-            // ssize           tag_bg      = *fan_component_get(&world->c_tag_background, id);
 
             if (not shape->visible) {
                 continue;

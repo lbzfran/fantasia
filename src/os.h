@@ -98,9 +98,6 @@ typedef nullptr_t nullptr;
 #define nullptr null
 #endif
 
-#define coalesce(a, b)      ((a) ? (a) : (b))
-#define init_if_null(a, x)  ((a) = coalesce((a), (x)))
-
 #if !defined(true) && !defined(false)
 # define true    1
 # define false   0

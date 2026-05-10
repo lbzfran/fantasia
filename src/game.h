@@ -6,7 +6,7 @@
 
 #define istagged(t) (t >= 0 ? true : false)
 #define TILE_SIZE 64
-#define MAX_ENTITY_CAP kilobytes(2)
+#define MAX_ENTITY_CAP kilobytes(1)
 
 typedef enum {
     MovementFlag_Immovable     = (1 << 0),
@@ -19,6 +19,9 @@ typedef struct {
     fan_vec2   position;
     fan_vec2   scale;
     float32    rotation;
+
+    fan_vec2   default_scale;
+    float32    default_rotation;
 
     bool32     initialized;
 } CTransform;

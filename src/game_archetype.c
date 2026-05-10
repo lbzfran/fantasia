@@ -8,12 +8,36 @@
 #include "os.h"
 #include "platform.h"
 
+static inline int32 SpawnBackground(World *world) {
+    fan_component_add(&world->c_transform,  world->entity_count,
+        .position = (fan_vec2){  0, 5 },
+        .scale = (fan_vec2){ 10, 6 },
+    );
+    fan_component_add(&world->c_shape,      world->entity_count,
+        .layer = 1,
+        .color = (fan_color){ 155, 155, 155, 255 },
+    );
+    fan_component_add(&world->c_movement,   world->entity_count,
+        .flags = MovementFlag_NoCollision,
+    );
+    fan_component_add(&world->c_tag_background, world->entity_count);
+    world->spec_id.tilemap = world->entity_count;
+
+    int32 id = world->entity_count;
+    world->entity_count++;
+    world->update_entity_split = true;
+
+    return id;
+}
+
 static inline int32 SpawnWanderer(World *world, fan_vec2 position, fan_vec2 direction, int32 question_id) {
     fan_texture tex_girl_02 = fan_sprite_get(&world->assets, "Khali");
     fan_vec2 citizen_size = (fan_vec2){ (float32)16.0f, (float32)16.0f };
 
     fan_component_add(&world->c_transform, world->entity_count,
-                     .position = position);
+                     .position = position,
+                     .scale = fan_vec2_one()
+    );
     fan_component_add(&world->c_shape,     world->entity_count,
         .color = (fan_color){ 50, 255, 255, 255 },
     );
@@ -49,6 +73,7 @@ static inline int32 SpawnWanderer(World *world, fan_vec2 position, fan_vec2 dire
 static inline void SpawnCamera(World *world, fan_vec2 position, int32 target_id) {
     fan_component_add(&world->c_transform, world->entity_count,
         .position = position,
+        .scale = fan_vec2_one()
     );
     fan_component_add(&world->c_movement, world->entity_count,
         .speed = 5.0f,
@@ -67,7 +92,9 @@ static inline int32 SpawnPlayer(World *world, fan_vec2 position, fan_vec2 direct
     fan_vec2 citizen_size = (fan_vec2){ (float32)16.0f, (float32)16.0f };
 
     fan_component_add(&world->c_transform, world->entity_count,
-                     .position = position);
+                     .position = position,
+                     .scale = fan_vec2_one()
+    );
     fan_component_add(&world->c_shape,     world->entity_count);
     fan_component_add(&world->c_movement,  world->entity_count,
         .direction = direction
@@ -277,6 +304,7 @@ global void SceneMain(World *world) {
     // what tile to render based on its four neighbors from
     // the world grid.
 
+    SpawnBackground(world);
     SpawnPlayer(world, fan_vec2_zero(), fan_vec2_one());
     SpawnCamera(world, fan_vec2_zero(), world->spec_id.player);
     SpawnWanderer(world, fan_vec2_zero(), fan_vec2_one(), 0);
@@ -301,21 +329,7 @@ global void SceneMain(World *world) {
     // fan_component_add(&world->c_tag_enemy,    world->entity_count);
     // world->entity_count++;
     //
-    fan_component_add(&world->c_transform,  world->entity_count,
-        .position = (fan_vec2){  0, 5 },
-        .scale    = (fan_vec2){ 10, 6 },
-    );
-    fan_component_add(&world->c_shape,      world->entity_count,
-        .layer = 1,
-        .color = (fan_color){ 155, 155, 155, 255 },
-    );
-    fan_component_add(&world->c_movement,   world->entity_count,
-        .flags = MovementFlag_NoCollision,
-    );
-    fan_component_add(&world->c_tag_background, world->entity_count);
-    world->spec_id.tilemap = world->entity_count;
-    world->entity_count++;
-    //
+
     // fan_component_add(&world->c_transform, world->entity_count,
     //     .position = (fan_vec2){ 200.0f, 300.0f },
     //     .scale = (fan_vec2){ 400.0f, 150.0f }

@@ -4,13 +4,29 @@
 #include "game_visual.c"
 #include "game_archetype.c"
 
+// static inline void RepairTransform(CTransform *transform) {
+//     if (not fan_f32_isvalid(transform->position.x)) transform->position.x = 0.0f;
+//     if (not fan_f32_isvalid(transform->position.y)) transform->position.y = 0.0f;
+//
+//     if (not fan_f32_isvalid(transform->scale.x) or transform->scale.x == 0.0f) transform->scale.x = 1.0f;
+//     if (not fan_f32_isvalid(transform->scale.y) or transform->scale.y == 0.0f) transform->scale.y = 1.0f;
+//
+//     if (not fan_f32_isvalid(transform->rotation)) transform->rotation = 0.0f;
+//
+//     if (not fan_f32_isvalid(transform->default_scale.x) or transform->default_scale.x == 0.0f) transform->default_scale.x = transform->scale.x;
+//     if (not fan_f32_isvalid(transform->default_scale.y) or transform->default_scale.y == 0.0f) transform->default_scale.y = transform->scale.y;
+//
+//     if (not fan_f32_isvalid(transform->default_rotation)) transform->default_rotation = transform->rotation;
+// }
+
 void MovementSystem(CMovement *m, CTransform *t, fan_vec2 direction, fan_rect_i32 bound_zone, float32 dt) {
     if (not m->initialized) {
-        init_if_null(m->speed,       4.0f);
-        init_if_null(m->max_speed,   5.0f);
+        if (not fan_f32_isvalid(m->speed) or m->speed == 0.0f) m->speed = 4.0f;
+        if (not fan_f32_isvalid(m->max_speed) or m->max_speed == 0.0f) m->max_speed = 5.0f;
 
-        init_if_null(m->direction.x, 1.0f);
-        init_if_null(m->direction.y, 1.0f);
+        if (not fan_f32_isvalid(m->direction.x) or not fan_f32_isvalid(m->direction.y) or fan_vec2_length(m->direction) == 0.0f) {
+            m->direction = fan_vec2_one();
+        }
 
         m->active      = true;
         m->initialized = true;
@@ -83,6 +99,8 @@ void PhysicsSystem(
     float32 render_height,
     float32 dt
 ) {
+    // RepairTransform(t);
+
     if (not p->initialized) {
         init_if_null(p->last_position.x, t->position.x);
         init_if_null(p->last_position.y, t->position.y);
@@ -276,10 +294,17 @@ void AttackSystem(CAttack *a, CMovement *m, CTransform *t, CMovement *o_m, CTran
 
     if (dist_squared <= a->attack_range * a->attack_range) {
         if (AttackInArc(target_dist, m->direction, a->arc_angle, progress)) {
-            float32 knockback_base_factor = 1.0f;
-            fan_vec2 knockback_dir  = fan_vec2_scale(target_dist, 1.0f / fan_f32_sqrt(dist_squared));
-            fan_vec2 knockback_dist = fan_vec2_scale(knockback_dir, a->knockback * knockback_base_factor);
-            o_m->velocity_force = fan_vec2_add(o_m->velocity_force, knockback_dist);
+            if (dist_squared > 0.000001f) {
+                float32 knockback_base_factor = 0.5f;
+                fan_vec2 knockback_dir  = fan_vec2_scale(target_dist, 1.0f / fan_f32_sqrt(dist_squared));
+                fan_vec2 knockback_dist = fan_vec2_scale(knockback_dir, a->knockback * knockback_base_factor);
+                o_m->velocity_force = fan_vec2_add(o_m->velocity_force, knockback_dist);
+
+                // :knockback animation
+                // o_t->scale = fan_vec2_scale(o_t->default_scale, 1.1f);
+                float32 other_rotation_table[2] = { -25.0f, 25.0f };
+                o_t->rotation = other_rotation_table[fan_random_int(0, 1)];
+            }
         }
     }
 }
@@ -337,24 +362,30 @@ void UpdateEntities(
     static const float32 fixed_dt = 0.00025f;
     static float32 accumulator = 0.0f;
 
+    for (ssize i = 0; i < world->c_transform.size; i++) {
+        ssize id = world->c_transform.dense[i];
+        if (id == -1)
+            continue;
+
+        CTransform *transform = fan_component_get_fast(&world->c_transform, id);
+        // RepairTransform(transform);
+        if (not transform->initialized) {
+            transform->default_scale    = transform->scale;
+            transform->default_rotation = transform->rotation;
+
+            transform->initialized = true;
+        }
+
+        // NOTE(liam): unconditional transform system for dynamic entities.
+        transform->scale    = fan_vec2_lerp(transform->scale,   dt, transform->default_scale);
+        transform->rotation = fan_f32_lerp(transform->rotation, 15.0f * dt, transform->default_rotation);
+    }
+
     EntitySplit *split = &world->split;
     if (world->update_entity_split) {
         printf("Updating Entity Split!\n");
         UpdateEntitySplit(world);
 
-        for (ssize i = 0; i < world->c_transform.size; i++) {
-            ssize id = world->c_transform.dense[i];
-            if (id == -1)
-                continue;
-
-            CTransform *transform = &world->c_transform.data[i];
-            if (not transform->initialized) {
-                init_if_null(transform->scale.x, 1.0f);
-                init_if_null(transform->scale.y, 1.0f);
-
-                transform->initialized = true;
-            }
-        }
         world->update_entity_split = false;
     }
 
@@ -556,6 +587,8 @@ void UpdateEntities(
                     ssize          other_tag_enemy  = fan_component_get_value(&world->c_tag_enemy,    other_id);
                     CQuestion     *other_question   = fan_component_get(&world->c_question,           other_id);
 
+                    // RepairTransform(other_transform);
+
                     if (fan_rect_f32_isempty(other_zone)) {
                         other_zone = (fan_rect_f32) {
                             .x = other_transform->position.x,
@@ -612,6 +645,8 @@ void UpdateEntities(
                     bool32         *other_interacted = fan_component_get(&world->c_interactable,     other_id);
                     fan_rect_f32    other_zone       = fan_component_get_value_or_else(&world->c_zone, other_id, (fan_rect_f32) { 0 });
                     ssize           other_tag_enemy  = fan_component_get_value(&world->c_tag_enemy,  other_id);
+
+                    // RepairTransform(other_transform);
 
                     if (fan_rect_f32_isempty(other_zone)) {
                         other_zone = (fan_rect_f32) {
@@ -979,6 +1014,9 @@ void GameUpdateAndRender(fan_allocator *a, World *world, GameState *state, float
     }
 
     fan_music_update(state->music);
+
+    // CTransform *cam_transform = fan_component_get(&world.c_transform, world.spec_id.camera);
+    // camera.target = fan_vec2_add(cam_transform->position, fan_vec2_scale(cam_transform->scale, 0.5f));
 
     UpdateEntities(world, state, dt);
     RenderEntities(world, state, dt);

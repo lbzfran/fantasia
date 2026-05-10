@@ -79,9 +79,9 @@ int GameMain(void) {
     fan_dev_audio_create();
 
     world.arena = (fan_arena){
-        .data     = heap_allocator.make(null, megabytes(1)),
+        .data     = heap_allocator.make(null, megabytes(2)),
         .size     = 0,
-        .capacity = megabytes(1)
+        .capacity = megabytes(2)
     };
     fan_allocator arena_allocator = {
         .make   = fan_arena_make,
@@ -176,7 +176,7 @@ int GameMain(void) {
             printf("Total Component 'Texture' size/capacity:   \t%td/%td\n", world.c_texture.size,   world.c_texture.capacity);
             printf("Total Component 'Behavior' size/capacity:  \t%td/%td\n", world.c_behavior.size,  world.c_behavior.capacity);
             printf("Total Component 'Animation' size/capacity: \t%td/%td\n", world.c_animation.size, world.c_animation.capacity);
-            printf("Total Component 'Question' size/capacity: \t%td/%td\n", world.c_question.size, world.c_question.capacity);
+            printf("Total Component 'Question' size/capacity: \t%td/%td\n", world.c_question.size,   world.c_question.capacity);
             state.player_called_object_dump = false;
         }
 
