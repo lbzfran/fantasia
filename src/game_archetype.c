@@ -319,8 +319,16 @@ global void SceneMain(World *world) {
     SpawnBackground(world);
     SpawnPlayer(world, fan_vec2_zero(), fan_vec2_one());
     SpawnCamera(world, fan_vec2_zero(), world->spec_id.player);
-    for (int32 i = 0; i < 20; i++) {
-        SpawnWanderer(world, fan_vec2_zero(), fan_vec2_one(), i);
+    for (int32 i = 0; i < 10; i++) {
+        SpawnWanderer(
+             world,
+             (fan_vec2) {
+                 (float32)fan_random_int(0,6),
+                 (float32)fan_random_int(0,6),
+             },
+             fan_vec2_one(),
+             i
+        );
     }
 
     // fan_component_add(&world->c_transform,    world->entity_count);

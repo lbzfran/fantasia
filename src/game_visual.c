@@ -574,22 +574,22 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
             fan_vec2 map_pos = TileMapGetPosition(world->map, center_pos);
             int32 tile_data = fan_matrix_at(world->map.logic_tiles, map_pos.x, map_pos.y);
 
-            if (id == world->spec_id.tilemap) {
-                // fan_mode_texture_begin(state->tilemap);
-                //     fan_draw_clear(fan_color_WHITE);
-                //     GridWorldDraw(world->map, world->tile_atlas, state->world_scale, world->tilesets[0]);
-                // fan_mode_texture_end();
-                //
-                // fan_draw_texture(
-                //     state->tilemap.texture,
-                //     (fan_rect){ 0, 0, (float32)state->tilemap.texture.width, (float32)-state->tilemap.texture.height },
-                //     (fan_rect){ transform->position.x, transform->position.y, transform->scale.x, transform->scale.y },
-                //     fan_vec2_zero(),
-                //     0.0f,
-                //     fan_color_WHITE
-                // );
+            // if (id == world->spec_id.tilemap) {
+            //     fan_mode_texture_begin(state->tilemap);
+            //         fan_draw_clear(fan_color_WHITE);
+            //         GridWorldDraw(world->map, world->tile_atlas, state->world_scale, world->tilesets[0]);
+            //     fan_mode_texture_end();
+            //
+            //     fan_draw_texture(
+            //         state->tilemap.texture,
+            //         (fan_rect){ 0, 0, (float32)state->tilemap.texture.width, (float32)-state->tilemap.texture.height },
+            //         (fan_rect){ transform->position.x, transform->position.y, transform->scale.x, transform->scale.y },
+            //         fan_vec2_zero(),
+            //         0.0f,
+            //         fan_color_WHITE
+            //     );
                 // continue;
-            }
+            // }
             if (id == world->spec_id.player) {
                 // fan_vec2 tile_world_pos = (fan_vec2) {
                 //     map_pos.x * world->map.tile_size,
