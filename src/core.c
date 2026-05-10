@@ -7,6 +7,10 @@ inline bool32 fan_f32_isvalid(float32 value) {
     return value == value && value != fan_inf() && value != fan_neg_inf();
 }
 
+inline float32 fan_f32_clamp(float32 v, float32 min, float32 max) {
+    return v < min ? min : ((v > max) ? max : v);
+}
+
 inline int32 fan_i32_clamp(int32 v, int32 min, int32 max) {
     return v < min ? min : ((v > max) ? max : v);
 }

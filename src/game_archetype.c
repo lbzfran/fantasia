@@ -31,7 +31,14 @@ static inline int32 SpawnBackground(World *world) {
 }
 
 static inline int32 SpawnWanderer(World *world, fan_vec2 position, fan_vec2 direction, int32 question_id) {
-    fan_texture tex_girl_02 = fan_sprite_get(&world->assets, "Khali");
+    char8 *texture_choices[] = {
+        "Khali",
+        "Julz",
+        "Nel",
+        "Seza",
+        "Vash",
+    };
+    fan_texture girl_texture = fan_sprite_get(&world->assets, texture_choices[fan_random_int(0, 4)]);
     fan_vec2 citizen_size = (fan_vec2){ (float32)16.0f, (float32)16.0f };
 
     fan_component_add(&world->c_transform, world->entity_count,
@@ -39,7 +46,12 @@ static inline int32 SpawnWanderer(World *world, fan_vec2 position, fan_vec2 dire
                      .scale = fan_vec2_one()
     );
     fan_component_add(&world->c_shape,     world->entity_count,
-        .color = (fan_color){ 50, 255, 255, 255 },
+        .color = (fan_color) {
+            fan_random_int(100, 255),
+            fan_random_int(100, 255),
+            fan_random_int(100, 255),
+            255,
+        },
     );
     fan_component_add(&world->c_movement,  world->entity_count,
         .direction = direction,
@@ -47,7 +59,7 @@ static inline int32 SpawnWanderer(World *world, fan_vec2 position, fan_vec2 dire
         // .flags = MovementFlag_CollideSoftly
     );
     fan_component_add(&world->c_texture,  world->entity_count,
-        .texture = tex_girl_02,
+        .texture = girl_texture,
         .rect = { .x = 0, .y = 0, .w = citizen_size.x, .h = citizen_size.y },
     );
     fan_component_add(&world->c_animation, world->entity_count);

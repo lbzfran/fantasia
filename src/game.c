@@ -58,6 +58,16 @@ void MovementSystem(CMovement *m, CTransform *t, fan_vec2 direction, fan_rect_i3
     }
     velocity = fan_vec2_add(velocity, m->velocity_input);
 
+    if (fan_f32_abs(m->velocity_input.x) > 0.001f) {
+        float32 max_tilt = fan_f32_rad(40.0f);
+        float32 target_rotation = m->velocity_input.x > 0.0f ? max_tilt : -max_tilt;
+
+        t->rotation = fan_f32_lerp(t->rotation, 64.0f * dt, target_rotation);
+    }
+    else {
+        t->rotation = fan_f32_lerp(t->rotation, 24.0f * dt, t->default_rotation);
+    }
+
     t->position = fan_vec2_add(t->position, fan_vec2_scale(velocity, dt));
 
     // float32 damp_factor = 0.9f;
@@ -391,7 +401,7 @@ void UpdateEntities(
 
         // NOTE(liam): unconditional transform system for dynamic entities.
         transform->scale    = fan_vec2_lerp(transform->scale,   7.5f * dt, transform->default_scale);
-        transform->rotation = fan_f32_lerp(transform->rotation, 15.0f * dt, transform->default_rotation);
+        // transform->rotation = fan_f32_lerp(transform->rotation, 15.0f * dt, transform->default_rotation);
     }
 
     EntitySplit *split = &world->split;
@@ -453,14 +463,25 @@ void UpdateEntities(
                 switch (behavior->type) {
                     case BehaviorType_Random: {
                         if (behavior->updating) {
-                            direction = (fan_vec2) {
-                                (float32)fan_random_int(-1, 1),
-                                (float32)fan_random_int(-1, 1)
-                            };
+                            float32 phase_time = behavior->update_time > 0.0f ? behavior->update_time : 120.0f;
+                            behavior->update_time = phase_time * (0.5f + ((float32)fan_random_int(0, 100) / 100.0f));
+
+                            if (fan_random_int(0, 100) < 60) {
+                                behavior->direction = (fan_vec2) {
+                                    (float32)fan_random_int(-1, 1),
+                                    (float32)fan_random_int(-1, 1)
+                                };
+
+                                if (fan_vec2_length(behavior->direction) == 0.0f) {
+                                    behavior->direction = (fan_vec2){ 1.0f, 0.0f };
+                                }
+                            }
+                            else {
+                                behavior->direction = fan_vec2_zero();
+                            }
                         }
                         else {
-                            // keeps entity moving rather than staying still
-                            direction = move->direction;
+                            direction = behavior->direction;
                         }
                     } break;
                     case BehaviorType_Follow: {
