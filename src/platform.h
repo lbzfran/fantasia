@@ -27,7 +27,18 @@ typedef struct {
     void             *ctx_data;
 } fan_music;
 
+typedef struct {
+    char8      *key;
+    fan_texture value;
+} fan_asset_sprite_entry;
+
+typedef struct {
+    fan_asset_sprite_entry *sprites;
+    fan_texture             default_sprite;
+} fan_asset;
+
 FAN_API void fan_sprite_load(fan_asset *assets, fan_allocator *mem, char8 *const path);
+FAN_API void fan_sprite_unload(fan_asset *assets, fan_allocator *mem);
 FAN_API void fan_sprite_init(fan_asset *assets, fan_texture fallback);
 FAN_API fan_texture fan_sprite_get(fan_asset *assets, char8 *const name);
 
@@ -196,6 +207,7 @@ typedef enum {
 #define fan_color_MAGENTA (fan_color){ 255,   0, 255, 255 }
 
 #define PI 3.14159265358979323846f
+
 
 FAN_API void  fan_window_create(int32 width, int32 height, const char8 *title);
 FAN_API void  fan_window_close(void);
@@ -382,6 +394,7 @@ typedef struct {
     uint8 values[8][64];
     int32 value_count;
 } fan_dsl_field;
+
 
 FAN_API void fan_dsl_array_append(fan_allocator *mem, fan_dsl_token_array *arr, fan_dsl_token x);
 FAN_API fan_dsl_token_array fan_dsl_tokenize(fan_allocator *mem, fan_str8 buf);

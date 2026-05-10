@@ -307,8 +307,9 @@ global void SceneMain(World *world) {
     SpawnBackground(world);
     SpawnPlayer(world, fan_vec2_zero(), fan_vec2_one());
     SpawnCamera(world, fan_vec2_zero(), world->spec_id.player);
-    SpawnWanderer(world, fan_vec2_zero(), fan_vec2_one(), 0);
-    SpawnWanderer(world, fan_vec2_zero(), fan_vec2_one(), 1);
+    for (int32 i = 0; i < 20; i++) {
+        SpawnWanderer(world, fan_vec2_zero(), fan_vec2_one(), i);
+    }
 
     // fan_component_add(&world->c_transform,    world->entity_count);
     // fan_component_add(&world->c_shape,    world->entity_count,

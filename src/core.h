@@ -53,16 +53,6 @@ typedef struct {
     fan_texture depth;
 } fan_rtexture;
 
-typedef struct {
-    char8 *key;
-    fan_texture value;
-} fan_asset_sprite_entry;
-
-typedef struct {
-    fan_asset_sprite_entry *sprites;
-    fan_texture             default_sprite;
-} fan_asset;
-
 #define fan_color_WHITE   (fan_color){ 210, 210, 210, 255 }
 #define fan_color_GRAY    (fan_color){  80,  80,  80, 255 }
 #define fan_color_BLACK   (fan_color){   0,   0,   0, 255 }

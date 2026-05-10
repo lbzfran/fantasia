@@ -21,6 +21,7 @@
 # define fan_ht_hmdefault stbds_hmdefault
 # define fan_ht_shput stbds_shput
 # define fan_ht_shget stbds_shget
+# define fan_ht_shlen stbds_shlen
 #endif
 
 inline void fan_dsl_array_append(fan_allocator *mem, fan_dsl_token_array *arr, fan_dsl_token x) {
@@ -104,6 +105,14 @@ static ssize fan_str8_copy(char8 *dst, fan_str8 src) {
 void fan_sprite_init(fan_asset *assets, fan_texture fallback) {
     assets->sprites = nullptr;
     assets->default_sprite = fallback;
+}
+
+void fan_sprite_unload(fan_asset *assets, fan_allocator *mem) {
+    fan_asset_sprite_entry *table = assets->sprites;
+    for (ssize i = 0; i < fan_ht_shlen(table); i++) {
+        mem->free(mem->ctx, table[i].key, fan_cstr_length(table[i].key) + 1);
+        fan_texture_unload(table[i].value);
+    }
 }
 
 void fan_sprite_load(fan_asset *assets, fan_allocator *mem, char8 *const path) {

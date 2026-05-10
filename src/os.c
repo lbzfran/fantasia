@@ -252,3 +252,7 @@ fan_cutstr8 fan_str8_cut(fan_str8 s, uchar8 c) {
     r.tail = fan_str8_span(cut+r.ok, end);
     return r;
 }
+
+ssize fan_cstr_length(char8 const *s) {
+    return (ssize)strlen(s);
+}

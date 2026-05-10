@@ -234,6 +234,7 @@ FAN_API fan_str8 fan_str8_substr(fan_str8, ssize);
 
 FAN_API fan_cutstr8 fan_str8_cut(fan_str8, uchar8);
 
+FAN_API ssize fan_cstr_length(char8 const *);
 
 inline uintptr fan_align_forward(uintptr ptr, ssize alignment) {
     return (ptr + (alignment - 1)) & ~(alignment - 1);

@@ -321,13 +321,6 @@ void QuestionSystem(CQuestion *question, CAnswer answer, float32 dt) {
         question->answered = true;
         question->timer = max(question->cooldown_time, 5.0f);
     }
-    else {
-        // question->timer -= dt;
-        // if (question->timer <= 0.0f) {
-        //     question->timer = 0.0f;
-        //     question->answered = false;
-        // }
-    }
 }
 
 // NOTE(liam): must call whenever entities are added/removed
@@ -1030,12 +1023,7 @@ void GameUpdateAndRender(fan_allocator *a, World *world, GameState *state, float
 
 void GameClose(fan_allocator *a, World *world, GameState *state) {
     (void)a;
-    for (ssize i = 0; i < world->c_texture.size; i++) {
-        if (world->c_texture.dense[i] == -1) {
-            continue;
-        }
-        fan_texture_unload(world->c_texture.data[i].texture);
-    }
+    fan_sprite_unload(&world->assets, a);
     for (ssize i = 0; i < world->c_sound.size; i++) {
         if (world->c_texture.dense[i] == -1)
             continue;
