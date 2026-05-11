@@ -1066,6 +1066,9 @@ void GameClose(fan_allocator *a, World *world, GameState *state) {
             continue;
         fan_sound_unload(world->c_sound.data[i].sound);
     }
+    fan_texture_unload(state->rendermap.texture);
+    fan_texture_unload(state->lightmap.texture);
+    fan_texture_unload(state->tilemap.texture);
     fan_rtexture_unload(state->rendermap);
     fan_rtexture_unload(state->lightmap);
     fan_rtexture_unload(state->tilemap);
