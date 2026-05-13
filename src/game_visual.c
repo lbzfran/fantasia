@@ -247,26 +247,6 @@ void RenderSystem(
             screen_scale.y
         };
 
-        if (flags & RenderFlag_ShowInteract) {
-            fan_vec2 screen_zone_pos = WorldToScreen(
-                (fan_vec2){ zone.x, zone.y },
-                camera_position,
-                camera_zoom,
-                pixels_per_unit,
-                render_size
-            );
-            fan_rect screen_zone = (fan_rect) {
-                screen_zone_pos.x,
-                screen_zone_pos.y,
-                (float32)zone.w * (float32)pixels_per_unit * camera_zoom,
-                (float32)zone.h * (float32)pixels_per_unit * camera_zoom
-            };
-            fan_color zone_color = interacting ?
-                (fan_color){ 255, 0, 0, 75 } : (fan_color){ 0, 255, 0, 75 };
-
-            fan_draw_rectr(screen_zone, zone_color);
-        }
-
         fan_draw_texture(
             tx->texture,
             src,
@@ -275,6 +255,31 @@ void RenderSystem(
             t->rotation,
             s->color
         );
+
+        if (flags & RenderFlag_ShowInteract) {
+            fan_vec2 screen_zone_pos = WorldToScreen(
+                (fan_vec2){ zone.x, zone.y },
+                camera_position,
+                camera_zoom,
+                pixels_per_unit,
+                render_size
+            );
+
+            float32 width_px = (float32)zone.w * (float32)pixels_per_unit * camera_zoom;
+            float32 height_px = (float32)zone.h * (float32)pixels_per_unit * camera_zoom;
+
+            fan_rect screen_zone = (fan_rect) {
+                screen_zone_pos.x,
+                screen_zone_pos.y - height_px,
+                width_px,
+                height_px
+            };
+            fan_color zone_color = interacting ?
+                (fan_color){ 255, 0, 0, 75 } : (fan_color){ 0, 255, 0, 75 };
+
+            fan_draw_rectr(screen_zone, zone_color);
+        }
+
     }
 
     if (ts) {
@@ -283,7 +288,7 @@ void RenderSystem(
             "TESTING",
             (fan_vec2) {
                 fan_f32_round(screen_pos.x),
-                fan_f32_round(screen_pos.y - (screen_scale.y * 0.25))
+                fan_f32_round(screen_pos.y - (screen_scale.y * 0.25f))
             },
             fan_color_BLACK,
             fan_color_WHITE
@@ -661,8 +666,8 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
 
                 fan_vec2 rect_pos = WorldToScreen(rect_center, camera_position, camera_zoom, pixels_per_unit, state->render_size);
                 fan_vec2 rect_scale = {
-                    length * camera_zoom * pixels_per_unit,
-                    half_width * 2.0f * camera_zoom * pixels_per_unit,
+                    length * camera_zoom * (float32)pixels_per_unit,
+                    half_width * 2.0f * camera_zoom * (float32)pixels_per_unit,
                 };
 
 
