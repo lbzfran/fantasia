@@ -270,7 +270,7 @@ void RenderSystem(
 
             fan_rect screen_zone = (fan_rect) {
                 screen_zone_pos.x,
-                screen_zone_pos.y - height_px,
+                screen_zone_pos.y,
                 width_px,
                 height_px
             };
