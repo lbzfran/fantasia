@@ -843,7 +843,7 @@ void GameOnReload(World *world, GameState *state) {
     fan_vec2 citizen_size = (fan_vec2){ (float32)16.0f, (float32)16.0f };
 
     player_idle_left_frames[0]  = (fan_rect){
-        0,                           0, citizen_size.x, citizen_size.y
+        0,                       0, citizen_size.x, citizen_size.y
     };
     player_idle_left_frames[1]  = (fan_rect){
         citizen_size.x,          0, citizen_size.x, citizen_size.y
@@ -856,7 +856,7 @@ void GameOnReload(World *world, GameState *state) {
     };
 
     player_idle_down_frames[0]  = (fan_rect){
-        0,                           (2.0f * citizen_size.y), citizen_size.x, citizen_size.y
+        0,                       (2.0f * citizen_size.y), citizen_size.x, citizen_size.y
     };
     player_idle_down_frames[1]  = (fan_rect){
         citizen_size.x,          (2.0f * citizen_size.y), citizen_size.x, citizen_size.y
@@ -869,7 +869,7 @@ void GameOnReload(World *world, GameState *state) {
     };
 
     player_idle_right_frames[0]  = (fan_rect){
-        0,                           citizen_size.y, citizen_size.x, citizen_size.y
+        0,                       citizen_size.y, citizen_size.x, citizen_size.y
     };
     player_idle_right_frames[1]  = (fan_rect){
         citizen_size.x,          citizen_size.y, citizen_size.x, citizen_size.y
@@ -882,7 +882,7 @@ void GameOnReload(World *world, GameState *state) {
     };
 
     player_idle_up_frames[0] = (fan_rect){
-        0,                           (3.0f * citizen_size.y), citizen_size.x, citizen_size.y
+        0,                       (3.0f * citizen_size.y), citizen_size.x, citizen_size.y
     };
     player_idle_up_frames[1] = (fan_rect){
         citizen_size.x,          (3.0f * citizen_size.y), citizen_size.x, citizen_size.y
@@ -897,7 +897,7 @@ void GameOnReload(World *world, GameState *state) {
     // WALK
 
     player_walk_left_frames[0]  = (fan_rect){
-        0,                           (4.0f * citizen_size.y), citizen_size.x, citizen_size.y
+        0,                       (4.0f * citizen_size.y), citizen_size.x, citizen_size.y
     };
     player_walk_left_frames[1]  = (fan_rect){
         citizen_size.x,          (4.0f * citizen_size.y), citizen_size.x, citizen_size.y
@@ -910,7 +910,7 @@ void GameOnReload(World *world, GameState *state) {
     };
 
     player_walk_down_frames[0]  = (fan_rect){
-        0,                           (6.0f * citizen_size.y), citizen_size.x, citizen_size.y
+        0,                       (6.0f * citizen_size.y), citizen_size.x, citizen_size.y
     };
     player_walk_down_frames[1]  = (fan_rect){
         citizen_size.x,          (6.0f * citizen_size.y), citizen_size.x, citizen_size.y
@@ -923,7 +923,7 @@ void GameOnReload(World *world, GameState *state) {
     };
 
     player_walk_right_frames[0]  = (fan_rect){
-        0,                           (5.0f * citizen_size.y), citizen_size.x, citizen_size.y
+        0,                       (5.0f * citizen_size.y), citizen_size.x, citizen_size.y
     };
     player_walk_right_frames[1]  = (fan_rect){
         citizen_size.x,          (5.0f * citizen_size.y), citizen_size.x, citizen_size.y
@@ -936,7 +936,7 @@ void GameOnReload(World *world, GameState *state) {
     };
 
     player_walk_up_frames[0] = (fan_rect){
-        0,                           (7.0f * citizen_size.y), citizen_size.x, citizen_size.y
+        0,                       (7.0f * citizen_size.y), citizen_size.x, citizen_size.y
     };
     player_walk_up_frames[1] = (fan_rect){
         citizen_size.x,          (7.0f * citizen_size.y), citizen_size.x, citizen_size.y

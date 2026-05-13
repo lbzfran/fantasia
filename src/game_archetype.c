@@ -14,7 +14,7 @@ static inline int32 SpawnBackground(World *world) {
         .scale = (fan_vec2){ 10, 6 },
     );
     fan_component_add(&world->c_shape,      world->entity_count,
-        .layer = 1,
+        .layer = 2,
         .color = (fan_color){ 155, 155, 155, 255 },
     );
     fan_component_add(&world->c_movement,   world->entity_count,
