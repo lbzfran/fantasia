@@ -52,6 +52,8 @@ void *fan_arena_make(void *ctx, ssize size) {
     void *result = a->data + offset;
     a->size = offset + size;
 
+    fan_memory_set(result, 0, size);
+
     return result;
 }
 
@@ -72,6 +74,20 @@ void fan_arena_free(void *ctx, void *ptr, ssize size) {
 void fan_arena_clear(fan_arena *a) {
     a->size = 0;
 }
+
+fan_arena_temp fan_arena_temp_begin(fan_arena *a) {
+    fan_arena_temp result;
+
+    result.arena = a;
+    result.size  = a->size;
+
+    return result;
+}
+
+void fan_arena_temp_end(fan_arena_temp temp) {
+    temp.arena->size = temp.size;
+}
+
 
 void *fan_arena_resize(void *ctx, void *ptr, ssize old, ssize new) {
     fan_arena *a = (fan_arena *)ctx;
@@ -102,6 +118,84 @@ void *fan_arena_resize(void *ctx, void *ptr, ssize old, ssize new) {
 
     return result;
 }
+
+// NOTE(liam): freelist
+void fan_flist_clear(fan_freelist *fl) {
+    fl->used = 0;
+    fan_flist_node *first_node = (fan_flist_node *)fl->data;
+    first_node->block_size = fl->size;
+    first_node->next = NULL;
+    fl->head = first_node;
+}
+
+void fan_flist_init(fan_freelist *fl, void *data, ssize size) {
+    fl->data = data;
+    fl->size = size;
+    fan_flist_clear(fl);
+}
+
+ssize calc_padding(uintptr ptr,
+                   uintptr alignment,
+                   ssize header_size) {
+    assert(is_power_of_two(alignment));
+
+    uintptr mask = alignment - 1;
+    uintptr padding = (-ptr) & mask;
+
+    if (padding < header_size) {
+        padding += (header_size - padding + mask) & ~mask;
+    }
+
+    return (ssize)padding;
+}
+
+fan_freelist_node *fan_freelist_findbest(fan_freelist *fl, ssize size, ssize alignment, ssize *padding_, fan_freelist_node **prev_node_) {
+    ssize smallest_diff = ~(ssize)0;
+
+    fan_freelist_node *node = fl->head;
+    fan_freelist_node *prev_node = NULL;
+    fan_freelist_node *best_node = NULL;
+
+    ssize padding = 0;
+
+    while (node != NULL) {
+        padding = calc_padding((uintptr)node, (uintptr)alignment, sizeof(fan_freelist_header));
+        ssize required = size + padding;
+        if (node->block_size >= required && (node->block_size - required_space < smallest_diff)) {
+            best_node = node;
+        }
+        prev_node = node;
+        node = node->next;
+    }
+    if (padding_) *padding_ = padding;
+    if (prev_node_) *prev_node_ = prev_node;
+    return best_node;
+}
+
+fan_freelist_node *fan_freelist_findfirst(fan_freelist *fl, ssize size, ssize alignment, ssize *padding_, fan_free_list_node **prev_node_) {
+    fan_freelist_node *node = fl->head;
+    fan_freelist_node *prev_node = nullptr;
+
+    ssize padding = 0;
+
+    while (node != nullptr) {
+        padding = fan_calc_padding((uintptr)node, (uintptr)alignment, sizeof(fan_freelist_header));
+        ssize required = size + padding;
+        if (node->block_size >= required) {
+            break;
+        }
+        prev_node = node;
+        node = node->next;
+    }
+
+    if (padding_) *padding_ = padding;
+    if (prev_node_) *prev_node = prev_node;
+    return node;
+}
+
+
+
+
 
 
 void fan_fbuf8_flush(fan_fbuf8 *b) {
@@ -186,7 +280,7 @@ void fan_fbuf8_append_double(fan_fbuf8 *b, double x) {
 
 void fan_fbuf8_append_ptr(fan_fbuf8 *b, void *ptr) {
     fan_fbuf8_append_cstr(b, "0x");
-    uintptr_t u = (uintptr_t)ptr;
+    uintptr u = (uintptr)ptr;
     for (int i = 2*sizeof(u) - 1; i >= 0; i--) {
         fan_fbuf8_append_char(b, "0123456789abcdef"[(u>>(4 * i)) & 15]);
     }

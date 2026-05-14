@@ -251,3 +251,16 @@ bool32 fan_rect_i32_equals(fan_rect_i32 a, fan_rect_i32 b) {
 bool32 fan_rect_i32_contains(fan_rect_i32 r, int32 x, int32 y) {
     return x >= r.x && y >= r.y && x < r.x + r.w && y < r.y + r.h;
 }
+
+// NOTE(liam):
+// https://en.wikipedia.org/wiki/Fast_inverse_square_root#Magic_number
+// https://web.archive.org/web/20180709021629/http://rrrola.wz.cz/inv_sqrt.html
+inline float32 fan_f32_rsqrt(float32 x) {
+    union { float32 f; int32 i; } u = { x };
+
+    u.i = 0x5F1FFFF9 - (u.i >> 1);
+    u.f = u.f * 0.703952253f * (2.38924456f - x * u.f * u.f);
+
+    return u.f;
+}
+

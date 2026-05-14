@@ -160,6 +160,35 @@ typedef struct fan_arena {
 } fan_arena;
 #define FAN_ARENA_ALIGNMENT 16
 
+typedef struct {
+    fan_arena *arena;
+    ssize start_size;
+} fan_arena_temp;
+
+typedef struct {
+    ssize block_size;
+    ssize padding;
+} fan_flist_header;
+
+typedef struct {
+    fan_flist_node *next;
+    ssize block_size;
+} fan_flist_node;
+
+typedef enum {
+    FanFListPolicy_FindFirst,
+    FanFListPolicy_FindBest,
+} fan_flist_policy;
+
+typedef struct {
+    void *data;
+    ssize size;
+    ssize used;
+
+    fan_flist_node *head;
+    fan_flist_policy policy;
+} fan_freelist;
+
 typedef enum {
     fan_pipe_stdout = 0,
     fan_pipe_stdin,
@@ -258,7 +287,12 @@ FAN_API fan_str8 fan_str8_copy(fan_str8 src, fan_allocator *mem);
 
 FAN_API ssize fan_cstr_length(char8 const *);
 
+inline bool32 is_power_of_two(uintptr x) {
+    return (x & (x - 1)) == 0;
+}
+
 inline uintptr fan_align_forward(uintptr ptr, ssize alignment) {
+    assert(is_power_of_two(alignment));
     return (ptr + (alignment - 1)) & ~(alignment - 1);
 }
 
@@ -271,6 +305,13 @@ FAN_API void  fan_arena_free(void *ctx, void *ptr, ssize size);
 FAN_API void *fan_arena_resize(void *ctx, void *ptr, ssize old, ssize new);
 
 FAN_API void  fan_arena_clear(fan_arena *a);
+
+FAN_API void *fan_freelist_make(void *ctx, ssize size);
+FAN_API void  fan_freelist_free(void *ctx, void *ptr, ssize size);
+FAN_API void *fan_freelist_resize(void *ctx, void *ptr, ssize old, ssize new);
+
+FAN_API fan_arena_temp fan_arena_temp_begin(fan_arena *a);
+FAN_API void           fan_arena_temp_end(fan_arena_temp temp);
 
 FAN_API void *fan_lib_open(const char *path);
 FAN_API void *fan_lib_load(void *lib, const char *name);

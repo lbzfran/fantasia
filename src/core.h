@@ -83,6 +83,8 @@ FAN_API float32 fan_f32_cos(float32);
 FAN_API float32 fan_f32_sqrt(float32);
 FAN_API float32 fan_f32_atan2(float32, float32);
 
+FAN_API float32 fan_f32_rsqrt(float32); // NOTE(liam): inverse sqrt
+
 FAN_API float32 fan_f32_rad(float32);
 FAN_API float32 fan_f32_deg(float32);
 
