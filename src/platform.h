@@ -411,11 +411,13 @@ typedef struct {
 FAN_API usize fan_ht_hash_str8(fan_str8);
 FAN_API usize fan_ht_hash_bytes(void *ptr, usize len);
 
+FAN_API void fan_ht_init(fan_ht *ht, ssize capacity, fan_allocator *mem);
 FAN_API void fan_ht_setdefault(fan_str8 buf, fan_ht *ht, fan_allocator *mem);
 FAN_API void fan_ht_free(fan_ht *ht, fan_allocator *mem);
-FAN_API fan_str8 fan_ht_get(fan_ht *ht, fan_str8 key);
+FAN_API fan_str8 fan_ht_get(fan_str8 key, fan_ht *ht);
 FAN_API void fan_ht_put(fan_str8 key, fan_str8 value, fan_ht *ht, fan_allocator *mem);
 FAN_API bool32 fan_ht_delete(fan_str8 key, fan_ht *ht, fan_allocator *mem);
+FAN_API bool32 fan_ht_resize(fan_ht *ht, fan_allocator *mem);
 
 
 FAN_API void fan_dsl_array_append(fan_allocator *mem, fan_dsl_token_array *arr, fan_dsl_token x);

@@ -220,9 +220,11 @@ FAN_API void fan_fbuf8_append_double(fan_fbuf8 *, double);
 // NOTE(liam): string definitions
 #define fan_str8_cstr(s) (fan_str8){ (uchar8 *)s, sizeof(s) - 1 }
 
-FAN_API void fan_str8_print(fan_fbuf8 *, fan_str8);
-FAN_API void fan_str8_printn(fan_fbuf8 *, fan_str8, uchar8);
-FAN_API void fan_str8_println(fan_fbuf8 *, fan_str8);
+// FAN_API void fan_str8_print(fan_fbuf8 *, fan_str8);
+// FAN_API void fan_str8_printn(fan_fbuf8 *, fan_str8, uchar8);
+// FAN_API void fan_str8_println(fan_fbuf8 *, fan_str8);
+
+FAN_API void fan_str8_print(fan_str8);
 
 FAN_API fan_str8 fan_str8_span(uchar8 *, uchar8 *);
 FAN_API fan_str8 fan_str8_cstrv(const char8 *);

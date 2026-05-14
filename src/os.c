@@ -20,7 +20,7 @@ void fan_heap_free(void *ctx, void *ptr, ssize size) {
     (void)size;
 
     free(ptr);
-    ptr = null;
+    ptr = nullptr;
 }
 
 void *fan_heap_resize(void *ctx, void *ptr, ssize old, ssize new) {
@@ -192,20 +192,20 @@ void fan_fbuf8_append_ptr(fan_fbuf8 *b, void *ptr) {
     }
 }
 
-void fan_str8_print(fan_fbuf8 *b, fan_str8 s) {
-    fan_fbuf8_append_str8(b, s);
-    fan_fbuf8_flush(b);
-}
-
-void fan_str8_printn(fan_fbuf8 *b, fan_str8 s, uchar8 end) {
-    fan_fbuf8_append_str8(b, s);
-    fan_fbuf8_append_char(b, end);
-    fan_fbuf8_flush(b);
-}
-
-void fan_str8_println(fan_fbuf8 *b, fan_str8 s) {
-    fan_str8_printn(b, s, '\n');
-}
+// void fan_str8_print(fan_fbuf8 *b, fan_str8 s) {
+//     fan_fbuf8_append_str8(b, s);
+//     fan_fbuf8_flush(b);
+// }
+//
+// void fan_str8_printn(fan_fbuf8 *b, fan_str8 s, uchar8 end) {
+//     fan_fbuf8_append_str8(b, s);
+//     fan_fbuf8_append_char(b, end);
+//     fan_fbuf8_flush(b);
+// }
+//
+// void fan_str8_println(fan_fbuf8 *b, fan_str8 s) {
+//     fan_str8_printn(b, s, '\n');
+// }
 
 fan_str8 fan_str8_span(uchar8 *beg, uchar8 *end) {
     fan_str8 r = {0};
@@ -278,4 +278,10 @@ fan_str8 fan_str8_copy(fan_str8 src, fan_allocator *mem) {
 
 void fan_memory_set(uint8 *ptr, ssize value, ssize length) {
     memset(ptr, value, length);
+}
+
+void fan_str8_print(fan_str8 buf) {
+    for (ssize i = 0; i < buf.length; i++) {
+        printf("%c", buf.data[i]);
+    }
 }

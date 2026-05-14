@@ -165,39 +165,55 @@ void fan_ht_setdefault(fan_str8 buf, fan_ht *ht, fan_allocator *mem) {
     ht->default_entry = fan_str8_copy(buf, mem);
 }
 
+void fan_ht_init(fan_ht *ht, ssize capacity, fan_allocator *mem) {
+    assume(ht->capacity == 0 && "initialize only zeroed ht.");
+
+    ht->table         = mem->make(mem->ctx, sizeof(fan_ht_entry) * capacity);
+    ht->default_entry = (fan_str8){ 0 };
+    ht->size          = 0;
+    ht->capacity      = capacity;
+
+    for (ssize i = 0; i < ht->capacity; i++) {
+        ht->table[i] = (fan_ht_entry){ 0 };
+    }
+}
+
 void fan_ht_free(fan_ht *ht, fan_allocator *mem) {
-    if (ht->default_entry.length) {
+    if (ht->default_entry.length > 0) {
         mem->free(mem->ctx, ht->default_entry.data, ht->default_entry.length);
     }
 
     for (ssize i = 0; i < ht->capacity; i++) {
         fan_ht_entry *entry = &ht->table[i];
 
-        if (entry->key.data != nullptr) {
+        if (entry->key.length > 0) {
             mem->free(mem->ctx, entry->key.data, entry->key.length);
         }
 
-        if (entry->value.data != nullptr) {
+        if (entry->value.length > 0) {
             mem->free(mem->ctx, entry->value.data, entry->value.length);
         }
     }
 
     mem->free(mem->ctx, ht->table, sizeof(fan_ht_entry) * ht->capacity);
 
-    ht->table = nullptr;
+    ht->table    = nullptr;
+    ht->default_entry = (fan_str8){ 0 };
+    ht->size     = 0;
     ht->capacity = 0;
-    ht->size = 0;
 }
 
 static fan_str8 fan_ht_put_(fan_str8 key, fan_str8 value, fan_ht *ht, fan_allocator *mem) {
     usize hash = fan_ht_hash_str8(key);
-    usize index = (usize)(hash & (usize)(ht->capacity - 1));
+    usize index = (ssize)(hash & (ssize)(ht->capacity - 1));
+
+    // printf("index: %zu, hash: %zu\n", index, hash);
 
     fan_ht_entry *table = ht->table;
 
-    while (table[index].key.data != nullptr) {
+    while (table[index].key.length != 0) {
         if (fan_str8_equals(key, table[index].key)) {
-            if (table[index].value.data != nullptr) {
+            if (table[index].value.length > 0) {
                 mem->free(
                     mem->ctx,
                     table[index].value.data,
@@ -218,12 +234,17 @@ static fan_str8 fan_ht_put_(fan_str8 key, fan_str8 value, fan_ht *ht, fan_alloca
     table[index].key = fan_str8_copy(key, mem);
     table[index].value = fan_str8_copy(value, mem);
 
+    // fan_str8_print(table[index].key);
+    // printf("\n");
+    // fan_str8_print(table[index].value);
+    // printf("\n");
+
     ht->size++;
 
     return table[index].key;
 }
 
-static bool32 fan_ht_expand(fan_ht *ht, fan_allocator *mem) {
+bool32 fan_ht_resize(fan_ht *ht, fan_allocator *mem) {
     ssize old_capacity = ht->capacity;
     fan_ht_entry *old_table = ht->table;
 
@@ -232,12 +253,17 @@ static bool32 fan_ht_expand(fan_ht *ht, fan_allocator *mem) {
         return false;
     }
 
+    printf("expanding ht: %zu -> %zu\n", old_capacity, new_capacity);
+
     fan_ht_entry *new_entries =
         mem->make(mem->ctx, sizeof(fan_ht_entry) * new_capacity);
 
     assert(new_entries != nullptr);
 
-    fan_memory_set((uint8 *)new_entries, 0, sizeof(fan_ht_entry) * new_capacity);
+    // fan_memory_set((uint8 *)new_entries, 0, sizeof(fan_ht_entry) * new_capacity);
+    for (ssize i = 0; i < new_capacity; i++) {
+        new_entries[i] = (fan_ht_entry){ 0 };
+    }
 
     ht->table = new_entries;
     ht->capacity = new_capacity;
@@ -272,13 +298,19 @@ static bool32 fan_ht_expand(fan_ht *ht, fan_allocator *mem) {
     return true;
 }
 
-fan_str8 fan_ht_get(fan_ht *ht, fan_str8 key) {
+fan_str8 fan_ht_get(fan_str8 key, fan_ht *ht) {
+    if (ht->size == 0) {
+        return ht->default_entry;
+    }
+
     usize hash = fan_ht_hash_str8(key);
     usize index = (usize)(hash & (usize)(ht->capacity - 1));
 
+    // printf("index: %zu, hash: %zu\n", index, hash);
+
     fan_ht_entry *table = ht->table;
 
-    while (table[index].key.data != nullptr) {
+    while (table[index].key.length != 0) {
         if (fan_str8_equals(key, table[index].key)) {
             return table[index].value;
         }
@@ -292,14 +324,12 @@ fan_str8 fan_ht_get(fan_ht *ht, fan_str8 key) {
 
 void fan_ht_put(fan_str8 key, fan_str8 value, fan_ht *ht, fan_allocator *mem) {
     assert(value.data != nullptr);
-
     if (value.length <= 0) {
         return;
     }
 
-    // expand around 70% load
-    if ((ht->size + 1) * 100 >= ht->capacity * 70) {
-        bool32 ok = fan_ht_expand(ht, mem);
+    if ((ht->size + 1) >= ht->capacity) {
+        bool32 ok = fan_ht_resize(ht, mem);
         assert(ok);
     }
 
@@ -308,7 +338,7 @@ void fan_ht_put(fan_str8 key, fan_str8 value, fan_ht *ht, fan_allocator *mem) {
 
 bool32 fan_ht_delete(fan_str8 key, fan_ht *ht, fan_allocator *mem) {
     usize hash = fan_ht_hash_str8(key);
-    usize index = (usize)(hash & (usize)(ht->capacity - 1));
+    usize index = (ssize)(hash & (ssize)(ht->capacity - 1));
 
     fan_ht_entry *table = ht->table;
 

@@ -2,7 +2,6 @@
 #include "os.h"
 #include "platform.h"
 #include "game.h"
-#include "runtime.h"
 
 typedef struct {
     void (*init)(fan_allocator *a, World *world, GameState *state);
