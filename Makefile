@@ -13,7 +13,7 @@ APP_SRC := $(SRC_DIR)/main.c $(SRC_DIR)/runtime.c
 BUILD_DIR := build
 BIN_DIR := bin
 
-CC := ccache gcc
+CC := gcc
 
 CFLAGS := -std=c23 -Wall -Wextra -I include -L lib -g3 -O1 -Wconversion -Wdouble-promotion -Wno-unused-parameter -Wno-unused-function -Wno-sign-conversion -fno-trapping-math -fno-math-errno
 LDFLAGS := -L bin -lplatform
@@ -32,7 +32,7 @@ ifeq ($(PLATFORM),linux)
 endif
 
 ifeq ($(PLATFORM),windows)
-	CC := ccache x86_64-w64-mingw32-gcc
+	CC := x86_64-w64-mingw32-gcc
 	CFLAGS += -DOS_WINDOWS
 	PLATFORM_FLAGS := -lraylib -lgdi32 -lwinmm
 	LIBFLAGS := -shared
@@ -46,7 +46,7 @@ GAME_LIB := libgame$(LIBEXT)
 PLATFORM_LIB := libplatform$(LIBEXT)
 
 all: $(APP_SRC) $(BIN_DIR)/$(GAME_LIB) $(BIN_DIR)/$(PLATFORM_LIB)
-	$(CC) $(CFLAGS) -o $(BINARY) ./$(SRC_DIR)/main.c ./$(SRC_DIR)/runtime.c $(LDFLAGS) $(MAIN_FLAGS)
+	$(CC) $(CFLAGS) -o $(BINARY) ./$(SRC_DIR)/main.c $(LDFLAGS) $(MAIN_FLAGS)
 
 $(BIN_DIR)/$(GAME_LIB): $(SRC_DIR)/game.c $(BIN_DIR)/$(PLATFORM_LIB)
 	$(CC) $(CFLAGS) $(LIBFLAGS) -o $(BIN_DIR)/$(GAME_LIB) $< $(LDFLAGS)
