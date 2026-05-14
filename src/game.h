@@ -249,6 +249,23 @@ typedef enum {
     CAnswer_D,
 } CAnswer;
 
+typedef enum {
+    CollisionFlag_Immovable   = (1 << 0),
+    CollisionFlag_NoCollision = (1 << 1),
+    CollisionFlag_MirrorScale = (1 << 2),
+    CollisionFlag_Ghost       = (1 << 3),
+} CollisionFlags;
+
+typedef struct {
+    bool32         active;
+    CollisionFlags flags;
+
+    fan_rect       boundary; // NOTE(liam): this is positioned relative to the
+                             // entity's transform position.
+} CCollision;
+
+fan_rect CollisionAdjusted(const fan_rect boundary, const fan_vec2 position);
+
 typedef struct {
     SystemMode   mode;
     fan_music    music;
@@ -331,7 +348,7 @@ fan_component_declare(CText,      CText);
 
 fan_component_declare(CInteraction,  bool32);
 fan_component_declare(CInteractable, bool32);
-fan_component_declare(CZone,         fan_rect_f32);
+fan_component_declare(CCollision,    CCollision);
 fan_component_declare(CAttack,       CAttack);
 
 fan_component_declare(CEnemyTag,      uint8);
@@ -372,7 +389,7 @@ typedef struct {
 
     CInteractionStorage    c_interaction;
     CInteractableStorage   c_interactable;
-    CZoneStorage           c_zone;
+    CCollisionStorage      c_collision;
     CAttackStorage         c_attack;
     CQuestionStorage       c_question;
 

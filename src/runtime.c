@@ -91,8 +91,8 @@ int GameMain(void) {
     };
 
     // NOTE(liam): testing DSL here!
-    fan_str8 dsl_buf = fan_os_read(&arena_allocator, "./resources/test.dsl");
-    (void)fan_dsl_tokenize(&arena_allocator, dsl_buf);
+    // fan_str8 dsl_buf = fan_os_read(&arena_allocator, "./resources/test.dsl");
+    // (void)fan_dsl_tokenize(&arena_allocator, dsl_buf);
 
     bool32 running           = true;
     world.update_entity_split = true;

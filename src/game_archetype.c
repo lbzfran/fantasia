@@ -69,6 +69,10 @@ static inline int32 SpawnWanderer(World *world, fan_vec2 position, fan_vec2 dire
     );
     fan_component_add(&world->c_interaction,  world->entity_count);
     fan_component_add(&world->c_interactable, world->entity_count);
+    fan_component_add(&world->c_collision,    world->entity_count,
+                      .active = true, .boundary = (fan_rect){ .x = 0, .y = 0, .w = 1, .h = 1, },
+    );
+
     // fan_component_add(&world->c_zone,     world->entity_count,
     //     .x = 0, .y = 0, .width = 1, .height = 1,
     // );
@@ -131,6 +135,9 @@ static inline int32 SpawnPlayer(World *world, fan_vec2 position, fan_vec2 direct
     );
     fan_component_add(&world->c_tag_answer, world->entity_count);
     fan_component_add(&world->c_text, world->entity_count);
+    fan_component_add(&world->c_collision,    world->entity_count,
+                      .active = true, .boundary = (fan_rect){ .x = 0, .y = 0, .w = 1, .h = 1, },
+    );
 
     world->spec_id.player = world->entity_count;
     world->entity_count++;

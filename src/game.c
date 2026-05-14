@@ -4,21 +4,6 @@
 #include "game_visual.c"
 #include "game_archetype.c"
 
-// static inline void RepairTransform(CTransform *transform) {
-//     if (not fan_f32_isvalid(transform->position.x)) transform->position.x = 0.0f;
-//     if (not fan_f32_isvalid(transform->position.y)) transform->position.y = 0.0f;
-//
-//     if (not fan_f32_isvalid(transform->scale.x) or transform->scale.x == 0.0f) transform->scale.x = 1.0f;
-//     if (not fan_f32_isvalid(transform->scale.y) or transform->scale.y == 0.0f) transform->scale.y = 1.0f;
-//
-//     if (not fan_f32_isvalid(transform->rotation)) transform->rotation = 0.0f;
-//
-//     if (not fan_f32_isvalid(transform->default_scale.x) or transform->default_scale.x == 0.0f) transform->default_scale.x = transform->scale.x;
-//     if (not fan_f32_isvalid(transform->default_scale.y) or transform->default_scale.y == 0.0f) transform->default_scale.y = transform->scale.y;
-//
-//     if (not fan_f32_isvalid(transform->default_rotation)) transform->default_rotation = transform->rotation;
-// }
-
 void MovementSystem(CMovement *m, CTransform *t, fan_vec2 direction, fan_rect_i32 bound_zone, float32 dt) {
     if (not m->initialized) {
         if (not fan_f32_isvalid(m->speed) or m->speed == 0.0f) m->speed = 4.0f;
@@ -70,41 +55,33 @@ void MovementSystem(CMovement *m, CTransform *t, fan_vec2 direction, fan_rect_i3
 
     t->position = fan_vec2_add(t->position, fan_vec2_scale(velocity, dt));
 
-    // float32 damp_factor = 0.9f;
-    // m->velocity_force = fan_vec2_scale(m->velocity_force, damp_factor);
-    // m->velocity_force = FanVector2AddValue(m->velocity_force, -decay * dt);
-
-    if (not (m->flags & MovementFlag_NoCollision)) {
-        if (fan_vec2_length(t->scale) > 0.0f) {
-            bound_zone.w = (int32)((float32)bound_zone.w - t->scale.x);
-            bound_zone.h = (int32)((float32)bound_zone.h - t->scale.y);
-        }
-
-        float32 overlap;
-        float32 softness = 0.005f;
-
-        // if (m->flags & MovementFlag_Ghost) {
-        //     softness = 0.0f;
-        // }
-
-        if (t->position.x < bound_zone.x) {
-            overlap = (float32)bound_zone.x - t->position.x;
-            t->position.x += overlap * softness;
-        }
-        else if (t->position.x > bound_zone.w) {
-            overlap = t->position.x - (float32)bound_zone.w;
-            t->position.x -= overlap * softness;
-        }
-
-        if (t->position.y < bound_zone.y) {
-            overlap = (float32)bound_zone.y - t->position.y;
-            t->position.y += overlap * softness;
-        }
-        else if (t->position.y > bound_zone.h) {
-            overlap = t->position.y - (float32)bound_zone.h;
-            t->position.y -= overlap * softness;
-        }
-    }
+    // if (not (m->flags & MovementFlag_NoCollision)) {
+    //     if (fan_vec2_length(t->scale) > 0.0f) {
+    //         bound_zone.w = (int32)((float32)bound_zone.w - t->scale.x);
+    //         bound_zone.h = (int32)((float32)bound_zone.h - t->scale.y);
+    //     }
+    //
+    //     float32 overlap;
+    //     float32 softness = 0.005f;
+    //
+    //     if (t->position.x < bound_zone.x) {
+    //         overlap = (float32)bound_zone.x - t->position.x;
+    //         t->position.x += overlap * softness;
+    //     }
+    //     else if (t->position.x > bound_zone.w) {
+    //         overlap = t->position.x - (float32)bound_zone.w;
+    //         t->position.x -= overlap * softness;
+    //     }
+    //
+    //     if (t->position.y < bound_zone.y) {
+    //         overlap = (float32)bound_zone.y - t->position.y;
+    //         t->position.y += overlap * softness;
+    //     }
+    //     else if (t->position.y > bound_zone.h) {
+    //         overlap = t->position.y - (float32)bound_zone.h;
+    //         t->position.y -= overlap * softness;
+    //     }
+    // }
 }
 
 void PhysicsSystem(
@@ -190,34 +167,47 @@ bool32 CollisionCheckV(fan_vec2 aPos, fan_vec2 aSize, fan_vec2 bPos, fan_vec2 bS
     return result;
 }
 
+inline fan_rect CollisionAdjusted(const fan_rect boundary, const fan_vec2 position) {
+    return (fan_rect) {
+        position.x + boundary.x,
+        position.y + boundary.y,
+        boundary.w,
+        boundary.h
+    };
+}
+
 bool32 CollisionSystem(
-        CTransform *a,
-	    CMovement *a_m,
-	    CTransform *b,
-	    CMovement *b_m,
-	    float32 dt
+	    const float32 dt,
+        CCollision *a,
+        CTransform *a_t,
+        CCollision *b,
+        CTransform *b_t
     ) {
     // NOTE(liam): this check is prob unnecessary
-    if (a_m->flags & MovementFlag_NoCollision or b_m->flags & MovementFlag_NoCollision)
+    if (not a->active or not b->active) {
         return false;
+    }
 
-    if (CollisionCheckV(a->position, a->scale, b->position, b->scale)) {
-        if (a_m->flags & MovementFlag_Ghost or b_m->flags & MovementFlag_Ghost) {
+    fan_rect a_collision = CollisionAdjusted(a->boundary, a_t->position);
+    fan_rect b_collision = CollisionAdjusted(b->boundary, b_t->position);
+
+    if (CollisionCheckR(a_collision, b_collision)) {
+        if (a->flags & MovementFlag_Ghost or b->flags & MovementFlag_Ghost) {
             return true;
         }
 
-        fan_vec2 aMax = (fan_vec2){
-            a->position.x + a->scale.x,
-            a->position.y + a->scale.y
+        fan_vec2 aMax = (fan_vec2) {
+            a_collision.x + a_collision.w,
+            a_collision.y + a_collision.h
         };
-        fan_vec2 bMax = (fan_vec2){
-            b->position.x + b->scale.x,
-            b->position.y + b->scale.y
+        fan_vec2 bMax = (fan_vec2) {
+            b_collision.x + b_collision.w,
+            b_collision.y + b_collision.h
         };
 
         fan_vec2 overlap = (fan_vec2){
-            min(aMax.x, bMax.x) - max(a->position.x, b->position.x),
-            min(aMax.y, bMax.y) - max(a->position.y, b->position.y)
+            min(aMax.x, bMax.x) - max(a_collision.x, b_collision.x),
+            min(aMax.y, bMax.y) - max(a_collision.y, b_collision.y)
         };
 
         const float32 tolerance = 0.01f;
@@ -225,14 +215,14 @@ bool32 CollisionSystem(
             return false;
 
         float32 correction;
-        float32 aMove = (a_m->flags & MovementFlag_Immovable) ? 0.0f : 1.0f;
-        float32 bMove = (b_m->flags & MovementFlag_Immovable) ? 0.0f : 1.0f;
-        if (a_m->flags & MovementFlag_CollideSoftly) {
-            aMove *= dt;
-        }
-        if (b_m->flags & MovementFlag_CollideSoftly) {
-            bMove *= dt;
-        }
+        float32 aMove = (a->flags & CollisionFlag_Immovable) ? 0.0f : 1.0f;
+        float32 bMove = (b->flags & CollisionFlag_Immovable) ? 0.0f : 1.0f;
+        // if (a->flags & MovementFlag_CollideSoftly) {
+        //     aMove *= dt;
+        // }
+        // if (b->flags & MovementFlag_CollideSoftly) {
+        //     bMove *= dt;
+        // }
 
         float32 totalMove = aMove + bMove;
         float32 aFactor = (totalMove > 0.0f) ? (aMove / totalMove) : 0.0f;
@@ -241,21 +231,21 @@ bool32 CollisionSystem(
         const float32 softness = 0.005f;
         if (overlap.x < overlap.y) {
             correction = overlap.x * softness;
-            if (a->position.x < b->position.x) {
-                a->position.x -= correction * aFactor;
-                b->position.x += correction * bFactor;
+            if (a_collision.x < b_collision.x) {
+                a_t->position.x -= correction * aFactor;
+                b_t->position.x += correction * bFactor;
             } else {
-                a->position.x += correction * aFactor;
-                b->position.x -= correction * bFactor;
+                a_t->position.x += correction * aFactor;
+                b_t->position.x -= correction * bFactor;
             }
         } else {
             correction = overlap.y * softness;
-            if (a->position.y < b->position.y) {
-                a->position.y -= correction * aFactor;
-                b->position.y += correction * bFactor;
+            if (a_collision.y < b_collision.y) {
+                a_t->position.y -= correction * aFactor;
+                b_t->position.y += correction * bFactor;
             } else {
-                a->position.y += correction * aFactor;
-                b->position.y -= correction * bFactor;
+                a_t->position.y += correction * aFactor;
+                b_t->position.y -= correction * bFactor;
             }
         }
 
@@ -565,12 +555,13 @@ void UpdateEntities(
         for (ssize i = 0; i < split->dynamic_count; i++) {
             ssize id = split->dynamic_entities[i];
 
-            CMovement     *move      = fan_component_get_fast(&world->c_movement,    id);
-            CTransform    *transform = fan_component_get_fast(&world->c_transform,   id);
+            CMovement     *move      = fan_component_get_fast(&world->c_movement,   id);
+            CTransform    *transform = fan_component_get_fast(&world->c_transform,  id);
             CAttack       *attack    = fan_component_get(&world->c_attack,          id);
             bool32        *interact  = fan_component_get(&world->c_interaction,     id);
-            ssize          tag_enemy = fan_component_get_value(&world->c_tag_enemy,  id);
-            fan_rect_f32   zone      = fan_component_get_value_or_else(&world->c_zone, id, (fan_rect_f32){ 0 });
+            CCollision    *collision = fan_component_get(&world->c_collision,       id);
+            ssize          tag_enemy = fan_component_get_value(&world->c_tag_enemy, id);
+            // fan_rect_f32   zone      = fan_component_get_value_or_else(&world->c_zone, id, (fan_rect_f32){ 0 });
 
             CQuestion *question = fan_component_get(&world->c_question, id);
             CAnswer *answer = fan_component_get(&world->c_tag_answer,   id);
@@ -606,44 +597,25 @@ void UpdateEntities(
                 AttackTick(attack, move, fixed_dt);
             }
 
-            if (fan_rect_f32_isempty(zone)) {
-                zone = (fan_rect_f32) {
-                    .x = transform->position.x,
-                    .y = transform->position.y,
-                    .w = transform->scale.x,
-                    .h = transform->scale.y,
+            if (collision and collision->active) {
+                fan_rect actual_collision = (fan_rect) {
+                    collision->boundary.x + transform->position.x,
+                    collision->boundary.y + transform->position.y,
+                    collision->boundary.w,
+                    collision->boundary.h
                 };
-            }
-            else {
-                zone.x += transform->position.x;
-                zone.y += transform->position.y;
-            }
 
-            if (move->active and not (move->flags & MovementFlag_NoCollision)) {
                 for (ssize j = i + 1; j < split->dynamic_count; j++) {
                     ssize other_id = split->dynamic_entities[j];
 
                     CTransform    *other_transform  = fan_component_get_fast(&world->c_transform,     other_id);
                     CMovement     *other_move       = fan_component_get_fast(&world->c_movement,      other_id);
                     bool32        *other_interacted = fan_component_get(&world->c_interactable,       other_id);
-                    fan_rect_f32   other_zone       = fan_component_get_value_or_else(&world->c_zone, other_id, (fan_rect_f32) { 0 });
+                    CCollision    *other_collision  = fan_component_get(&world->c_collision,          other_id);
                     ssize          other_tag_enemy  = fan_component_get_value(&world->c_tag_enemy,    other_id);
                     CQuestion     *other_question   = fan_component_get(&world->c_question,           other_id);
 
                     // RepairTransform(other_transform);
-
-                    if (fan_rect_f32_isempty(other_zone)) {
-                        other_zone = (fan_rect_f32) {
-                            .x = other_transform->position.x,
-                            .y = other_transform->position.y,
-                            .w = other_transform->scale.x,
-                            .h = other_transform->scale.y,
-                        };
-                    }
-                    else {
-                        other_zone.x += other_transform->position.x;
-                        other_zone.y += other_transform->position.y;
-                    }
 
                     if (attack) {
                         if (move->lock_time <= 0.0f) {
@@ -651,28 +623,32 @@ void UpdateEntities(
                         }
                     }
 
-                    CollisionSystem(transform, move, other_transform, other_move, fixed_dt);
-                    if (
-                        interact and
-                        other_interacted and
-                        CollisionCheckR(zone, other_zone)
-                        // and not (istagged(tag_enemy) and istagged(other_tag_enemy))
-                       ) {
-                        // FanRectInt32Print(zone);
-                        // FanRectInt32Print(other_zone);
-                        *interact = true;
-                        *other_interacted = true; // NOTE: does nothing
-
-                        if (
-                            player_asks and
-                            answer exists and
-                            other_question exists and
-                            other_question->answered is false
+                    if (other_collision and collision->active) {
+                        fan_rect other_actual_collision = (fan_rect) {
+                            collision->boundary.x + transform->position.x,
+                            collision->boundary.y + transform->position.y,
+                            collision->boundary.w,
+                            collision->boundary.h
+                        };
+                        if (CollisionSystem(fixed_dt, collision, transform, other_collision, other_transform)
+                            // and not (istagged(tag_enemy) and istagged(other_tag_enemy))
                            ) {
-                            QuestionSystem(other_question, *answer, fixed_dt);
+                            // FanRectInt32Print(zone);
+                            // FanRectInt32Print(other_zone);
+                            *interact = true;
+                            *other_interacted = true; // NOTE: does nothing
 
-                            *answer = 0;
-                            // player_answered = true;
+                            if (
+                                player_asks and
+                                answer exists and
+                                other_question exists and
+                                other_question->answered is false
+                               ) {
+                                QuestionSystem(other_question, *answer, fixed_dt);
+
+                                *answer = 0;
+                                // player_answered = true;
+                            }
                         }
                     }
                 }
@@ -682,40 +658,26 @@ void UpdateEntities(
                     CTransform     *other_transform  = fan_component_get_fast(&world->c_transform,   other_id);
                     CMovement      *other_move       = fan_component_get_fast(&world->c_movement,    other_id);
                     bool32         *other_interacted = fan_component_get(&world->c_interactable,     other_id);
-                    fan_rect_f32    other_zone       = fan_component_get_value_or_else(&world->c_zone, other_id, (fan_rect_f32) { 0 });
+                    CCollision     *other_collision  = fan_component_get(&world->c_collision,        other_id);
+                    // fan_rect_f32    other_zone       = fan_component_get_value_or_else(&world->c_zone, other_id, (fan_rect_f32) { 0 });
                     ssize           other_tag_enemy  = fan_component_get_value(&world->c_tag_enemy,  other_id);
 
                     // RepairTransform(other_transform);
-
-                    if (fan_rect_f32_isempty(other_zone)) {
-                        other_zone = (fan_rect_f32) {
-                            .x = other_transform->position.x,
-                            .y = other_transform->position.y,
-                            .w = other_transform->scale.x,
-                            .h = other_transform->scale.y,
-                        };
-                    }
-                    else {
-                        other_zone.x += other_transform->position.x;
-                        other_zone.y += other_transform->position.y;
-                    }
 
                     if (attack) {
                         AttackSystem(attack, move, transform, other_move, other_transform, fixed_dt);
                     }
 
-                    CollisionSystem(transform, move, other_transform, other_move, fixed_dt);
-                    if (
-                            interact and
-                            other_interacted and
-                            CollisionCheckR(zone, other_zone) and
-                            not (istagged(tag_enemy) and istagged(other_tag_enemy))
-                        ) {
-                        // FanRectInt32Print(zone);
-                        // FanRectInt32Print(other_zone);
-                        *interact = true;
-                        *other_interacted = true;
+                    if (other_collision) {
+                        if (CollisionSystem(fixed_dt, collision, transform, other_collision, other_transform) and
+                                not (istagged(tag_enemy) and istagged(other_tag_enemy))
+                            ) {
+                            // FanRectInt32Print(zone);
+                            // FanRectInt32Print(other_zone);
+                            *interact = true;
+                            *other_interacted = true;
 
+                        }
                     }
                 }
             }
@@ -737,7 +699,7 @@ void UpdateEntities(
                         printf("\tmove->speed: %f\n", (float64)move->speed);
                     }
                     printf("\t");
-                    fan_rect_print(zone);
+                    fan_rect_print(collision->boundary);
                 }
             }
         }
@@ -969,7 +931,7 @@ void GameInit(fan_allocator *a, World *world, GameState *state) {
     StateGetView(state);
 
     ssize split_size      = kilobytes(1);
-    ssize component_size  = kilobytes(1);
+    ssize component_size  = 256;
 
     fan_component_create(&world->c_transform,      a, component_size);
     fan_component_create(&world->c_shape,          a, component_size);
@@ -984,7 +946,7 @@ void GameInit(fan_allocator *a, World *world, GameState *state) {
 
     fan_component_create(&world->c_interaction,    a, component_size);
     fan_component_create(&world->c_interactable,   a, component_size);
-    fan_component_create(&world->c_zone,           a, component_size);
+    fan_component_create(&world->c_collision,      a, component_size);
     fan_component_create(&world->c_attack,         a, component_size);
 
     fan_component_create(&world->c_tag_background, a, component_size);

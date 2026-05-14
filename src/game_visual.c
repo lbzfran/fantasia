@@ -548,25 +548,12 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
             CAttack        *attack      = fan_component_get(&world->c_attack, id);
             bool32          interacting = fan_component_get_value(&world->c_interaction, id);
             bool32          interacted  = fan_component_get_value(&world->c_interactable, id);
-            fan_rect        zone        = fan_component_get_value_or_else(&world->c_zone, id, (fan_rect){ 0 });
+            CCollision     *collision   = fan_component_get(&world->c_collision, id);
+            // fan_rect        zone        = fan_component_get_value_or_else(&world->c_zone, id, (fan_rect){ 0 });
             CText          *text        = fan_component_get(&world->c_text, id);
 
             if (not shape->visible) {
                 continue;
-            }
-
-
-            if (fan_rect_f32_isempty(zone)) {
-                zone = (fan_rect_f32) {
-                    .x = transform->position.x,
-                    .y = transform->position.y,
-                    .w = transform->scale.x,
-                    .h = transform->scale.y,
-                };
-            }
-            else {
-                zone.x += transform->position.x;
-                zone.y += transform->position.y;
             }
 
             fan_vec2 center_pos = fan_vec2_add(
@@ -625,6 +612,11 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
             if (state->player_input.actions[1])
                 render_flags |= RenderFlag_ShowInteract;
 
+            fan_rect actual_collision = {};
+            if (collision) {
+                actual_collision = CollisionAdjusted(collision->boundary, transform->position);
+            }
+
             RenderSystem(
                 shape,
                 transform,
@@ -632,7 +624,7 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
                 move,
                 text,
                 interacting || interacted,
-                zone,
+                actual_collision,
                 camera_position,
                 camera_zoom,
                 pixels_per_unit,
@@ -682,7 +674,7 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
                 printf("id: %td\n", id);
                 printf("interacting: %s\n", interacting ? "true" : "false");
                 printf("interacted: %s\n",  interacted  ? "true" : "false");
-                fan_rect_print(zone);
+                fan_rect_print(collision->boundary);
                 printf("\t");
                 fan_vec2_print(transform->position);
                 printf("\t");

@@ -26,7 +26,7 @@ endif
 
 ifeq ($(PLATFORM),linux)
 	CFLAGS += -DOS_LINUX
-	PLATFORM_FLAGS := -lraylib -lm
+	PLATFORM_FLAGS := -lraylib -lm -lX11
 	LIBFLAGS := -shared -fPIC
 	LIBEXT := .so
 endif
