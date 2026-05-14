@@ -206,7 +206,7 @@ void fan_ht_free(fan_ht *ht, fan_allocator *mem) {
 
 static fan_str8 fan_ht_put_(fan_str8 key, fan_str8 value, fan_ht *ht, fan_allocator *mem) {
     usize hash = fan_ht_hash_str8(key);
-    usize index = (ssize)(hash & (ssize)(ht->capacity - 1));
+    usize index = (usize)(hash & (usize)(ht->capacity - 1));
 
     // printf("index: %zu, hash: %zu\n", index, hash);
 
@@ -341,7 +341,7 @@ void fan_ht_put(fan_str8 key, fan_str8 value, fan_ht *ht, fan_allocator *mem) {
 bool32 fan_ht_delete(fan_str8 key, fan_ht *ht, fan_allocator *mem) {
     // TODO(liam): need to validate this
     usize hash = fan_ht_hash_str8(key);
-    usize index = (ssize)(hash & (ssize)(ht->capacity - 1));
+    usize index = (usize)(hash & (usize)(ht->capacity - 1));
 
     fan_ht_entry *table = ht->table;
 
