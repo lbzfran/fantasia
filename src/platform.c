@@ -149,6 +149,7 @@ fan_texture fan_sprite_get(fan_asset *assets, char8 *const name) {
 }
 
 // djb2 hash by Dan Bernstein
+// NOTE(liam): result must be unsigned.
 usize fan_ht_hash_str8(fan_str8 buf) {
     usize result = 5381;
     int32 c;
@@ -245,6 +246,7 @@ static fan_str8 fan_ht_put_(fan_str8 key, fan_str8 value, fan_ht *ht, fan_alloca
 }
 
 bool32 fan_ht_resize(fan_ht *ht, fan_allocator *mem) {
+    // TODO(liam): allow to downsize
     ssize old_capacity = ht->capacity;
     fan_ht_entry *old_table = ht->table;
 
@@ -337,6 +339,7 @@ void fan_ht_put(fan_str8 key, fan_str8 value, fan_ht *ht, fan_allocator *mem) {
 }
 
 bool32 fan_ht_delete(fan_str8 key, fan_ht *ht, fan_allocator *mem) {
+    // TODO(liam): need to validate this
     usize hash = fan_ht_hash_str8(key);
     usize index = (ssize)(hash & (ssize)(ht->capacity - 1));
 
