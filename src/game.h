@@ -264,8 +264,6 @@ typedef struct {
                              // entity's transform position.
 } CCollision;
 
-fan_rect CollisionAdjusted(const fan_rect boundary, const fan_vec2 position);
-
 typedef struct {
     SystemMode   mode;
     fan_music    music;

@@ -1,6 +1,8 @@
 
 #include "game.h"
 
+fan_rect CollisionAdjusted(const fan_rect boundary, const fan_vec2 position);
+
 #include "game_visual.c"
 #include "game_archetype.c"
 
@@ -630,14 +632,9 @@ void UpdateEntities(
                             collision->boundary.w,
                             collision->boundary.h
                         };
-                        if (CollisionSystem(fixed_dt, collision, transform, other_collision, other_transform)
-                            // and not (istagged(tag_enemy) and istagged(other_tag_enemy))
-                           ) {
-                            // FanRectInt32Print(zone);
-                            // FanRectInt32Print(other_zone);
+                        if (CollisionSystem(fixed_dt, collision, transform, other_collision, other_transform)) {
                             *interact = true;
                             *other_interacted = true; // NOTE: does nothing
-
                             if (
                                 player_asks and
                                 answer exists and
@@ -669,9 +666,7 @@ void UpdateEntities(
                     }
 
                     if (other_collision) {
-                        if (CollisionSystem(fixed_dt, collision, transform, other_collision, other_transform) and
-                                not (istagged(tag_enemy) and istagged(other_tag_enemy))
-                            ) {
+                        if (CollisionSystem(fixed_dt, collision, transform, other_collision, other_transform)) {
                             // FanRectInt32Print(zone);
                             // FanRectInt32Print(other_zone);
                             *interact = true;
