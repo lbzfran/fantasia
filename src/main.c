@@ -9,7 +9,8 @@ int TestMain(void) {
     };
     fan_ht ht = { 0 };
 
-    fan_ht_init(&ht, 8, &heap_allocator);
+    ssize ht_capacity = 8;
+    fan_ht_init(&ht, ht_capacity, &heap_allocator);
     fan_ht_setdefault(fan_str8_cstr("0"), &ht, &heap_allocator);
 
     fan_ht_put(fan_str8_cstr("key"),            fan_str8_cstr("val1"), &ht, &heap_allocator);
@@ -24,10 +25,9 @@ int TestMain(void) {
     fan_str8 found     = fan_ht_get(fan_str8_cstr("key"), &ht);
     fan_str8 not_found = fan_ht_get(fan_str8_cstr("test"), &ht);
 
-    fan_str8_print(found);
-    printf("\n");
-    fan_str8_print(not_found);
-    printf("\n");
+    assert(fan_str8_equals(found, fan_str8_cstr("val1")));
+    assert(fan_str8_equals(not_found, fan_str8_cstr("0")));
+    assert(ht.capacity == ht_capacity * 2);
 
     return 0;
 }
