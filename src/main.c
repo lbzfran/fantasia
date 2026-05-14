@@ -33,8 +33,14 @@ int TestMain(void) {
 }
 
 int main(int argc, char **argv) {
-    (void)argc;
-    (void)argv;
-    return TestMain();
-    // return GameMain();
+    if (argc > 1) {
+        fan_str8 arg = fan_str8_trimr(fan_str8_cstr(argv[1]));
+        if (fan_str8_equals(arg, fan_str8_cstr("test"))) {
+            return TestMain();
+        }
+        else {
+            return GameMain();
+        }
+    }
+    return GameMain();
 }
