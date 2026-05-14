@@ -282,6 +282,6 @@ void fan_memory_set(uint8 *ptr, ssize value, ssize length) {
 
 void fan_str8_print(fan_str8 buf) {
     for (ssize i = 0; i < buf.length; i++) {
-        printf("%c", buf.data[i]);
+        fan_log(FanLog_INFO, "%c", buf.data[i]);
     }
 }

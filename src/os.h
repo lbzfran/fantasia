@@ -12,8 +12,9 @@
 #include <stdint.h>
 #include <stdalign.h>
 
-
 #if defined(OS_WINDOWS)
+ #define PATH_SEPARATOR '\\'
+ #define PATH_SEPARATOR_CSTR "\\"
  #if defined(DEBUG)
   #define GAME_LIB_PATH "bin/libgame.dll"
   #define GAME_LIB_TMP_PATH "bin/dbg_libgame.dll"
@@ -27,6 +28,8 @@
   #define FAN_API __declspec(dllimport)
  #endif
 #else // OS_LINUX implied
+ #define PATH_SEPARATOR '/'
+ #define PATH_SEPARATOR_CSTR "/"
  #if defined(DEBUG)
   #define GAME_LIB_PATH "bin/libgame.so"
   #define GAME_LIB_TMP_PATH "bin/dbg_libgame.so"
@@ -68,7 +71,7 @@ typedef ptrdiff_t     ssize;
 typedef uintptr_t     uintptr;
 
 #ifdef DEBUG
-# define assert(c) ((c) ? (void) (0) : fprintf(stderr, "%s failed in %s:%d:%s()\n", #c, __FILE__, __LINE__, __func__))
+# define assert(c) ((c) ? (void) (0) : fprintf(stderr, "'%s' assertion failed in %s:%d:%s()\n", #c, __FILE__, __LINE__, __func__))
 # define assume(c) assert(c)
 #else
 # define assert(c) ((void) (0))
@@ -128,6 +131,20 @@ typedef nullptr_t nullptr;
 #endif
 
 #define clamp(x, a, b)   min(max(x, a), b)
+
+typedef enum {
+    FanLog_ALL     = 0,
+    FanLog_TRACE   = 1,
+    FanLog_DEBUG   = 2,
+    FanLog_INFO    = 3,
+    FanLog_WARNING = 4,
+    FanLog_ERROR   = 5,
+    FanLog_FATAL   = 6,
+    FanLog_NONE    = 7
+} fan_loglevel;
+
+#define fan_log(level, fmt, ...) \
+    fprintf(stderr, "[%s] " fmt "\n", #level, ##__VA_ARGS__)
 
 typedef struct fan_allocator {
     void *(*make)   (void *ctx, ssize size);

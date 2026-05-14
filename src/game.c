@@ -333,7 +333,7 @@ void AttackTick(CAttack *a, CMovement *m, float32 dt) {
 
 void QuestionSystem(CQuestion *question, CAnswer answer, float32 dt) {
     if (question and answer and not question->answered) {
-        printf("NOTICE: Question '%d' triggered with answer '%d'.\n", question->id, answer);
+        fan_log(FanLog_DEBUG, "NOTICE: Question '%d' triggered with answer '%d'.\n", question->id, answer);
         question->answered = true;
         question->timer = max(question->cooldown_time, 5.0f);
     }
@@ -398,7 +398,7 @@ void UpdateEntities(
 
     EntitySplit *split = &world->split;
     if (world->update_entity_split) {
-        printf("Updating Entity Split!\n");
+        fan_log(FanLog_DEBUG, "Updating Entity Split!\n");
         UpdateEntitySplit(world);
 
         world->update_entity_split = false;
@@ -535,20 +535,20 @@ void UpdateEntities(
             MovementSystem(move, transform, direction, state->world_bound_zone, fixed_dt);
 
             if (last_iter and state->player_called_object_dump) {
-                printf("\tid: %td\n", id);
+                fan_log(FanLog_DEBUG, "\tid: %td\n", id);
 
                 if (id == world->spec_id.player) {
-                    printf("\t");
+                    fan_log(FanLog_DEBUG, "\t");
                     fan_vec2_print(transform->position);
-                    printf("\t");
+                    fan_log(FanLog_DEBUG, "\t");
                     fan_vec2_print(transform->scale);
 
                     if (move) {
-                        printf("\t");
+                        fan_log(FanLog_DEBUG, "\t");
                         fan_vec2_print(move->velocity_input);
-                        printf("\t");
+                        fan_log(FanLog_DEBUG, "\t");
                         fan_vec2_print(move->direction);
-                        printf("\tmove->speed: %f\n", (float64)move->speed);
+                        fan_log(FanLog_DEBUG, "\tmove->speed: %f\n", (float64)move->speed);
                     }
                 }
             }
@@ -678,22 +678,22 @@ void UpdateEntities(
             }
 
             if (last_iter and state->player_called_object_dump) {
-                printf("\tid: %td\n", id);
+                fan_log(FanLog_DEBUG, "\tid: %td\n", id);
 
                 if (id == world->spec_id.player) {
-                    printf("\t");
+                    fan_log(FanLog_DEBUG, "\t");
                     fan_vec2_print(transform->position);
-                    printf("\t");
+                    fan_log(FanLog_DEBUG, "\t");
                     fan_vec2_print(transform->scale);
 
                     if (move) {
-                        printf("\t");
+                        fan_log(FanLog_DEBUG, "\t");
                         fan_vec2_print(move->velocity_input);
-                        printf("\t");
+                        fan_log(FanLog_DEBUG, "\t");
                         fan_vec2_print(move->direction);
-                        printf("\tmove->speed: %f\n", (float64)move->speed);
+                        fan_log(FanLog_DEBUG, "\tmove->speed: %f\n", (float64)move->speed);
                     }
-                    printf("\t");
+                    fan_log(FanLog_DEBUG, "\t");
                     fan_rect_print(collision->boundary);
                 }
             }
@@ -990,7 +990,7 @@ void GameInit(fan_allocator *a, World *world, GameState *state) {
     fan_music_play(state->music);
     fan_music_volume_set(state->music, 0.4f);
 
-    printf("Successfully passed initialization!\n");
+    fan_log(FanLog_DEBUG, "Successfully passed initialization!\n");
 }
 
 void GameUpdateAndRender(fan_allocator *a, World *world, GameState *state, float32 dt) {

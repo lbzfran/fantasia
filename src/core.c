@@ -169,19 +169,19 @@ fan_vec2 fan_vec2_lerp(fan_vec2 v1, float32 t, fan_vec2 v2) {
 }
 
 void fan_vec2_print_(fan_vec2 v, const char8 *name) {
-    printf("%s: (%f, %f)\n", name, (float64)v.x, (float64)v.y);
+    fan_log(FanLog_INFO, "%s: (%f, %f)\n", name, (float64)v.x, (float64)v.y);
 }
 
 void fan_color_print_(fan_color c, const char8 *name) {
-    printf("%s: (%d, %d, %d, %d)\n", name, c.r, c.g, c.b, c.a);
+    fan_log(FanLog_INFO, "%s: (%d, %d, %d, %d)\n", name, c.r, c.g, c.b, c.a);
 }
 
 void fan_rect_i32_print_(fan_rect_i32 r, const char8 *name) {
-    printf("%s: (%d, %d, %d, %d)\n", name, r.x, r.y, r.w, r.h);
+    fan_log(FanLog_INFO, "%s: (%d, %d, %d, %d)\n", name, r.x, r.y, r.w, r.h);
 }
 
 void fan_rect_f32_print_(fan_rect_f32 r, const char8 *name) {
-    printf("%s: (%f, %f, %f, %f)\n", name, (float64)r.x, (float64)r.y, (float64)r.w, (float64)r.h);
+    fan_log(FanLog_INFO, "%s: (%f, %f, %f, %f)\n", name, (float64)r.x, (float64)r.y, (float64)r.w, (float64)r.h);
 }
 
 fan_matrix fan_matrix_create_(ssize rows, ssize cols, int32 *data) {

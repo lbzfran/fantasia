@@ -155,17 +155,6 @@ typedef enum {
 } fan_key;
 
 typedef enum {
-    FanLog_ALL     = 0,
-    FanLog_TRACE   = 1,
-    FanLog_DEBUG   = 2,
-    FanLog_INFO    = 3,
-    FanLog_WARNING = 4,
-    FanLog_ERROR   = 5,
-    FanLog_FATAL   = 6,
-    FanLog_NONE    = 7
-} fan_loglevel;
-
-typedef enum {
     FanWindow_VSYNC_HINT         = 0x00000040,   // Set to try enabling V-Sync on GPU
     FanWindow_FULLSCREEN_MODE    = 0x00000002,   // Set to run program in fullscreen
     FanWindow_WINDOW_RESIZABLE   = 0x00000004,   // Set to allow resizable window
