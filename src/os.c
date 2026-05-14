@@ -256,3 +256,26 @@ fan_cutstr8 fan_str8_cut(fan_str8 s, uchar8 c) {
 ssize fan_cstr_length(char8 const *s) {
     return (ssize)strlen(s);
 }
+
+ssize fan_cstr_copy_str8(char8 *dst, fan_str8 src) {
+    for (ssize i = 0; i < src.length; i++) {
+        dst[i] = src.data[i];
+    }
+    return src.length;
+}
+
+fan_str8 fan_str8_copy(fan_str8 src, fan_allocator *mem) {
+    fan_str8 result = {
+        .data = mem->make(mem->ctx, src.length),
+        .length = src.length
+    };
+    assert(result.data != nullptr);
+    for (ssize i = 0; i < src.length; i++) {
+        result.data[i] = src.data[i];
+    }
+    return result;
+}
+
+void fan_memory_set(uint8 *ptr, ssize value, ssize length) {
+    memset(ptr, value, length);
+}

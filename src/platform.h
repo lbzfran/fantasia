@@ -395,6 +395,28 @@ typedef struct {
     int32 value_count;
 } fan_dsl_field;
 
+typedef struct {
+    fan_str8 key;
+    fan_str8 value;
+} fan_ht_entry;
+
+typedef struct {
+    fan_ht_entry *table;
+
+    fan_str8 default_entry;
+    ssize size;
+    ssize capacity;
+} fan_ht;
+
+FAN_API usize fan_ht_hash_str8(fan_str8);
+FAN_API usize fan_ht_hash_bytes(void *ptr, usize len);
+
+FAN_API void fan_ht_setdefault(fan_str8 buf, fan_ht *ht, fan_allocator *mem);
+FAN_API void fan_ht_free(fan_ht *ht, fan_allocator *mem);
+FAN_API fan_str8 fan_ht_get(fan_ht *ht, fan_str8 key);
+FAN_API void fan_ht_put(fan_str8 key, fan_str8 value, fan_ht *ht, fan_allocator *mem);
+FAN_API bool32 fan_ht_delete(fan_str8 key, fan_ht *ht, fan_allocator *mem);
+
 
 FAN_API void fan_dsl_array_append(fan_allocator *mem, fan_dsl_token_array *arr, fan_dsl_token x);
 FAN_API fan_dsl_token_array fan_dsl_tokenize(fan_allocator *mem, fan_str8 buf);

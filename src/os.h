@@ -234,6 +234,9 @@ FAN_API fan_str8 fan_str8_substr(fan_str8, ssize);
 
 FAN_API fan_cutstr8 fan_str8_cut(fan_str8, uchar8);
 
+FAN_API ssize fan_cstr_copy_str8(char8 *dst, fan_str8 src);
+FAN_API fan_str8 fan_str8_copy(fan_str8 src, fan_allocator *mem);
+
 FAN_API ssize fan_cstr_length(char8 const *);
 
 inline uintptr fan_align_forward(uintptr ptr, ssize alignment) {
@@ -257,6 +260,8 @@ FAN_API void  fan_lib_close(void *lib);
 FAN_API bool32   fan_os_write(fan_pipe pipe, void *data, ssize length);
 FAN_API fan_str8 fan_os_read(fan_allocator *mem, const char *path);
 FAN_API void     fan_os_wait(uint32 ms);
+
+FAN_API void fan_memory_set(uint8 *ptr, ssize value, ssize length);
 
 FAN_API bool32 fan_file_copy(const char *src, const char *dst);
 FAN_API bool32 fan_file_delete(const char *path);
