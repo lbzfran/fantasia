@@ -11,7 +11,7 @@
 void* fan_lib_open(const char *path) {
     void *res = dlopen(path, RTLD_LAZY);
     if (res == NULL) {
-        fan_log(FanLog_ERROR, "Failed to load DLL: %s.\n", dlerror());
+        fan_log_error("Failed to load DLL: %s.\n", dlerror());
     }
     return res;
 }
@@ -19,7 +19,7 @@ void* fan_lib_open(const char *path) {
 void* fan_lib_load(void *lib, const char *name) {
     void *res = dlsym(lib, name);
     if (res == NULL) {
-        fan_log(FanLog_ERROR, "Failed to load function: '%s'.\n", dlerror());
+        fan_log_error("Failed to load function: '%s'.\n", dlerror());
     }
     return res;
 }

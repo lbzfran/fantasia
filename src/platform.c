@@ -78,7 +78,7 @@ fan_dsl_token_array fan_dsl_tokenize(fan_allocator *mem, fan_str8 buf) {
 
     for (ssize i = 0; i < result.size; i++) {
         fan_str8 dat = result.data[i].literal;
-        fan_log(FanLog_DEBUG, "LITERAL: %.*s\n", (int32)dat.length, dat.data);
+        fan_log_debug("LITERAL: %.*s\n", (int32)dat.length, dat.data);
     }
 
     return result;
@@ -208,7 +208,7 @@ static fan_str8 fan_ht_put_(fan_str8 key, fan_str8 value, fan_ht *ht, fan_alloca
     usize hash = fan_ht_hash_str8(key);
     usize index = (usize)(hash & (usize)(ht->capacity - 1));
 
-    // fan_log(FanLog_DEBUG, "index: %zu, hash: %zu\n", index, hash);
+    // fan_log_debug("index: %zu, hash: %zu\n", index, hash);
 
     fan_ht_entry *table = ht->table;
 
@@ -236,9 +236,9 @@ static fan_str8 fan_ht_put_(fan_str8 key, fan_str8 value, fan_ht *ht, fan_alloca
     table[index].value = fan_str8_copy(value, mem);
 
     // fan_str8_print(table[index].key);
-    // fan_log(FanLog_DEBUG, "\n");
+    // fan_log_debug("\n");
     // fan_str8_print(table[index].value);
-    // fan_log(FanLog_DEBUG, "\n");
+    // fan_log_debug("\n");
 
     ht->size++;
 
@@ -255,7 +255,7 @@ bool32 fan_ht_resize(fan_ht *ht, fan_allocator *mem) {
         return false;
     }
 
-    fan_log(FanLog_DEBUG, "expanding ht: %zu -> %zu\n", old_capacity, new_capacity);
+    fan_log_debug("expanding ht: %zu -> %zu\n", old_capacity, new_capacity);
 
     fan_ht_entry *new_entries =
         mem->make(mem->ctx, sizeof(fan_ht_entry) * new_capacity);
@@ -308,7 +308,7 @@ fan_str8 fan_ht_get(fan_str8 key, fan_ht *ht) {
     usize hash = fan_ht_hash_str8(key);
     usize index = (usize)(hash & (usize)(ht->capacity - 1));
 
-    // fan_log(FanLog_DEBUG, "index: %zu, hash: %zu\n", index, hash);
+    // fan_log_debug("index: %zu, hash: %zu\n", index, hash);
 
     fan_ht_entry *table = ht->table;
 

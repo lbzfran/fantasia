@@ -66,6 +66,8 @@ typedef struct {
 
 #define PI 3.14159265358979323846f
 
+FAN_API uint32 fan_i32_reduce(uint32 x, uint32 N);
+
 FAN_API float32 fan_f32_clamp(float32 value, float32 min, float32 max);
 FAN_API float32 fan_f32_lerp(float32 a, float32 x, float32 b);
 FAN_API int32 fan_f32_equals(float32 x, float32 y);

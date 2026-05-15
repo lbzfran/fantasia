@@ -80,6 +80,7 @@ static inline void assume(bool32 condition) {
         __builtin_unreachable();
     }
 }
+# define FAN_LOG_LEVEL FanLog_DEBUG
 #endif
 
 #define sizeof(x)           (ssize)sizeof(x)
@@ -93,12 +94,12 @@ static inline void assume(bool32 condition) {
 #define lengthof(s)         (countof(s) - 1)
 #define signof(x)           ((x) > 0) ? 1 : (((x) < 0) ? -1 : 0)
 #ifndef static_assert
-#define static_assert _Static_assert
+#define static_assert       _Static_assert
 #endif
 #ifdef nullptr_t
-typedef nullptr_t nullptr;
+typedef nullptr_t           nullptr;
 #else
-#define nullptr null
+#define nullptr             null
 #endif
 
 #if !defined(true) && !defined(false)
@@ -117,7 +118,7 @@ typedef nullptr_t nullptr;
 #define global  static
 
 // NOTE(liam): fake attribute used to denote if a function's parameter
-// is effectively optional (as in a nullable parameter)
+// is effectively optional/nullable
 #define optional_
 
 #define null            0
@@ -133,18 +134,69 @@ typedef nullptr_t nullptr;
 #define clamp(x, a, b)   min(max(x, a), b)
 
 typedef enum {
-    FanLog_ALL     = 0,
-    FanLog_TRACE   = 1,
-    FanLog_DEBUG   = 2,
-    FanLog_INFO    = 3,
-    FanLog_WARNING = 4,
-    FanLog_ERROR   = 5,
-    FanLog_FATAL   = 6,
-    FanLog_NONE    = 7
+    FanLog_ALL = 0,
+    FanLog_TRACE,
+    FanLog_DEBUG,
+    FanLog_INFO,
+    FanLog_WARN,
+    FanLog_ERROR,
+    FanLog_FATAL,
+    FanLog_NONE,
 } fan_loglevel;
 
-#define fan_log(level, fmt, ...) \
-    fprintf(stderr, "[%s] " fmt "\n", #level, ##__VA_ARGS__)
+#ifndef FAN_LOG_LEVEL
+#define FAN_LOG_LEVEL FanLog_WARN
+#endif
+
+#define fan_log_impl_(level, fmt, ...) \
+    fprintf(stderr, "[%s] " fmt, #level, ##__VA_ARGS__)
+#define fan_log_nested_impl_(fmt, ...) \
+    fprintf(stderr, fmt, ##__VA_ARGS__)
+
+#if FAN_LOG_LEVEL <= FanLog_TRACE
+#define fan_log_trace(fmt, ...) \
+    fan_log_impl_(TRACE, fmt, ##__VA_ARGS__)
+#define fan_log_nested_trace fan_log_nested_impl_
+#else
+#define fan_log_trace(fmt, ...) ((void)0)
+#define fan_log_nested_trace(fmt, ...) ((void)0)
+#endif
+
+#if FAN_LOG_LEVEL <= FanLog_DEBUG
+#define fan_log_debug(fmt, ...) \
+    fan_log_impl_(DEBUG, fmt, ##__VA_ARGS__)
+#define fan_log_nested_debug fan_log_nested_impl_
+#else
+#define fan_log_debug(fmt, ...) ((void)0)
+#define fan_log_nested_debug(fmt, ...) ((void)0)
+#endif
+
+#if FAN_LOG_LEVEL <= FanLog_INFO
+#define fan_log_info(fmt, ...) \
+    fan_log_impl_(INFO, fmt, ##__VA_ARGS__)
+#define fan_log_nested_info fan_log_nested_impl_
+#else
+#define fan_log_info(fmt, ...) ((void)0)
+#define fan_log_nested_info(fmt, ...) ((void)0)
+#endif
+
+#if FAN_LOG_LEVEL <= FanLog_WARN
+#define fan_log_warn(fmt, ...) \
+    fan_log_impl_(WARN, fmt, ##__VA_ARGS__)
+#define fan_log_nested_warn fan_log_nested_impl_
+#else
+#define fan_log_warn(fmt, ...) ((void)0)
+#define fan_log_nested_warn(fmt, ...) ((void)0)
+#endif
+
+#if FAN_LOG_LEVEL <= FanLog_ERROR
+#define fan_log_error(fmt, ...) \
+    fan_log_impl_(WARN, fmt, ##__VA_ARGS__)
+#define fan_log_nested_error fan_log_nested_impl_
+#else
+#define fan_log_error(fmt, ...) ((void)0)
+#define fan_log_nested_error(fmt, ...) ((void)0)
+#endif
 
 typedef struct fan_allocator {
     void *(*make)   (void *ctx, ssize size);
@@ -237,40 +289,9 @@ typedef struct {
     allocator.free(allocator.ctx, arr.data, arr.capacity);                 \
 }while(0)
 
-#define fan_fbuf8_mem(buf, cap)    { buf, 0, cap, -1, 0 }
-#define fan_fbuf8_fd(fd, buf, cap) { buf, 0, cap, fd, 0 }
-
-
-FAN_API void fan_fbuf8_flush(fan_fbuf8 *);
-FAN_API void fan_fbuf8_append(fan_fbuf8 *, uchar8 *, ssize);
-
-FAN_API void fan_fbuf8_append_char(fan_fbuf8 *, uchar8);
-FAN_API void fan_fbuf8_append_cstr(fan_fbuf8 *, const char8 *);
-FAN_API void fan_fbuf8_append_str8(fan_fbuf8 *, fan_str8);
-FAN_API void fan_fbuf8_append_ptr(fan_fbuf8  *, void *);
-
-FAN_API void fan_fbuf8_append_long(fan_fbuf8   *, long);
-FAN_API void fan_fbuf8_append_double(fan_fbuf8 *, double);
-
-#define fan_fbuf8_append_derive_(b, x) _Generic((x),  \
-        int32:              fan_fbuf8_append_long,    \
-        int64:              fan_fbuf8_append_long,    \
-        float32:            fan_fbuf8_append_double,  \
-        float64:            fan_fbuf8_append_double,  \
-        char8:              fan_fbuf8_append_char,    \
-        uchar8:             fan_fbuf8_append_char,    \
-        char8 *:            fan_fbuf8_append_cstr,    \
-        const char8 *:      fan_fbuf8_append_cstr,    \
-        fan_str8:           fan_fbuf8_append_str8,    \
-        default:            (void)0                   \
-)(b, x)
 
 // NOTE(liam): string definitions
 #define fan_str8_cstr(s) (fan_str8){ (uchar8 *)s, sizeof(s) - 1 }
-
-// FAN_API void fan_str8_print(fan_fbuf8 *, fan_str8);
-// FAN_API void fan_str8_printn(fan_fbuf8 *, fan_str8, uchar8);
-// FAN_API void fan_str8_println(fan_fbuf8 *, fan_str8);
 
 FAN_API void fan_str8_print(fan_str8);
 
@@ -312,8 +333,8 @@ FAN_API void *fan_freelist_make(void *ctx, ssize size);
 FAN_API void  fan_freelist_free(void *ctx, void *ptr, ssize size);
 FAN_API void *fan_freelist_resize(void *ctx, void *ptr, ssize old, ssize new);
 
-void fan_freelist_clear(fan_freelist *fl);
-void fan_freelist_init(fan_freelist *fl, void *data, ssize size);
+FAN_API void fan_freelist_clear(fan_freelist *fl);
+FAN_API void fan_freelist_init(fan_freelist *fl, void *data, ssize size);
 
 FAN_API fan_arena_temp fan_arena_temp_begin(fan_arena *a);
 FAN_API void           fan_arena_temp_end(fan_arena_temp temp);

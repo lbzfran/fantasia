@@ -153,7 +153,7 @@ void GridWorldGenerate(TileMap map) {
             }
 
             fan_matrix_at(map.visual_tiles, j, i) = bits;
-            fan_log(FanLog_DEBUG, "%d\t", bits);
+            fan_log_debug("%d\t", bits);
             // fan_rect src = GridAtlasGetRect(atlas, bits);
             // fan_rect dst = (fan_rect) {
             //     0, 0, map.tile_size, map.tile_size
@@ -162,7 +162,7 @@ void GridWorldGenerate(TileMap map) {
             //
             // fan_draw_texture(tile_texture, src, dst, fan_vec2_zero(), 0.0f, fan_color_WHITE);
         }
-        fan_log(FanLog_DEBUG, "\n");
+        fan_log_debug("\n");
     }
 }
 
@@ -400,8 +400,8 @@ void AnimationSystem(CAnimation *a, CTexture *t, AnimationData *table, float dt)
     }
 
     a->timer += dt;
-    // fan_log(FanLog_DEBUG, "a->timer: %f\n", a->timer);
-    // fan_log(FanLog_DEBUG, "data->frame_time: %f\n", data->frame_time);
+    // fan_log_debug("a->timer: %f\n", a->timer);
+    // fan_log_debug("data->frame_time: %f\n", data->frame_time);
     if (a->timer >= data->frame_time) {
         a->timer -= data->frame_time;
         a->current_frame++;
@@ -671,13 +671,13 @@ void RenderEntities(World *world, GameState *state, float32 dt) {
             }
 
             if (state->player_called_object_dump) {
-                fan_log(FanLog_DEBUG, "id: %td\n", id);
-                fan_log(FanLog_DEBUG, "interacting: %s\n", interacting ? "true" : "false");
-                fan_log(FanLog_DEBUG, "interacted: %s\n",  interacted  ? "true" : "false");
+                fan_log_debug("id: %td\n", id);
+                fan_log_debug("interacting: %s\n", interacting ? "true" : "false");
+                fan_log_debug("interacted: %s\n",  interacted  ? "true" : "false");
                 fan_rect_print(collision->boundary);
-                fan_log(FanLog_DEBUG, "\t");
+                fan_log_debug("\t");
                 fan_vec2_print(transform->position);
-                fan_log(FanLog_DEBUG, "\t");
+                fan_log_debug("\t");
                 fan_vec2_print(transform->scale);
             }
         }

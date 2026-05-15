@@ -35,13 +35,13 @@ static bool32 GameAPILoad(GameAPI *game) {
     }
 
     if (!fan_file_copy(GAME_LIB_PATH, GAME_LIB_TMP_PATH)) {
-        fan_log(FanLog_ERROR, "DEBUGGING Failed to copy game library!\n");
+        fan_log_error("DEBUGGING Failed to copy game library!\n");
         return false;
     }
 
     void *library = fan_lib_open(GAME_LIB_TMP_PATH);
     if (library == nullptr) {
-        fan_log(FanLog_ERROR, "Failed to load game library!\n");
+        fan_log_error("Failed to load game library!\n");
         return false;
     }
 
@@ -54,7 +54,7 @@ static bool32 GameAPILoad(GameAPI *game) {
     };
 
     if (!new_game.init || !new_game.update_and_render || !new_game.close || !new_game.on_reload) {
-        fan_log(FanLog_ERROR, ": Failed to laod game symbols!\n");
+        fan_log_error(": Failed to laod game symbols!\n");
         fan_lib_close(library);
         return false;
     }
@@ -143,7 +143,7 @@ int GameMain(void) {
 #ifdef DEBUG
         if (fan_key_pressed(FanKey_P)) {
             state.player_called_object_dump = true;
-            fan_log(FanLog_DEBUG, "[[START DUMP]]\n");
+            fan_log_debug("[[START DUMP]]\n");
         }
         if (fan_key_pressed(FanKey_T) ||
             fan_file_time_last_written(GAME_LIB_PATH,
@@ -166,28 +166,28 @@ int GameMain(void) {
 
 #ifdef DEBUG
         if (state.player_called_object_dump) {
-            fan_log(FanLog_DEBUG, "Total Allocations: %.2f / %.2f KB\n", (float64)world.arena.size / 1000.0, (float64)world.arena.capacity / 1000.0);
-            fan_log(FanLog_DEBUG, "current_time: %.3f\n", state.current_time);
+            fan_log_debug("Total Allocations: %.2f / %.2f KB\n", (float64)world.arena.size / 1000.0, (float64)world.arena.capacity / 1000.0);
+            fan_log_debug("current_time: %.3f\n", state.current_time);
 
-            fan_log(FanLog_DEBUG, "Total Component 'Transform' size/capacity: \t%td/%td\n", world.c_transform.size, world.c_transform.capacity);
-            fan_log(FanLog_DEBUG, "Total Component 'Shape' size/capacity:     \t%td/%td\n", world.c_shape.size,     world.c_shape.capacity);
-            fan_log(FanLog_DEBUG, "Total Component 'Physics' size/capacity:   \t%td/%td\n", world.c_physics.size,   world.c_physics.capacity);
-            fan_log(FanLog_DEBUG, "Total Component 'Texture' size/capacity:   \t%td/%td\n", world.c_texture.size,   world.c_texture.capacity);
-            fan_log(FanLog_DEBUG, "Total Component 'Behavior' size/capacity:  \t%td/%td\n", world.c_behavior.size,  world.c_behavior.capacity);
-            fan_log(FanLog_DEBUG, "Total Component 'Animation' size/capacity: \t%td/%td\n", world.c_animation.size, world.c_animation.capacity);
-            fan_log(FanLog_DEBUG, "Total Component 'Question' size/capacity: \t%td/%td\n", world.c_question.size,   world.c_question.capacity);
+            fan_log_debug("Total Component 'Transform' size/capacity: \t%td/%td\n", world.c_transform.size, world.c_transform.capacity);
+            fan_log_debug("Total Component 'Shape' size/capacity:     \t%td/%td\n", world.c_shape.size,     world.c_shape.capacity);
+            fan_log_debug("Total Component 'Physics' size/capacity:   \t%td/%td\n", world.c_physics.size,   world.c_physics.capacity);
+            fan_log_debug("Total Component 'Texture' size/capacity:   \t%td/%td\n", world.c_texture.size,   world.c_texture.capacity);
+            fan_log_debug("Total Component 'Behavior' size/capacity:  \t%td/%td\n", world.c_behavior.size,  world.c_behavior.capacity);
+            fan_log_debug("Total Component 'Animation' size/capacity: \t%td/%td\n", world.c_animation.size, world.c_animation.capacity);
+            fan_log_debug("Total Component 'Question' size/capacity: \t%td/%td\n", world.c_question.size,   world.c_question.capacity);
             state.player_called_object_dump = false;
         }
 
         if (requested_reload) {
             fan_os_wait(250);
-            fan_log(FanLog_DEBUG, "DEBUG: Reloading!\n");
+            fan_log_debug("DEBUG: Reloading!\n");
             if (GameAPILoad(&game)) {
                 game.on_reload(&world, &state);
                 requested_reload = false;
             }
             else {
-                fan_log(FanLog_ERROR, "Failed to Reload!");
+                fan_log_error("Failed to Reload!");
                 break;
             }
         }

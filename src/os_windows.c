@@ -21,14 +21,14 @@ void os_error_get_(void) {
                    0,
                    NULL);
 
-    fan_log(FanLog_ERROR, "%lu: %s\n", err, msg);
+    fan_log_error("%lu: %s\n", err, msg);
     LocalFree(msg);
 }
 
 void* fan_lib_open(const char *path) {
     void *res = (void *)LoadLibraryA(path);
     if (res == NULL) {
-        fan_log(FanLog_ERROR, "Failed to load DLL '%s': '%lu'.\n", path, GetLastError());
+        fan_log_error("Failed to load DLL '%s': '%lu'.\n", path, GetLastError());
     }
     return res;
 }
@@ -36,7 +36,7 @@ void* fan_lib_open(const char *path) {
 void* fan_lib_load(void *lib, const char *name) {
     void *res = (void *)GetProcAddress((HMODULE)lib, name);
     if (res == NULL) {
-        fan_log(FanLog_ERROR, "Failed to load function '%s': '%lu'.\n", name, GetLastError());
+        fan_log_error("Failed to load function '%s': '%lu'.\n", name, GetLastError());
     }
     return res;
 }
