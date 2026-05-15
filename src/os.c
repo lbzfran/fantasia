@@ -44,7 +44,7 @@ void *fan_arena_make(void *ctx, ssize size) {
     fan_arena *a = (fan_arena *)ctx;
 
     uintptr base = (uintptr)(a->data + a->size);
-    uintptr alignment = fan_align_forward(base, FAN_ARENA_ALIGNMENT);
+    uintptr alignment = fan_align_forward(base, FAN_DEFAULT_ALIGNMENT);
     ssize offset = alignment - (uintptr)a->data;
 
     assert(size + offset <= a->capacity && "ERROR: Reached Out-Of-Memory state.");
@@ -79,13 +79,13 @@ fan_arena_temp fan_arena_temp_begin(fan_arena *a) {
     fan_arena_temp result;
 
     result.arena = a;
-    result.size  = a->size;
+    result.start_size = a->size;
 
     return result;
 }
 
 void fan_arena_temp_end(fan_arena_temp temp) {
-    temp.arena->size = temp.size;
+    temp.arena->size = temp.start_size;
 }
 
 
@@ -120,21 +120,21 @@ void *fan_arena_resize(void *ctx, void *ptr, ssize old, ssize new) {
 }
 
 // NOTE(liam): freelist
-void fan_flist_clear(fan_freelist *fl) {
+void fan_freelist_clear(fan_freelist *fl) {
     fl->used = 0;
-    fan_flist_node *first_node = (fan_flist_node *)fl->data;
+    fan_freelist_node *first_node = (fan_freelist_node *)fl->data;
     first_node->block_size = fl->size;
     first_node->next = NULL;
     fl->head = first_node;
 }
 
-void fan_flist_init(fan_freelist *fl, void *data, ssize size) {
+void fan_freelist_init(fan_freelist *fl, void *data, ssize size) {
     fl->data = data;
     fl->size = size;
-    fan_flist_clear(fl);
+    fan_freelist_clear(fl);
 }
 
-ssize calc_padding(uintptr ptr,
+ssize fan_calc_padding(uintptr ptr,
                    uintptr alignment,
                    ssize header_size) {
     assert(is_power_of_two(alignment));
@@ -153,49 +153,177 @@ fan_freelist_node *fan_freelist_findbest(fan_freelist *fl, ssize size, ssize ali
     ssize smallest_diff = ~(ssize)0;
 
     fan_freelist_node *node = fl->head;
-    fan_freelist_node *prev_node = NULL;
-    fan_freelist_node *best_node = NULL;
+    fan_freelist_node *prev_node = nullptr;
+    fan_freelist_node *best_node = nullptr;
 
     ssize padding = 0;
 
     while (node != NULL) {
-        padding = calc_padding((uintptr)node, (uintptr)alignment, sizeof(fan_freelist_header));
+        padding = fan_calc_padding((uintptr)node, (uintptr)alignment, sizeof(fan_freelist_header));
         ssize required = size + padding;
-        if (node->block_size >= required && (node->block_size - required_space < smallest_diff)) {
-            best_node = node;
+        if (node->block_size >= required) {
+            ssize diff = node->block_size - required;
+
+            if (diff < smallest_diff) {
+                smallest_diff = diff;
+                best_node = node;
+
+                if (padding_) *padding_ = padding;
+                if (prev_node_) *prev_node_ = prev_node;
+            }
         }
         prev_node = node;
         node = node->next;
     }
-    if (padding_) *padding_ = padding;
-    if (prev_node_) *prev_node_ = prev_node;
     return best_node;
 }
 
-fan_freelist_node *fan_freelist_findfirst(fan_freelist *fl, ssize size, ssize alignment, ssize *padding_, fan_free_list_node **prev_node_) {
+fan_freelist_node *fan_freelist_findfirst(fan_freelist *fl, ssize size, ssize alignment, ssize *padding_, fan_freelist_node **prev_node_) {
     fan_freelist_node *node = fl->head;
     fan_freelist_node *prev_node = nullptr;
 
     ssize padding = 0;
 
     while (node != nullptr) {
-        padding = fan_calc_padding((uintptr)node, (uintptr)alignment, sizeof(fan_freelist_header));
+        padding = fan_calc_padding(
+            (uintptr)node,
+            (uintptr)alignment,
+            sizeof(fan_freelist_header)
+        );
         ssize required = size + padding;
+
         if (node->block_size >= required) {
             break;
         }
+
         prev_node = node;
         node = node->next;
     }
 
-    if (padding_) *padding_ = padding;
-    if (prev_node_) *prev_node = prev_node;
+    if (padding_)   *padding_   = padding;
+    if (prev_node_) *prev_node_ = prev_node;
     return node;
 }
 
+void fan_freelist_node_insert(fan_freelist_node **phead, fan_freelist_node *prev_node, fan_freelist_node *new_node) {
+    if (prev_node is nullptr) {
+        new_node->next = *phead;
+        *phead = new_node;
+    }
+    else {
+        new_node->next = prev_node->next;
+        prev_node->next = new_node;
+    }
+}
 
+void fan_freelist_node_remove(fan_freelist_node **phead, fan_freelist_node *prev_node, fan_freelist_node *del_node) {
+    if (prev_node is nullptr) {
+        *phead = del_node->next;
+    } else {
+        prev_node->next = del_node->next;
+    }
+}
 
+void *fan_freelist_make(void *ctx, ssize size) {
+    fan_freelist *fl = (fan_freelist *)ctx;
+    ssize padding = 0;
+    fan_freelist_node *prev_node = nullptr;
+    fan_freelist_node *node = nullptr;
+    ssize alignment = FAN_DEFAULT_ALIGNMENT;
+    assume(alignment >= 8 and is_power_of_two(alignment));
+    ssize alignment_padding, required, remaining;
+    fan_freelist_header *header_ptr;
 
+    if (size < sizeof(fan_freelist_node)) {
+        size = sizeof(fan_freelist_node);
+    }
+
+    if (fl->policy is FanFListPolicy_FindBest) {
+        node = fan_freelist_findbest(fl, size, alignment, &padding, &prev_node);
+    }
+    else {
+        node = fan_freelist_findfirst(fl, size, alignment, &padding, &prev_node);
+    }
+    fan_log(
+            FanLog_DEBUG,
+           "head=%p block=%zu size=%zu padding=%zu required=%zu\n",
+           fl->head,
+           (ssize)(node ? node->block_size : -1),
+           (ssize)size,
+           (ssize)padding,
+           (ssize)(size + padding)
+    );
+    if (node is nullptr) {
+        assert(false && "Freelist has run out of memory.");
+        return nullptr;
+    }
+
+    alignment_padding = padding - sizeof(fan_freelist_header);
+    required = size + padding;
+    remaining = node->block_size - required;
+
+    if (remaining >= sizeof(fan_freelist_node)) {
+        fan_freelist_node *new_node = (fan_freelist_node *)((uint8 *)node + required);
+        new_node->block_size = remaining;
+        fan_freelist_node_insert(&fl->head, node, new_node);
+    }
+
+    fan_freelist_node_remove(&fl->head, prev_node, node);
+
+    fl->used += required;
+
+    header_ptr = (fan_freelist_header *)((uint8 *)node + alignment_padding);
+    header_ptr->block_size = required;
+    header_ptr->padding = alignment_padding;
+
+    return (void *)((uint8 *)header_ptr + sizeof(fan_freelist_header));
+}
+
+void fan_freelist_coalesce(fan_freelist *fl, fan_freelist_node *prev_node, fan_freelist_node *free_node);
+
+void fan_freelist_free(void *ctx, void *ptr, ssize size) {
+    (void)size;
+    fan_freelist *fl = (fan_freelist *)ctx;
+    fan_freelist_header *header;
+    fan_freelist_node *free_node, *node;
+    fan_freelist_node *prev_node = nullptr;
+
+    if (ptr is null) {
+        return;
+    }
+
+    header = (fan_freelist_header *)((uint8 *)ptr - sizeof(fan_freelist_header));
+    free_node = (fan_freelist_node *)((uint8 *)header - header->padding);
+    free_node->block_size = header->block_size;
+    free_node->next = nullptr;
+
+    node = fl->head;
+    while (node isnt nullptr and (uintptr)free_node > (uintptr)node) {
+        prev_node = node;
+        node = node->next;
+    }
+    fan_freelist_node_insert(&fl->head, prev_node, free_node);
+    fl->used -= free_node->block_size;
+    fan_freelist_coalesce(fl, prev_node, free_node);
+}
+
+void fan_freelist_coalesce(fan_freelist *fl, fan_freelist_node *prev_node, fan_freelist_node *free_node) {
+    if (free_node->next isnt nullptr and
+        (void *)((uint8 *)free_node + free_node->block_size) is free_node->next) {
+        free_node->block_size += free_node->next->block_size;
+
+        fan_freelist_node *next = free_node->next;
+
+        free_node->block_size += next->block_size;
+        fan_freelist_node_remove(&fl->head, free_node, next);
+    }
+
+    if (prev_node isnt nullptr and prev_node->next isnt nullptr and
+        (void *)((uint8 *)prev_node + prev_node->block_size) is free_node) {
+        prev_node->block_size += free_node->block_size;
+        fan_freelist_node_remove(&fl->head, prev_node, free_node);
+    }
+}
 
 
 void fan_fbuf8_flush(fan_fbuf8 *b) {

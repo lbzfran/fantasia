@@ -158,7 +158,8 @@ typedef struct fan_arena {
     ssize  size;
     ssize  capacity;
 } fan_arena;
-#define FAN_ARENA_ALIGNMENT 16
+
+#define FAN_DEFAULT_ALIGNMENT 16
 
 typedef struct {
     fan_arena *arena;
@@ -168,25 +169,26 @@ typedef struct {
 typedef struct {
     ssize block_size;
     ssize padding;
-} fan_flist_header;
+} fan_freelist_header;
 
-typedef struct {
-    fan_flist_node *next;
+// typedef struct fan_freelist_node fan_freelist_node;
+typedef struct fan_freelist_node {
+    struct fan_freelist_node *next;
     ssize block_size;
-} fan_flist_node;
+} fan_freelist_node;
 
 typedef enum {
     FanFListPolicy_FindFirst,
     FanFListPolicy_FindBest,
-} fan_flist_policy;
+} fan_freelist_policy;
 
 typedef struct {
     void *data;
     ssize size;
     ssize used;
 
-    fan_flist_node *head;
-    fan_flist_policy policy;
+    fan_freelist_node *head;
+    fan_freelist_policy policy;
 } fan_freelist;
 
 typedef enum {
@@ -309,6 +311,9 @@ FAN_API void  fan_arena_clear(fan_arena *a);
 FAN_API void *fan_freelist_make(void *ctx, ssize size);
 FAN_API void  fan_freelist_free(void *ctx, void *ptr, ssize size);
 FAN_API void *fan_freelist_resize(void *ctx, void *ptr, ssize old, ssize new);
+
+void fan_freelist_clear(fan_freelist *fl);
+void fan_freelist_init(fan_freelist *fl, void *data, ssize size);
 
 FAN_API fan_arena_temp fan_arena_temp_begin(fan_arena *a);
 FAN_API void           fan_arena_temp_end(fan_arena_temp temp);

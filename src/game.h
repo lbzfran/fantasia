@@ -357,6 +357,7 @@ fan_component_declare(CAnswerTag,   CAnswer);
 
 typedef struct {
     fan_arena              arena;
+    // fan_freelist           freelist;
 
     uint8                  entity_count;
     SpecialEntityID        spec_id;
@@ -364,7 +365,7 @@ typedef struct {
     AnimationData         *anim_table;
     ssize                  anim_table_size;
 
-    fan_asset               assets;
+    fan_asset              assets;
 
     EntitySplit            split;
 	bool32                 update_entity_split;
