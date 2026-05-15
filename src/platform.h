@@ -397,6 +397,62 @@ typedef struct {
     ssize capacity;
 } fan_ht;
 
+typedef union {
+    int32    i;
+    float32  f;
+    bool32   b;
+    char8   *s;
+} fan_cvar_value;
+
+typedef enum : uint32 {
+    FanCVarFlag_NONE     = 0,
+    FanCVarFlag_ARCHIVE  = 1 << 0,
+    FanCVarFlag_ROM      = 1 << 1,
+    FanCVarFlag_CHEAT    = 1 << 2,
+    FanCVarFlag_MODIFIED = 1 << 3,
+
+    FanCVarFlag_INT      = 1 << 4,
+    FanCVarFlag_FLOAT    = 1 << 5,
+    FanCVarFlag_BOOL     = 1 << 6,
+    FanCVarFlag_STRING   = 1 << 7,
+
+    FanCVarFlag_SYSTEM   = 1 << 8,
+    FanCVarFlag_GAME     = 1 << 9,
+} fan_cvar_flags;
+
+// typedef struct {
+//     fan_str8          name;
+//     fan_str8          description;
+//     fan_cvar_type     type;
+//     fan_cvar_value    value;
+//     fan_str8          valueString;
+//     fan_str8          resetString;
+//     fan_cvar_flags    flags;
+//     float32           min_value, max_value;
+// } fan_cvar_internal_;
+
+typedef struct {
+    fan_str8           name;
+    fan_str8           description;
+    fan_cvar_value     value;
+    fan_cvar_value     default_value;
+    fan_cvar_flags     flags : 24;
+
+    float32            min_value;
+    float32            max_value;
+    fan_str8          *string_values;
+
+    fan_cvar          *internal;
+} fan_cvar;
+
+typedef struct {
+    fan_cvar_internal_ *cvars;
+    ssize               size;
+    ssize               capacity;
+
+    fan_ht             *ht;
+} fan_cvar_registry;
+
 FAN_API usize fan_ht_hash_str8(fan_str8);
 FAN_API usize fan_ht_hash_bytes(void *ptr, usize len);
 
@@ -407,6 +463,13 @@ FAN_API fan_str8 fan_ht_get(fan_str8 key, fan_ht *ht);
 FAN_API void fan_ht_put(fan_str8 key, fan_str8 value, fan_ht *ht, fan_allocator *mem);
 FAN_API bool32 fan_ht_delete(fan_str8 key, fan_ht *ht, fan_allocator *mem);
 FAN_API bool32 fan_ht_resize(fan_ht *ht, fan_allocator *mem);
+
+FAN_API void     fan_cvar_set(fan_str8, fan_str8);
+FAN_API fan_str8 fan_cvar_get(fan_str8);
+
+FAN_API int32   fan_cvar_getint32(fan_str8);
+FAN_API float32 fan_cvar_getfloat32(fan_str8);
+FAN_API bool32  fan_cvar_getbool32(fan_str8);
 
 
 FAN_API void fan_dsl_array_append(fan_allocator *mem, fan_dsl_token_array *arr, fan_dsl_token x);
