@@ -31,6 +31,7 @@ int TestMain(void) {
     assert(fan_str8_equals(not_found, fan_str8_cstr("0")));
     assert(ht.capacity == ht_capacity * 2);
 
+
     fan_ht_free(&ht, &mem);
     fan_freelist_clear(&fl);
 

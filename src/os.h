@@ -145,7 +145,7 @@ typedef enum {
 } fan_loglevel;
 
 #ifndef FAN_LOG_LEVEL
-#define FAN_LOG_LEVEL FanLog_WARN
+#define FAN_LOG_LEVEL FanLog_INFO
 #endif
 
 #define fan_log_impl_(level, fmt, ...) \
@@ -268,24 +268,27 @@ typedef struct {
     int32    ok;
 } fan_cutstr8;
 
+#define fan_make(mem, ...)   ((mem)->make((mem)->ctx, __VA_ARGS__))
+#define fan_free(mem, ...)   ((mem)->free((mem)->ctx, __VA_ARGS__))
+#define fan_resize(mem, ...) ((mem)->resize((mem)->ctx, __VA_ARGS__))
+
 #define FAN_ARRAY_INITIAL_CAPACITY 32
 #define fan_array_append(allocator, arr, x) do{                                             \
     assume((allocator)->resize != null && "allocator 'resize' must be defined.");              \
-    assume(typeof(*(arr).data) == typeof(x) && "array's data type must match.");        \
-    if ((arr).size >= (arr).capacity) {                                                     \
-        ssize new_capacity = max((arr).capacity * 2, FAN_ARRAY_INITIAL_CAPACITY);             \
-        void *new_data = allocator->resize((allocator)->ctx, (arr).data, (arr).capacity, sizeof(*(arr).data) * new_capacity); \
+    if ((arr)->size >= (arr)->capacity) {                                                     \
+        ssize new_capacity = max((arr)->capacity * 2, FAN_ARRAY_INITIAL_CAPACITY);             \
+        void *new_data = allocator->resize((allocator)->ctx, (arr)->data, (arr)->capacity, sizeof(*(arr)->data) * new_capacity); \
         assume(new_data != nullptr); \
-        (arr).data = new_data; \
-        (arr).capacity = new_capacity;                                                        \
+        (arr)->data = new_data; \
+        (arr)->capacity = new_capacity;                                                        \
     }                                                                                       \
-    (arr).data[(arr).size] = x;                                                                 \
-    (arr).size++;                                                                             \
+    (arr)->data[(arr)->size] = x;                                                                 \
+    (arr)->size++;                                                                             \
 }while(0)
 
 // NOTE(liam): array definitions
 #define fan_array_clear(allocator, arr) do{                                \
-    assume(allocator.free != null && "allocator 'free' must be defined."); \
+    assume(allocator->free != null && "allocator 'free' must be defined."); \
     allocator.free(allocator.ctx, arr.data, arr.capacity);                 \
 }while(0)
 

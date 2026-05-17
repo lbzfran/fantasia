@@ -405,3 +405,33 @@ bool32 fan_ht_delete(fan_str8 key, fan_ht *ht, fan_allocator *mem) {
 
     return false;
 }
+
+fan_cvar *fan_cvar_register_(fan_cvar params, fan_cvar_system *sys) {
+    assert(params.name.length > 0);
+
+    fan_allocator *mem = &(fan_allocator){
+        .make   = fan_arena_make,
+        .free   = fan_arena_free,
+        .resize = fan_arena_resize,
+        .ctx    = &sys->arena
+    };
+    fan_cvar *result = fan_make(mem, sizeof(fan_cvar));
+
+    result->name          = fan_str8_copy(params.name, mem);
+    result->description   = fan_str8_copy(params.description, mem);
+    result->default_value = params.default_value;
+    result->value         = result->default_value;
+    result->flags         = params.flags;
+    if (params.min_value + params.max_value != 0.0f) {
+        result->min_value = params.min_value;
+        result->max_value = params.max_value;
+    }
+    else if (params.string_values.capacity > 0) {
+        for (ssize i = 0; i < params.string_values.size; i++) {
+            fan_str8 s = params.string_values.data[i];
+            fan_array_append(mem, &result->string_values, fan_str8_copy(s, mem));
+        }
+    }
+
+    return result;
+}
