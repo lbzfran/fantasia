@@ -387,10 +387,10 @@ typedef struct {
 typedef struct {
     fan_str8 key;
     fan_str8 value;
-} fan_ht_entry;
+} fan_ht_entry_str8;
 
 typedef struct {
-    fan_ht_entry *table;
+    fan_ht_entry_str8 *table;
 
     fan_str8 default_entry;
     ssize size;
@@ -401,7 +401,7 @@ typedef union {
     int32    i;
     float32  f;
     bool32   b;
-    char8   *s;
+    fan_str8 s;
 } fan_cvar_value;
 
 typedef enum : uint32 {
@@ -444,7 +444,7 @@ struct fan_cvar {
     fan_str8           description;
     fan_cvar_value     value;
     fan_cvar_value     default_value;
-    fan_cvar_flags     flags : 24;
+    fan_cvar_flags     flags;
 
     float32            min_value;
     float32            max_value;
@@ -453,18 +453,48 @@ struct fan_cvar {
     fan_cvar          *next;
 };
 
-// typedef struct {
-//     fan_cvar_internal_ *cvars;
-//     ssize               size;
-//     ssize               capacity;
-//
-//     fan_ht             *ht;
-// } fan_cvar_registry;
+typedef struct {
+    fan_str8 key;
+    fan_cvar value;
+} fan_ht_entry_cvar;
+
+// TODO(liam): figure out what to do with the hashtable.
+// make str8-to-str8 and str8-to-ptr, or use a generic macro
+// like the generic array?
+typedef struct {
+    fan_ht     table;
+    fan_cvar  *head;
+
+    fan_arena  arena;
+} fan_cvar_system;
 
 FAN_API usize fan_ht_hash_str8(fan_str8);
 FAN_API usize fan_ht_hash_bytes(void *ptr, usize len);
 
-FAN_API void fan_ht_init(fan_ht *ht, ssize capacity, fan_allocator *mem);
+/* NOTE(liam): assumes the structure
+ * struct {
+ *     struct {
+ *         fan_str8 key;
+ *         T value;
+ *     } *table;
+ *     ssize size;
+ *     ssize capacity;
+ *     T default_entry;
+ * }
+ *
+ * where T is one uniform type across the struct.
+ */
+#define FAN_HT_DEFAULT_CAPACITY 8
+#define fan_ht_init(ht, default_value, mem) do{ \
+    assume((ht)->capacity == 0); \
+    ssize capacity = sizeof(*(ht)->table) * FAN_HT_DEFAULT_CAPACITY; \
+    (ht)->table         = fan_make((mem), capacity); \
+    (ht)->default_entry = (default_value); \
+    (ht)->size          = 0; \
+    (ht)->capacity      = (FAN_HT_DEFAULT_CAPACITY); \
+    fan_memory_set((uint8 *)(ht)->table, 0, capacity); \
+}while(0);
+// FAN_API void fan_ht_init(fan_ht *ht, ssize capacity, fan_allocator *mem);
 FAN_API void fan_ht_setdefault(fan_str8 buf, fan_ht *ht, fan_allocator *mem);
 FAN_API void fan_ht_free(fan_ht *ht, fan_allocator *mem);
 FAN_API fan_str8 fan_ht_get(fan_str8 key, fan_ht *ht);
@@ -472,15 +502,20 @@ FAN_API void fan_ht_put(fan_str8 key, fan_str8 value, fan_ht *ht, fan_allocator 
 FAN_API bool32 fan_ht_delete(fan_str8 key, fan_ht *ht, fan_allocator *mem);
 FAN_API bool32 fan_ht_resize(fan_ht *ht, fan_allocator *mem);
 
-typedef struct fan_cvar_system {
-    fan_arena arena;
-} fan_cvar_system;
-
 FAN_API fan_cvar *fan_cvar_register_(fan_cvar v, fan_cvar_system *sys);
 
-static inline fan_cvar_value fan_cvar_value_int(int32 v) {
+static inline fan_cvar_value fan_cvar_value_i32(int32 v) {
     return (fan_cvar_value){ .i = v };
 }
+
+static inline fan_cvar_value fan_cvar_value_f32(float32 v) {
+    return (fan_cvar_value){ .f = v };
+}
+
+static inline fan_cvar_value fan_cvar_value_b32(bool32 v) {
+    return (fan_cvar_value){ .f = v };
+}
+
 #define FAN_CVAR_VALUE(v) \
     _Generic((v), \
              int32: fan_cvar_value_int \

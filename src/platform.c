@@ -166,18 +166,19 @@ void fan_ht_setdefault(fan_str8 buf, fan_ht *ht, fan_allocator *mem) {
     ht->default_entry = fan_str8_copy(buf, mem);
 }
 
-void fan_ht_init(fan_ht *ht, ssize capacity, fan_allocator *mem) {
-    assume(ht->capacity == 0 && "initialize only zeroed ht.");
 
-    ht->table         = mem->make(mem->ctx, sizeof(fan_ht_entry) * capacity);
-    ht->default_entry = (fan_str8){ 0 };
-    ht->size          = 0;
-    ht->capacity      = capacity;
-
-    for (ssize i = 0; i < ht->capacity; i++) {
-        ht->table[i] = (fan_ht_entry){ 0 };
-    }
-}
+// void fan_ht_init(fan_ht *ht, ssize capacity, fan_allocator *mem) {
+//     assume(ht->capacity == 0 && "initialize only zeroed ht.");
+//
+//     ht->table         = mem->make(mem->ctx, sizeof(fan_ht_entry_str8) * capacity);
+//     ht->default_entry = (fan_str8){ 0 };
+//     ht->size          = 0;
+//     ht->capacity      = capacity;
+//
+//     for (ssize i = 0; i < ht->capacity; i++) {
+//         ht->table[i] = (fan_ht_entry_str8){ 0 };
+//     }
+// }
 
 void fan_ht_free(fan_ht *ht, fan_allocator *mem) {
     if (ht->default_entry.length > 0) {
@@ -185,7 +186,7 @@ void fan_ht_free(fan_ht *ht, fan_allocator *mem) {
     }
 
     for (ssize i = 0; i < ht->capacity; i++) {
-        fan_ht_entry *entry = &ht->table[i];
+        fan_ht_entry_str8 *entry = &ht->table[i];
 
         if (entry->key.length > 0) {
             mem->free(mem->ctx, entry->key.data, entry->key.length);
@@ -196,7 +197,7 @@ void fan_ht_free(fan_ht *ht, fan_allocator *mem) {
         }
     }
 
-    mem->free(mem->ctx, ht->table, sizeof(fan_ht_entry) * ht->capacity);
+    mem->free(mem->ctx, ht->table, sizeof(fan_ht_entry_str8) * ht->capacity);
 
     ht->table    = nullptr;
     ht->default_entry = (fan_str8){ 0 };
@@ -210,7 +211,7 @@ static fan_str8 fan_ht_put_(fan_str8 key, fan_str8 value, fan_ht *ht, fan_alloca
 
     // fan_log_debug("index: %zu, hash: %zu\n", index, hash);
 
-    fan_ht_entry *table = ht->table;
+    fan_ht_entry_str8 *table = ht->table;
 
     while (table[index].key.length != 0) {
         if (fan_str8_equals(key, table[index].key)) {
@@ -248,7 +249,7 @@ static fan_str8 fan_ht_put_(fan_str8 key, fan_str8 value, fan_ht *ht, fan_alloca
 bool32 fan_ht_resize(fan_ht *ht, fan_allocator *mem) {
     // TODO(liam): allow to downsize
     ssize old_capacity = ht->capacity;
-    fan_ht_entry *old_table = ht->table;
+    fan_ht_entry_str8 *old_table = ht->table;
 
     ssize new_capacity = ht->capacity * 2;
     if (new_capacity < ht->capacity) {
@@ -257,14 +258,14 @@ bool32 fan_ht_resize(fan_ht *ht, fan_allocator *mem) {
 
     fan_log_debug("expanding ht: %zu -> %zu\n", old_capacity, new_capacity);
 
-    fan_ht_entry *new_entries =
-        mem->make(mem->ctx, sizeof(fan_ht_entry) * new_capacity);
+    fan_ht_entry_str8 *new_entries =
+        mem->make(mem->ctx, sizeof(fan_ht_entry_str8) * new_capacity);
 
     assert(new_entries != nullptr);
 
-    // fan_memory_set((uint8 *)new_entries, 0, sizeof(fan_ht_entry) * new_capacity);
+    // fan_memory_set((uint8 *)new_entries, 0, sizeof(fan_ht_entry_str8) * new_capacity);
     for (ssize i = 0; i < new_capacity; i++) {
-        new_entries[i] = (fan_ht_entry){ 0 };
+        new_entries[i] = (fan_ht_entry_str8){ 0 };
     }
 
     ht->table = new_entries;
@@ -272,7 +273,7 @@ bool32 fan_ht_resize(fan_ht *ht, fan_allocator *mem) {
     ht->size = 0;
 
     for (ssize i = 0; i < old_capacity; i++) {
-        fan_ht_entry entry = old_table[i];
+        fan_ht_entry_str8 entry = old_table[i];
 
         if (entry.key.data != nullptr) {
             usize hash = fan_ht_hash_str8(entry.key);
@@ -294,7 +295,7 @@ bool32 fan_ht_resize(fan_ht *ht, fan_allocator *mem) {
     mem->free(
         mem->ctx,
         old_table,
-        sizeof(fan_ht_entry) * old_capacity
+        sizeof(fan_ht_entry_str8) * old_capacity
     );
 
     return true;
@@ -310,7 +311,7 @@ fan_str8 fan_ht_get(fan_str8 key, fan_ht *ht) {
 
     // fan_log_debug("index: %zu, hash: %zu\n", index, hash);
 
-    fan_ht_entry *table = ht->table;
+    fan_ht_entry_str8 *table = ht->table;
 
     while (table[index].key.length != 0) {
         if (fan_str8_equals(key, table[index].key)) {
@@ -343,11 +344,11 @@ bool32 fan_ht_delete(fan_str8 key, fan_ht *ht, fan_allocator *mem) {
     usize hash = fan_ht_hash_str8(key);
     usize index = (usize)(hash & (usize)(ht->capacity - 1));
 
-    fan_ht_entry *table = ht->table;
+    fan_ht_entry_str8 *table = ht->table;
 
     while (table[index].key.data != nullptr) {
         if (fan_str8_equals(key, table[index].key)) {
-            fan_ht_entry removed = table[index];
+            fan_ht_entry_str8 removed = table[index];
 
             // free removed entry strings
             mem->free(
@@ -377,7 +378,7 @@ bool32 fan_ht_delete(fan_str8 key, fan_ht *ht, fan_allocator *mem) {
             }
 
             while (table[next].key.data != nullptr) {
-                fan_ht_entry entry = table[next];
+                fan_ht_entry_str8 entry = table[next];
 
                 table[next].key.data = nullptr;
                 table[next].key.length = 0;

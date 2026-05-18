@@ -12,7 +12,8 @@ int TestMain(void) {
     fan_ht ht = { 0 };
 
     ssize ht_capacity = 8;
-    fan_ht_init(&ht, ht_capacity, &mem);
+    // fan_ht_init(&ht, ht_capacity, &mem);
+    fan_ht_init(&ht, fan_str8_cstr("0"), &mem);
     fan_ht_setdefault(fan_str8_cstr("0"), &ht, &mem);
 
     fan_ht_put(fan_str8_cstr("key"),            fan_str8_cstr("val1"), &ht, &mem);
