@@ -22,11 +22,11 @@ jobs:
       contents: write
 
     steps:
-    - uses: actions/checkout@6.0.2
+    - uses: actions/checkout@v6.0
     - name: Computer version
       id: version
       run: |
-        VERSION=v${{ github.event.inputs.major }}.${{ github.event.inputs.minor }}.${{ github.run_number }}
+        VERSION=v${{ github.event.inputs.major }}.${{ github.event.inputs.minor }}.${{ github.sha }}
         echo "VERSION=$VERSION" >> $GITHUB_ENV
         echo "version=$VERSION" >> $GITHUB_OUTPUT
     - name: Install Compilers
@@ -44,7 +44,7 @@ jobs:
         git tag $VERSION
         git push origin $VERSION
     - name: Create Release
-      uses: softprops/action-gh-release@3.0.0
+      uses: softprops/action-gh-release@v3.0
       with:
         tag_name: ${{ steps.version.outputs.version }}
         files: |
