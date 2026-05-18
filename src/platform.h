@@ -385,17 +385,21 @@ typedef struct {
 } fan_dsl_field;
 
 typedef struct {
-    fan_str8 key;
-    fan_str8 value;
-} fan_ht_entry_str8;
-
-typedef struct {
-    fan_ht_entry_str8 *table;
-
-    fan_str8 default_entry;
+    void *default_value;
     ssize size;
     ssize capacity;
-} fan_ht;
+    ssize value_size;
+    ssize key_offset;
+} fan_ht_header;
+
+#define fan_ht_define(NAME, TYPE)  \
+                                   \
+typedef struct {                   \
+    fan_str8 key;                  \
+    TYPE     value;                \
+} fan_ht_entry_##NAME
+
+fan_ht_define(str8, fan_str8);
 
 typedef union {
     int32    i;
@@ -453,23 +457,20 @@ struct fan_cvar {
     fan_cvar          *next;
 };
 
-typedef struct {
-    fan_str8 key;
-    fan_cvar value;
-} fan_ht_entry_cvar;
+fan_ht_define(cvar, fan_cvar);
 
 // TODO(liam): figure out what to do with the hashtable.
 // make str8-to-str8 and str8-to-ptr, or use a generic macro
 // like the generic array?
 typedef struct {
-    fan_ht     table;
+    // fan_ht     table;
     fan_cvar  *head;
 
     fan_arena  arena;
 } fan_cvar_system;
 
 FAN_API usize fan_ht_hash_str8(fan_str8);
-FAN_API usize fan_ht_hash_bytes(void *ptr, usize len);
+FAN_API usize fan_ht_hash_bytes(const void *ptr, usize len);
 
 /* NOTE(liam): assumes the structure
  * struct {
@@ -484,23 +485,30 @@ FAN_API usize fan_ht_hash_bytes(void *ptr, usize len);
  *
  * where T is one uniform type across the struct.
  */
-#define FAN_HT_DEFAULT_CAPACITY 8
-#define fan_ht_init(ht, default_value, mem) do{ \
-    assume((ht)->capacity == 0); \
-    ssize capacity = sizeof(*(ht)->table) * FAN_HT_DEFAULT_CAPACITY; \
-    (ht)->table         = fan_make((mem), capacity); \
-    (ht)->default_entry = (default_value); \
-    (ht)->size          = 0; \
-    (ht)->capacity      = (FAN_HT_DEFAULT_CAPACITY); \
-    fan_memory_set((uint8 *)(ht)->table, 0, capacity); \
-}while(0);
+// #define FAN_HT_DEFAULT_CAPACITY 8
+// #define fan_ht_init(ht, default_value, mem) do{ \
+//     assume((ht)->capacity == 0); \
+//     ssize capacity = sizeof(*(ht)->table) * FAN_HT_DEFAULT_CAPACITY; \
+//     (ht)->table         = fan_make((mem), capacity); \
+//     (ht)->default_entry = (default_value); \
+//     (ht)->size          = 0; \
+//     (ht)->capacity      = (FAN_HT_DEFAULT_CAPACITY); \
+//     fan_memory_set((uint8 *)(ht)->table, 0, capacity); \
+// }while(0);
 // FAN_API void fan_ht_init(fan_ht *ht, ssize capacity, fan_allocator *mem);
-FAN_API void fan_ht_setdefault(fan_str8 buf, fan_ht *ht, fan_allocator *mem);
-FAN_API void fan_ht_free(fan_ht *ht, fan_allocator *mem);
-FAN_API fan_str8 fan_ht_get(fan_str8 key, fan_ht *ht);
-FAN_API void fan_ht_put(fan_str8 key, fan_str8 value, fan_ht *ht, fan_allocator *mem);
-FAN_API bool32 fan_ht_delete(fan_str8 key, fan_ht *ht, fan_allocator *mem);
-FAN_API bool32 fan_ht_resize(fan_ht *ht, fan_allocator *mem);
+// FAN_API void fan_ht_setdefault(fan_str8 buf, fan_ht *ht, fan_allocator *mem);
+// FAN_API void fan_ht_free(fan_ht *ht, fan_allocator *mem);
+// FAN_API fan_str8 fan_ht_get(fan_str8 key, fan_ht *ht);
+// FAN_API void fan_ht_put(fan_str8 key, fan_str8 value, fan_ht *ht, fan_allocator *mem);
+// FAN_API bool32 fan_ht_delete(fan_str8 key, fan_ht *ht, fan_allocator *mem);
+// FAN_API bool32 fan_ht_resize(fan_ht *ht, fan_allocator *mem);
+
+
+FAN_API void *fan_ht_create(ssize entry_size, ssize capacity, void *default_value, fan_allocator *mem);
+FAN_API void fan_ht_free(void *table, fan_allocator *mem);
+FAN_API ssize fan_ht_len(void *table);
+FAN_API void *fan_ht_get(void *table, fan_str8 key);
+FAN_API void *fan_ht_put(void *table, fan_str8 key, void *value, fan_allocator *mem);
 
 FAN_API fan_cvar *fan_cvar_register_(fan_cvar v, fan_cvar_system *sys);
 

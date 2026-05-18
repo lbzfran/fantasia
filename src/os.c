@@ -394,11 +394,15 @@ fan_str8 fan_str8_copy(fan_str8 src, fan_allocator *mem) {
 }
 
 void fan_memory_set(uint8 *ptr, ssize value, ssize length) {
-    memset(ptr, value, length);
+    memset(ptr, (int)value, length);
+}
+
+void *fan_memory_copy(void *dst, void *src, ssize size) {
+    return memcpy(dst, src, size);
 }
 
 void fan_str8_print(fan_str8 buf) {
     for (ssize i = 0; i < buf.length; i++) {
-        fan_log_info("%c", buf.data[i]);
+        fan_log_nested_info("%c", buf.data[i]);
     }
 }
