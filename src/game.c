@@ -404,7 +404,6 @@ void UpdateEntities(
         world->update_entity_split = false;
     }
 
-    bool32 player_answered = false;
     bool32 player_asks = false;
     accumulator += dt;
     while (accumulator >= fixed_dt) {
@@ -422,6 +421,7 @@ void UpdateEntities(
             CBehavior    *behavior  = fan_component_get(&world->c_behavior,  id);
             CAttack      *attack    = fan_component_get(&world->c_attack,    id);
             CAnimation   *anim      = fan_component_get(&world->c_animation, id);
+            (void)anim;
 
             bool32 *interact   = fan_component_get(&world->c_interaction,  id);
             bool32 *interacted = fan_component_get(&world->c_interactable, id);
@@ -565,6 +565,8 @@ void UpdateEntities(
             ssize          tag_enemy = fan_component_get_value(&world->c_tag_enemy, id);
             // fan_rect_f32   zone      = fan_component_get_value_or_else(&world->c_zone, id, (fan_rect_f32){ 0 });
 
+            (void)tag_enemy;
+
             CQuestion *question = fan_component_get(&world->c_question, id);
             CAnswer *answer = fan_component_get(&world->c_tag_answer,   id);
 
@@ -600,13 +602,6 @@ void UpdateEntities(
             }
 
             if (collision and collision->active) {
-                fan_rect actual_collision = (fan_rect) {
-                    collision->boundary.x + transform->position.x,
-                    collision->boundary.y + transform->position.y,
-                    collision->boundary.w,
-                    collision->boundary.h
-                };
-
                 for (ssize j = i + 1; j < split->dynamic_count; j++) {
                     ssize other_id = split->dynamic_entities[j];
 
@@ -617,6 +612,8 @@ void UpdateEntities(
                     ssize          other_tag_enemy  = fan_component_get_value(&world->c_tag_enemy,    other_id);
                     CQuestion     *other_question   = fan_component_get(&world->c_question,           other_id);
 
+                    (void)other_tag_enemy;
+
                     // RepairTransform(other_transform);
 
                     if (attack) {
@@ -626,12 +623,6 @@ void UpdateEntities(
                     }
 
                     if (other_collision and collision->active) {
-                        fan_rect other_actual_collision = (fan_rect) {
-                            collision->boundary.x + transform->position.x,
-                            collision->boundary.y + transform->position.y,
-                            collision->boundary.w,
-                            collision->boundary.h
-                        };
                         if (CollisionSystem(fixed_dt, collision, transform, other_collision, other_transform)) {
                             *interact = true;
                             *other_interacted = true; // NOTE: does nothing
@@ -660,6 +651,7 @@ void UpdateEntities(
                     ssize           other_tag_enemy  = fan_component_get_value(&world->c_tag_enemy,  other_id);
 
                     // RepairTransform(other_transform);
+                    (void)other_tag_enemy;
 
                     if (attack) {
                         AttackSystem(attack, move, transform, other_move, other_transform, fixed_dt);

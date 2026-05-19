@@ -142,7 +142,7 @@ ssize fan_calc_padding(uintptr ptr,
     uintptr mask = alignment - 1;
     uintptr padding = (-ptr) & mask;
 
-    if (padding < header_size) {
+    if (padding < (uintptr)header_size) {
         padding += (header_size - padding + mask) & ~mask;
     }
 

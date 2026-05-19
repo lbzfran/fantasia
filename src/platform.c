@@ -150,7 +150,7 @@ fan_texture fan_sprite_get(fan_asset *assets, char8 *const name) {
 
 // djb2 hash by Dan Bernstein
 // NOTE(liam): result must be unsigned.
-usize fan_ht_hash_str8(fan_str8 buf) {
+usize fan_hash_str8(fan_str8 buf) {
     usize result = 5381;
     int32 c;
 
@@ -163,10 +163,10 @@ usize fan_ht_hash_str8(fan_str8 buf) {
 }
 
 // NOTE(liam): fnv-a1 algorithm.
-usize fan_ht_hash_bytes(const void *ptr, usize len) {
+usize fan_hash_bytes(const void *ptr, usize len) {
     const uint8 *bytes = (const uint8 *)ptr;
 
-    uint64_t hash = 14695981039346656037;
+    uint64_t hash = 14695981039346656037ULL;
     for (usize i = 0; i < len; i++) {
         hash ^= (usize)bytes[i];
         hash *= 1099511628211ULL;
@@ -177,6 +177,23 @@ usize fan_ht_hash_bytes(const void *ptr, usize len) {
 
 static inline ssize fan_ht_entry_size(fan_ht_header *h) {
     return sizeof(fan_str8) + h->value_size;
+}
+
+static inline fan_ht_header *fan_ht_header_get(void *table) {
+    return (fan_ht_header *)((uint8 *)table - sizeof(fan_ht_header));
+}
+
+static inline fan_str8 *fan_ht_key(fan_ht_header *h, void *entry) {
+    return (fan_str8 *)((uint8 *)entry + h->key_offset);
+}
+
+static inline void *fan_ht_value(fan_ht_header *h, void *entry) {
+    return (void *)((uint8 *)entry + h->key_offset + sizeof(fan_str8));
+}
+
+static inline void *fan_ht_at(fan_ht_header *h, ssize index) {
+    ssize entry_size = fan_ht_entry_size(h);
+    return (void *)((uint8 *)h + sizeof(fan_ht_header) + index * entry_size);
 }
 
 void *fan_ht_create(ssize value_size, ssize capacity, void *default_value, fan_allocator *mem) {
@@ -198,50 +215,50 @@ void *fan_ht_create(ssize value_size, ssize capacity, void *default_value, fan_a
     // header->default_value = fan_memory_copy(header->default_value, default_value, value_size);
 
     void *table = (void *)((uint8 *)header + sizeof(fan_ht_header));
-    // fan_memory_set(table, 0, capacity * entry_size);
 
     return table;
 }
 
-static inline fan_ht_header *fan_ht_header_get(void *table) {
-    return (fan_ht_header *)((uint8 *)table - sizeof(fan_ht_header));
-}
-
-
 void fan_ht_free(void *table, fan_allocator *mem) {
+    assume(table isnt nullptr);
     fan_ht_header *h = fan_ht_header_get(table);
     ssize entry_size = fan_ht_entry_size(h);
     ssize total = sizeof(fan_ht_header) + (h->capacity * entry_size);
 
+    for (ssize i = 0; i < h->capacity; i++) {
+        void *entry = (uint8 *)table + (i * entry_size);
+
+        fan_str8 *key = (fan_str8 *)((uint8 *)entry + h->key_offset);
+
+        if (key->length == 0) continue;
+
+        fan_free(mem, key->data, key->length);
+        }
+
     fan_free(mem, h, total);
 }
 
-static inline fan_str8 *fan_ht_key(fan_ht_header *h, void *entry) {
-    return (fan_str8 *)((uint8 *)entry + h->key_offset);
-}
-
-static inline void *fan_ht_value(fan_ht_header *h, void *entry) {
-    return (void *)((uint8 *)entry + h->key_offset + sizeof(fan_str8));
-}
-
-static inline void *fan_ht_at(fan_ht_header *h, ssize index) {
-    ssize entry_size = fan_ht_entry_size(h);
-    return (void *)((uint8 *)h + sizeof(fan_ht_header) + index * entry_size);
+ssize fan_ht_cap(void *table) {
+    assume(table isnt nullptr);
+    fan_ht_header *h = fan_ht_header_get(table);
+    return h->capacity;
 }
 
 ssize fan_ht_len(void *table) {
+    assume(table isnt nullptr);
     fan_ht_header *h = fan_ht_header_get(table);
     return h->size;
 }
 
-void *fan_ht_get(void *table, fan_str8 key) {
+void *fan_ht_get(fan_str8 key, void *table) {
+    assume(table isnt nullptr);
     fan_ht_header *h = fan_ht_header_get(table);
 
     if (h->size == 0) {
         return h->default_value;
     }
 
-    usize hash = fan_ht_hash_str8(key);
+    usize hash = fan_hash_str8(key);
     usize index = (usize)(hash & (usize)(h->capacity - 1));
 
     for (ssize i = 0; i < h->capacity; i++) {
@@ -258,61 +275,6 @@ void *fan_ht_get(void *table, fan_str8 key) {
     }
     return h->default_value;
 }
-
-// bool32 fan_ht_resize(fan_ht *ht, fan_allocator *mem) {
-//     // TODO(liam): allow to downsize
-//     ssize old_capacity = ht->capacity;
-//     fan_ht_entry_str8 *old_table = ht->table;
-//
-//     ssize new_capacity = ht->capacity * 2;
-//     if (new_capacity < ht->capacity) {
-//         return false;
-//     }
-//
-//     fan_log_debug("expanding ht: %zu -> %zu\n", old_capacity, new_capacity);
-//
-//     fan_ht_entry_str8 *new_entries =
-//         mem->make(mem->ctx, sizeof(fan_ht_entry_str8) * new_capacity);
-//
-//     assert(new_entries != nullptr);
-//
-//     // fan_memory_set((uint8 *)new_entries, 0, sizeof(fan_ht_entry_str8) * new_capacity);
-//     for (ssize i = 0; i < new_capacity; i++) {
-//         new_entries[i] = (fan_ht_entry_str8){ 0 };
-//     }
-//
-//     ht->table = new_entries;
-//     ht->capacity = new_capacity;
-//     ht->size = 0;
-//
-//     for (ssize i = 0; i < old_capacity; i++) {
-//         fan_ht_entry_str8 entry = old_table[i];
-//
-//         if (entry.key.data != nullptr) {
-//             usize hash = fan_ht_hash_str8(entry.key);
-//             usize index =
-//                 (usize)(hash & (usize)(ht->capacity - 1));
-//
-//             while (ht->table[index].key.data != nullptr) {
-//                 index++;
-//                 if (index >= ht->capacity) {
-//                     index = 0;
-//                 }
-//             }
-//
-//             ht->table[index] = entry;
-//             ht->size++;
-//         }
-//     }
-//
-//     mem->free(
-//         mem->ctx,
-//         old_table,
-//         sizeof(fan_ht_entry_str8) * old_capacity
-//     );
-//
-//     return true;
-// }
 
 static void *fan_ht_resize(fan_ht_header *h, fan_allocator *mem) {
     ssize old_capacity = h->capacity;
@@ -351,7 +313,7 @@ static void *fan_ht_resize(fan_ht_header *h, fan_allocator *mem) {
 
         void *old_value = (uint8 *)old_entry + h->key_offset + sizeof(fan_str8);
 
-        usize hash = fan_ht_hash_str8(*old_key);
+        usize hash = fan_hash_str8(*old_key);
         usize index = (usize)(hash & (usize)(new_capacity - 1));
 
         while (true) {
@@ -369,10 +331,8 @@ static void *fan_ht_resize(fan_ht_header *h, fan_allocator *mem) {
             index = (index + 1) & (new_capacity - 1);
         }
     }
-    // fan_memory_copy(new_table, old_table, old_capacity * entry_size);
 
     fan_free(mem, h, old_total);
-
 
     return new_table;
 }
@@ -385,9 +345,9 @@ static inline void fan_ht_put_(fan_str8 key, void *value, fan_ht_header *h, fan_
     ssize entry_size = fan_ht_entry_size(h);
     assert(entry_size > 0);
 
-    usize hash = fan_ht_hash_str8(key);
+    usize hash = fan_hash_str8(key);
     usize index = (usize)(hash & (usize)(h->capacity - 1));
-    assert(index < h->capacity);
+    assert(index < (usize)h->capacity);
 
     while (true) {
         void *entry = fan_ht_at(h, index);
@@ -415,7 +375,7 @@ static inline void fan_ht_put_(fan_str8 key, void *value, fan_ht_header *h, fan_
     }
 }
 
-void *fan_ht_put(void *table, fan_str8 key, void *value, fan_allocator *mem) {
+void *fan_ht_put(fan_str8 key, void *value, void *table, fan_allocator *mem) {
     assert(value != nullptr);
 
     fan_ht_header *h = fan_ht_header_get(table);
@@ -435,243 +395,42 @@ void *fan_ht_put(void *table, fan_str8 key, void *value, fan_allocator *mem) {
     return table;
 }
 
-// void fan_ht_init(fan_ht *ht, ssize capacity, fan_allocator *mem) {
-//     assume(ht->capacity == 0 && "initialize only zeroed ht.");
-//
-//     ht->table         = mem->make(mem->ctx, sizeof(fan_ht_entry_str8) * capacity);
-//     ht->default_entry = (fan_str8){ 0 };
-//     ht->size          = 0;
-//     ht->capacity      = capacity;
-//
-//     fan_memory_set((uint8 *)ht->table, 0, sizeof(*ht->table) * capacity);
-// }
-//
-// void fan_ht_free(fan_ht *ht, fan_allocator *mem) {
-//     if (ht->default_entry.length > 0) {
-//         mem->free(mem->ctx, ht->default_entry.data, ht->default_entry.length);
-//     }
-//
-//     for (ssize i = 0; i < ht->capacity; i++) {
-//         fan_ht_entry_str8 *entry = &ht->table[i];
-//
-//         if (entry->key.length > 0) {
-//             mem->free(mem->ctx, entry->key.data, entry->key.length);
-//         }
-//
-//         if (entry->value.length > 0) {
-//             mem->free(mem->ctx, entry->value.data, entry->value.length);
-//         }
-//     }
-//
-//     mem->free(mem->ctx, ht->table, sizeof(fan_ht_entry_str8) * ht->capacity);
-//
-//     ht->table    = nullptr;
-//     ht->default_entry = (fan_str8){ 0 };
-//     ht->size     = 0;
-//     ht->capacity = 0;
-// }
-//
-// static fan_str8 fan_ht_put_(fan_str8 key, fan_str8 value, fan_ht *ht, fan_allocator *mem) {
-//     usize hash = fan_ht_hash_str8(key);
-//     usize index = (usize)(hash & (usize)(ht->capacity - 1));
-//
-//     // fan_log_debug("index: %zu, hash: %zu\n", index, hash);
-//
-//     fan_ht_entry_str8 *table = ht->table;
-//
-//     while (table[index].key.length != 0) {
-//         if (fan_str8_equals(key, table[index].key)) {
-//             if (table[index].value.length > 0) {
-//                 mem->free(
-//                     mem->ctx,
-//                     table[index].value.data,
-//                     table[index].value.length
-//                 );
-//             }
-//
-//             table[index].value = fan_str8_copy(value, mem);
-//             return table[index].key;
-//         }
-//
-//         index++;
-//         if (index >= ht->capacity) {
-//             index = 0;
-//         }
-//     }
-//
-//     table[index].key = fan_str8_copy(key, mem);
-//     table[index].value = fan_str8_copy(value, mem);
-//
-//     // fan_str8_print(table[index].key);
-//     // fan_log_debug("\n");
-//     // fan_str8_print(table[index].value);
-//     // fan_log_debug("\n");
-//
-//     ht->size++;
-//
-//     return table[index].key;
-// }
-//
-// bool32 fan_ht_resize(fan_ht *ht, fan_allocator *mem) {
-//     // TODO(liam): allow to downsize
-//     ssize old_capacity = ht->capacity;
-//     fan_ht_entry_str8 *old_table = ht->table;
-//
-//     ssize new_capacity = ht->capacity * 2;
-//     if (new_capacity < ht->capacity) {
-//         return false;
-//     }
-//
-//     fan_log_debug("expanding ht: %zu -> %zu\n", old_capacity, new_capacity);
-//
-//     fan_ht_entry_str8 *new_entries =
-//         mem->make(mem->ctx, sizeof(fan_ht_entry_str8) * new_capacity);
-//
-//     assert(new_entries != nullptr);
-//
-//     // fan_memory_set((uint8 *)new_entries, 0, sizeof(fan_ht_entry_str8) * new_capacity);
-//     for (ssize i = 0; i < new_capacity; i++) {
-//         new_entries[i] = (fan_ht_entry_str8){ 0 };
-//     }
-//
-//     ht->table = new_entries;
-//     ht->capacity = new_capacity;
-//     ht->size = 0;
-//
-//     for (ssize i = 0; i < old_capacity; i++) {
-//         fan_ht_entry_str8 entry = old_table[i];
-//
-//         if (entry.key.data != nullptr) {
-//             usize hash = fan_ht_hash_str8(entry.key);
-//             usize index =
-//                 (usize)(hash & (usize)(ht->capacity - 1));
-//
-//             while (ht->table[index].key.data != nullptr) {
-//                 index++;
-//                 if (index >= ht->capacity) {
-//                     index = 0;
-//                 }
-//             }
-//
-//             ht->table[index] = entry;
-//             ht->size++;
-//         }
-//     }
-//
-//     mem->free(
-//         mem->ctx,
-//         old_table,
-//         sizeof(fan_ht_entry_str8) * old_capacity
-//     );
-//
-//     return true;
-// }
-//
-// fan_str8 fan_ht_get(fan_str8 key, fan_ht *ht) {
-//     if (ht->size == 0) {
-//         return ht->default_entry;
-//     }
-//
-//     usize hash = fan_ht_hash_str8(key);
-//     usize index = (usize)(hash & (usize)(ht->capacity - 1));
-//
-//     // fan_log_debug("index: %zu, hash: %zu\n", index, hash);
-//
-//     fan_ht_entry_str8 *table = ht->table;
-//
-//     while (table[index].key.length != 0) {
-//         if (fan_str8_equals(key, table[index].key)) {
-//             return table[index].value;
-//         }
-//         index++;
-//         if (index >= ht->capacity) {
-//          index = 0;
-//         }
-//     }
-//     return ht->default_entry;
-// }
-//
-// void fan_ht_put(fan_str8 key, fan_str8 value, fan_ht *ht, fan_allocator *mem) {
-//     assert(value.data != nullptr);
-//     if (value.length <= 0) {
-//         return;
-//     }
-//
-//     if ((ht->size + 1) >= ht->capacity) {
-//         bool32 ok = fan_ht_resize(ht, mem);
-//         assert(ok);
-//     }
-//
-//     fan_ht_put_(key, value, ht, mem);
-// }
-//
-// bool32 fan_ht_delete(fan_str8 key, fan_ht *ht, fan_allocator *mem) {
-//     // TODO(liam): need to validate this
-//     usize hash = fan_ht_hash_str8(key);
-//     usize index = (usize)(hash & (usize)(ht->capacity - 1));
-//
-//     fan_ht_entry_str8 *table = ht->table;
-//
-//     while (table[index].key.data != nullptr) {
-//         if (fan_str8_equals(key, table[index].key)) {
-//             fan_ht_entry_str8 removed = table[index];
-//
-//             // free removed entry strings
-//             mem->free(
-//                 mem->ctx,
-//                 removed.key.data,
-//                 removed.key.length
-//             );
-//
-//             mem->free(
-//                 mem->ctx,
-//                 removed.value.data,
-//                 removed.value.length
-//             );
-//
-//             // clear slot
-//             table[index].key.data = nullptr;
-//             table[index].key.length = 0;
-//             table[index].value.data = nullptr;
-//             table[index].value.length = 0;
-//
-//             ht->size--;
-//
-//             // reinsert following cluster
-//             usize next = index + 1;
-//             if (next >= ht->capacity) {
-//                 next = 0;
-//             }
-//
-//             while (table[next].key.data != nullptr) {
-//                 fan_ht_entry_str8 entry = table[next];
-//
-//                 table[next].key.data = nullptr;
-//                 table[next].key.length = 0;
-//                 table[next].value.data = nullptr;
-//                 table[next].value.length = 0;
-//
-//                 ht->size--;
-//
-//                 fan_ht_put_(entry.key, entry.value, ht, mem);
-//
-//                 next++;
-//                 if (next >= ht->capacity) {
-//                     next = 0;
-//                 }
-//             }
-//
-//             return true;
-//         }
-//
-//         index++;
-//         if (index >= ht->capacity) {
-//             index = 0;
-//         }
-//     }
-//
-//     return false;
-// }
+bool32 fan_ht_delete(fan_str8 key, void *table, fan_allocator *mem) {
+    assume(table != nullptr);
+
+    fan_ht_header *h = fan_ht_header_get(table);
+
+    if (h->size == 0) {
+        return true;
+    }
+
+    usize hash = fan_hash_str8(key);
+    usize index = (usize)(hash & (usize)(h->capacity - 1));
+
+    for (ssize i = 0; i < h->capacity; i++) {
+        void *entry = fan_ht_at(h, index);
+
+        fan_str8 *entry_key = fan_ht_key(h, entry);
+        void *entry_value = fan_ht_value(h, entry);
+        if (entry_key->length == 0) {
+            break;
+        }
+        else if (fan_str8_equals(key, *entry_key)) {
+            fan_free(mem, entry_key->data, entry_key->length);
+            entry_key->data = nullptr;
+            entry_key->length = 0;
+
+            fan_memory_set(entry_value, 0, h->value_size);
+
+            h->size--;
+
+            return true;
+        }
+        index = (index + 1) & (h->capacity - 1);
+    }
+
+    return false;
+}
 
 fan_cvar *fan_cvar_register_(fan_cvar params, fan_cvar_system *sys) {
     assert(params.name.length > 0);

@@ -407,7 +407,7 @@ void fan_draw_text(const char *buf, fan_vec2 origin, fan_color text_color, fan_c
     // DrawTextPro();
     (void)background_color;
     Color rl_text_color = fan_color_rl(text_color);
-    DrawText(buf, origin.x, origin.y, 14, rl_text_color);
+    DrawText(buf, (int32)origin.x, (int32)origin.y, 14, rl_text_color);
 }
 
 void fan_camera_begin(fan_camera2D camera) {
@@ -492,8 +492,7 @@ void fan_draw_circle_grad(int32 x, int32 y, float32 r, fan_color in, fan_color o
     Color rl_in = fan_color_rl(in);
     Color rl_out = fan_color_rl(out);
 
-    // DrawCircleGradient(x, y, r, rl_in, rl_out);
-    DrawCircleGradient((Vector2){ x, y }, r, rl_in, rl_out);
+    DrawCircleGradient((Vector2){ (float32)x, (float32)y }, r, rl_in, rl_out);
 }
 
 void fan_fps_target(int32 fps) {
