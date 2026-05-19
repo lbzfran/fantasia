@@ -238,11 +238,11 @@ typedef struct {
     ssize padding;
 } fan_freelist_header;
 
-// typedef struct fan_freelist_node fan_freelist_node;
-typedef struct fan_freelist_node {
+typedef struct fan_freelist_node fan_freelist_node;
+struct fan_freelist_node {
     struct fan_freelist_node *next;
     ssize block_size;
-} fan_freelist_node;
+};
 
 typedef enum {
     FanFListPolicy_FindFirst,
@@ -367,6 +367,7 @@ FAN_API void     fan_os_wait(uint32 ms);
 
 FAN_API void fan_memory_set(uint8 *ptr, ssize value, ssize length);
 FAN_API void *fan_memory_copy(void *dst, void *src, ssize size);
+FAN_API void *fan_memory_move(void *dst, void *src, ssize size);
 
 FAN_API bool32 fan_file_copy(const char *src, const char *dst);
 FAN_API bool32 fan_file_delete(const char *path);

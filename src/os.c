@@ -10,7 +10,8 @@
 void *fan_heap_make(void *ctx, ssize size) {
     (void)ctx;
     void *result = malloc(size);
-    assert(result && "ERROR: Reached Out-Of-Memory state.");
+    fan_memory_set(result, 0, size);
+    assert(result && "Reached Out-Of-Memory state.");
 
     return result;
 }
@@ -29,10 +30,10 @@ void *fan_heap_resize(void *ctx, void *ptr, ssize old, ssize new) {
 
     if (ptr isnt null) {
         if (new > old) {
-            memcpy(result, ptr, old);
+            fan_memory_copy(result, ptr, old);
         }
         else {
-            memmove(result, ptr, old);
+            fan_memory_move(result, ptr, old);
         }
         fan_heap_free(ctx, ptr, old);
     }
@@ -399,6 +400,10 @@ void fan_memory_set(uint8 *ptr, ssize value, ssize length) {
 
 void *fan_memory_copy(void *dst, void *src, ssize size) {
     return memcpy(dst, src, size);
+}
+
+void *fan_memory_move(void *dst, void *src, ssize) {
+    return memmove(dst, src, size);
 }
 
 void fan_str8_print(fan_str8 buf) {

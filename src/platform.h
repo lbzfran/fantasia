@@ -473,6 +473,7 @@ FAN_API usize fan_hash_bytes(const void *ptr, usize len);
 
 FAN_API void *fan_ht_create(ssize entry_size, ssize capacity, void *default_value, fan_allocator *mem);
 FAN_API void fan_ht_free(void *table, fan_allocator *mem);
+FAN_API ssize fan_ht_cap(void *table);
 FAN_API ssize fan_ht_len(void *table);
 FAN_API void *fan_ht_get(fan_str8 key, void *table);
 FAN_API void *fan_ht_put(fan_str8 key, void *value, void *table, fan_allocator *mem);
