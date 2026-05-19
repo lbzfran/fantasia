@@ -12,6 +12,14 @@
 #include <stdint.h>
 #include <stdalign.h>
 
+#if defined(__GNUC__)
+#define COMPILER_GCC 1
+#elif defined(__clang__)
+#define COMPILER_CLANG 1
+#elif defined(_MSC_VER)
+#define COMPILER_MSVC 1
+#endif
+
 #if defined(OS_WINDOWS)
  #define PATH_SEPARATOR '\\'
  #define PATH_SEPARATOR_CSTR "\\"
@@ -84,6 +92,13 @@ static inline void assume(bool32 condition) {
 #endif
 
 #define sizeof(x)           (ssize)sizeof(x)
+#ifndef offsetof
+ #ifdef COMPILER_GCC
+  #define offsetof(st, m) __builtin_offsetof(st, m)
+ #else
+  #define offsetof(st, m) ((size_t)((char *)&((st*)0)->m - (char *)0))
+ #endif
+#endif
 #ifndef alignas
 #define alignas(x)          _Alignas(x)
 #endif

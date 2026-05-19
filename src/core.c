@@ -266,6 +266,6 @@ inline float32 fan_f32_rsqrt(float32 x) {
 
 // NOTE(liam): https://lemire.me/blog/2016/06/27/a-fast-alternative-to-the-modulo-reduction/
 inline uint32 fan_f32_reduce(uint32 x, uint32 N) {
-    return ((uint64)x * (uint64)N) >> 32;
+    return (uint32)(((uint64)x * (uint64)N) >> 32);
 }
 

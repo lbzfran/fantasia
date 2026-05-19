@@ -2,7 +2,6 @@
 #define FAN_PLATFORM_H
 
 #include "os.h"
-
 #include "core.h"
 
 typedef struct {
@@ -469,46 +468,15 @@ typedef struct {
     fan_arena  arena;
 } fan_cvar_system;
 
-FAN_API usize fan_ht_hash_str8(fan_str8);
-FAN_API usize fan_ht_hash_bytes(const void *ptr, usize len);
-
-/* NOTE(liam): assumes the structure
- * struct {
- *     struct {
- *         fan_str8 key;
- *         T value;
- *     } *table;
- *     ssize size;
- *     ssize capacity;
- *     T default_entry;
- * }
- *
- * where T is one uniform type across the struct.
- */
-// #define FAN_HT_DEFAULT_CAPACITY 8
-// #define fan_ht_init(ht, default_value, mem) do{ \
-//     assume((ht)->capacity == 0); \
-//     ssize capacity = sizeof(*(ht)->table) * FAN_HT_DEFAULT_CAPACITY; \
-//     (ht)->table         = fan_make((mem), capacity); \
-//     (ht)->default_entry = (default_value); \
-//     (ht)->size          = 0; \
-//     (ht)->capacity      = (FAN_HT_DEFAULT_CAPACITY); \
-//     fan_memory_set((uint8 *)(ht)->table, 0, capacity); \
-// }while(0);
-// FAN_API void fan_ht_init(fan_ht *ht, ssize capacity, fan_allocator *mem);
-// FAN_API void fan_ht_setdefault(fan_str8 buf, fan_ht *ht, fan_allocator *mem);
-// FAN_API void fan_ht_free(fan_ht *ht, fan_allocator *mem);
-// FAN_API fan_str8 fan_ht_get(fan_str8 key, fan_ht *ht);
-// FAN_API void fan_ht_put(fan_str8 key, fan_str8 value, fan_ht *ht, fan_allocator *mem);
-// FAN_API bool32 fan_ht_delete(fan_str8 key, fan_ht *ht, fan_allocator *mem);
-// FAN_API bool32 fan_ht_resize(fan_ht *ht, fan_allocator *mem);
-
+FAN_API usize fan_hash_str8(fan_str8);
+FAN_API usize fan_hash_bytes(const void *ptr, usize len);
 
 FAN_API void *fan_ht_create(ssize entry_size, ssize capacity, void *default_value, fan_allocator *mem);
 FAN_API void fan_ht_free(void *table, fan_allocator *mem);
 FAN_API ssize fan_ht_len(void *table);
-FAN_API void *fan_ht_get(void *table, fan_str8 key);
-FAN_API void *fan_ht_put(void *table, fan_str8 key, void *value, fan_allocator *mem);
+FAN_API void *fan_ht_get(fan_str8 key, void *table);
+FAN_API void *fan_ht_put(fan_str8 key, void *value, void *table, fan_allocator *mem);
+FAN_API bool32 fan_ht_delete(fan_str8 key, void *table, fan_allocator *mem);
 
 FAN_API fan_cvar *fan_cvar_register_(fan_cvar v, fan_cvar_system *sys);
 
@@ -521,7 +489,7 @@ static inline fan_cvar_value fan_cvar_value_f32(float32 v) {
 }
 
 static inline fan_cvar_value fan_cvar_value_b32(bool32 v) {
-    return (fan_cvar_value){ .f = v };
+    return (fan_cvar_value){ .b = v };
 }
 
 #define FAN_CVAR_VALUE(v) \
