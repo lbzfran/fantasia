@@ -462,8 +462,8 @@ fan_ht_define(cvar, fan_cvar);
 // make str8-to-str8 and str8-to-ptr, or use a generic macro
 // like the generic array?
 typedef struct {
-    // fan_ht     table;
-    fan_cvar  *head;
+    fan_ht_entry_cvar  *table;
+    fan_cvar           *head;
 
     fan_arena  arena;
 } fan_cvar_system;

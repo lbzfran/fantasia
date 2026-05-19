@@ -402,7 +402,7 @@ void *fan_memory_copy(void *dst, void *src, ssize size) {
     return memcpy(dst, src, size);
 }
 
-void *fan_memory_move(void *dst, void *src, ssize) {
+void *fan_memory_move(void *dst, void *src, ssize size) {
     return memmove(dst, src, size);
 }
 
