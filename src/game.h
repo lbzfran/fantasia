@@ -10,15 +10,15 @@
 
 typedef struct {
     bool32 active;
-    uint8 input[256];
+    char8 input[256];
     ssize input_size;
     int32 cursor_position;
 
-    uint8 output[20][256];
+    char8 output[20][256];
     int32 output_start;
     int32 output_count;
 
-    uint8 history[10][256];
+    char8 history[10][256];
     int32 history_position;
     int32 history_count;
 

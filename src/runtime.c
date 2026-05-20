@@ -20,7 +20,13 @@ fan_allocator heap_allocator = {
 };
 
 // TODO(liam): implement these console functions
-static void fan_console_output_add(GameConsole *console, fan_str8 text);
+static void ConsoleOutputAdd(GameConsole *console, fan_str8 text) {
+    for (ssize i = 0; i < text.length; i++) {
+        console->output[console->output_count][i] = text.data[i];
+    }
+    console->output_count++;
+}
+
 static void fan_console_history_add(fan_str8 text);
 static void fan_console_execute(fan_str8 cmd);
 
@@ -33,7 +39,7 @@ static void ConsoleUpdate(GameConsole *console, GameState *state) {
             fan_memory_move(&console->input[console->cursor_position + 1],
                             &console->input[console->cursor_position],
                             console->input_size - console->cursor_position + 1);
-            console->input[console->cursor_position] = (uint8)key;
+            console->input[console->cursor_position] = (char8)key;
             console->input_size++;
             console->cursor_position++;
         }
@@ -74,7 +80,7 @@ static void ConsoleDraw(GameConsole *console, int32 width, int32 height) {
     for (int32 i = 0; i < console->output_count && i < 20; i++) {
         int32 index = (console->output_start + i) % 20;
         // TODO(liam): figure out how to convert char properly.
-        fan_draw_text(console->output[index], (fan_vec2){ margin, margin + i * line_height }, fan_color_GRAY, (fan_color){ 0 });
+        fan_draw_text(console->output[index], (fan_vec2){ (float32)margin, (float32)margin + i * line_height }, fan_color_GRAY, (fan_color){ 0 });
     }
 }
 
@@ -165,6 +171,8 @@ int GameMain(void) {
     fan_camera2D camera = { 0 };
     camera.zoom = 0.8f;
     PlayerInput *p_input = &state.player_input;
+
+    ConsoleOutputAdd(&console, fan_str8_cstr("Test!\n"));
 
     game.init(&arena_allocator, &world, &state);
     while (running) {
