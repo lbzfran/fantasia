@@ -24,6 +24,7 @@ static void ConsoleOutputAdd(GameConsole *console, fan_str8 text) {
     for (ssize i = 0; i < text.length; i++) {
         console->output[console->output_count][i] = text.data[i];
     }
+    console->output[console->output_count][text.length] = '\0';
     console->output_count++;
 }
 
@@ -31,8 +32,7 @@ static void fan_console_history_add(fan_str8 text);
 static void fan_console_execute(fan_str8 cmd);
 
 static void ConsoleUpdate(GameConsole *console, GameState *state) {
-    if (!console->active) return;
-
+    // if (!console->active) return;
     int32 key = fan_key_current_char();
     while (key > 0) {
         if ((key >= 32) && (key <= 125) && console->cursor_position < (256 - 1)) {
@@ -40,6 +40,7 @@ static void ConsoleUpdate(GameConsole *console, GameState *state) {
                             &console->input[console->cursor_position],
                             console->input_size - console->cursor_position + 1);
             console->input[console->cursor_position] = (char8)key;
+            console->input[console->cursor_position + 1] = '\0';
             console->input_size++;
             console->cursor_position++;
         }
@@ -49,6 +50,11 @@ static void ConsoleUpdate(GameConsole *console, GameState *state) {
     int32 pressed = fan_key_current();
     while (pressed != 0) {
         switch (pressed) {
+            case FanKey_GRAVE: [[ fallthrough ]]
+            case FanKey_ESCAPE: {
+                console->input_size = 0;
+                console->active = not console->active;
+            } break;
             case FanKey_BACKSPACE: {
                 if (console->cursor_position > 0 && console->input_size > 0) {
                     fan_memory_move(&console->input[console->cursor_position - 1],
@@ -57,6 +63,12 @@ static void ConsoleUpdate(GameConsole *console, GameState *state) {
                     console->input_size--;
                     console->cursor_position--;
                 }
+            } break;
+            case FanKey_LEFT: {
+                console->cursor_position = max(0, console->cursor_position - 1);
+            } break;
+            case FanKey_RIGHT: {
+                console->cursor_position = min(console->cursor_position + 1, console->input_size);
             } break;
             default:
                 break;
@@ -79,9 +91,10 @@ static void ConsoleDraw(GameConsole *console, int32 width, int32 height) {
 
     for (int32 i = 0; i < console->output_count && i < 20; i++) {
         int32 index = (console->output_start + i) % 20;
-        // TODO(liam): figure out how to convert char properly.
-        fan_draw_text(console->output[index], (fan_vec2){ (float32)margin, (float32)margin + i * line_height }, fan_color_GRAY, (fan_color){ 0 });
+        fan_draw_text(console->output[index], (fan_vec2){ (float32)margin, (float32)margin + (float32)i * line_height }, fan_color_GRAY, fan_color_GRAY);
     }
+
+    fan_draw_text(console->input, (fan_vec2){ (float32)margin, (float32)margin + (float32)(input_y - line_height - margin) }, fan_color_BLACK, (fan_color){ 0 });
 }
 
 GameConsole console = {};
@@ -177,7 +190,7 @@ int GameMain(void) {
     game.init(&arena_allocator, &world, &state);
     while (running) {
         float dt = fan_frametime_get();
-        if (fan_window_shouldclose() || fan_key_pressed(FanKey_ESCAPE)) {
+        if (fan_window_shouldclose()) {
             running = false;
         }
 
@@ -188,14 +201,18 @@ int GameMain(void) {
 
         p_input->direction = (fan_vec2){ 0 };
 
-        if (fan_key_pressed(FanKey_GRAVE)) {
-            console.active = not console.active;
-        }
-
         if (console.active) {
             ConsoleUpdate(&console, &state);
         }
         else {
+            if (fan_key_pressed(FanKey_ESCAPE)) {
+                running = false;
+            }
+
+            if (fan_key_pressed(FanKey_GRAVE)) {
+                console.active = not console.active;
+            }
+
             if (fan_key_down(FanKey_W)) {
                 p_input->direction.y += 1;
             }
