@@ -8,6 +8,23 @@
 #define TILE_SIZE 64
 #define MAX_ENTITY_CAP kilobytes(1)
 
+typedef struct {
+    bool32 active;
+    uint8 input[256];
+    ssize input_size;
+    int32 cursor_position;
+
+    uint8 output[20][256];
+    int32 output_start;
+    int32 output_count;
+
+    uint8 history[10][256];
+    int32 history_position;
+    int32 history_count;
+
+    // fan_cvar cvars[32];
+} GameConsole;
+
 typedef enum {
     MovementFlag_Immovable     = (1 << 0),
     MovementFlag_NoCollision   = (1 << 1),

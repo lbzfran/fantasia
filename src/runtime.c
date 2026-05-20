@@ -19,9 +19,69 @@ fan_allocator heap_allocator = {
     .ctx    = null
 };
 
-GameAPI game    = {};
-GameState state = {};
-World world     = {};
+// TODO(liam): implement these console functions
+static void fan_console_output_add(GameConsole *console, fan_str8 text);
+static void fan_console_history_add(fan_str8 text);
+static void fan_console_execute(fan_str8 cmd);
+
+static void ConsoleUpdate(GameConsole *console, GameState *state) {
+    if (!console->active) return;
+
+    int32 key = fan_key_current_char();
+    while (key > 0) {
+        if ((key >= 32) && (key <= 125) && console->cursor_position < (256 - 1)) {
+            fan_memory_move(&console->input[console->cursor_position + 1],
+                            &console->input[console->cursor_position],
+                            console->input_size - console->cursor_position + 1);
+            console->input[console->cursor_position] = (uint8)key;
+            console->input_size++;
+            console->cursor_position++;
+        }
+        key = fan_key_current_char();
+    }
+
+    int32 pressed = fan_key_current();
+    while (pressed != 0) {
+        switch (pressed) {
+            case FanKey_BACKSPACE: {
+                if (console->cursor_position > 0 && console->input_size > 0) {
+                    fan_memory_move(&console->input[console->cursor_position - 1],
+                                    &console->input[console->cursor_position],
+                                    console->input_size - console->cursor_position + 1);
+                    console->input_size--;
+                    console->cursor_position--;
+                }
+            } break;
+            default:
+                break;
+        }
+        pressed = fan_key_current();
+    }
+}
+
+static void ConsoleDraw(GameConsole *console, int32 width, int32 height) {
+    if (!console->active) return;
+
+    int32 console_height = height / 2;
+    int32 line_height = 20;
+    int32 margin = 10;
+    int32 input_y = height - margin - line_height;
+
+    fan_draw_rect(0, 0, width, console_height, (fan_color){ 0, 0, 0, 100 });
+    fan_draw_rect(0, input_y - line_height - margin,
+                  width, line_height + margin * 2, (fan_color){ 0, 0, 0, 150 });
+
+    for (int32 i = 0; i < console->output_count && i < 20; i++) {
+        int32 index = (console->output_start + i) % 20;
+        // TODO(liam): figure out how to convert char properly.
+        fan_draw_text(console->output[index], (fan_vec2){ margin, margin + i * line_height }, fan_color_GRAY, (fan_color){ 0 });
+    }
+}
+
+GameConsole console = {};
+GameAPI game        = {};
+GameState state     = {};
+World world         = {};
 
 static void GameAPIClose(GameAPI *game) {
     fan_lib_close(game->library);
@@ -117,28 +177,39 @@ int GameMain(void) {
             state.window_resized = true;
         }
 
+
         p_input->direction = (fan_vec2){ 0 };
-        if (fan_key_down(FanKey_W)) {
-            p_input->direction.y += 1;
-        }
-        if (fan_key_down(FanKey_S)) {
-            p_input->direction.y -= 1;
-        }
-        if (fan_key_down(FanKey_A)) {
-            p_input->direction.x -= 1;
-        }
-        if (fan_key_down(FanKey_D)) {
-            p_input->direction.x += 1;
+
+        if (fan_key_pressed(FanKey_GRAVE)) {
+            console.active = not console.active;
         }
 
-        p_input->actions[0] = fan_key_pressed(FanKey_E);
-        p_input->actions[1] = fan_key_pressed(FanKey_R) ? not p_input->actions[1] : p_input->actions[1];
-        p_input->actions[2] = fan_key_pressed(FanKey_F) ? not p_input->actions[2] : p_input->actions[2];
+        if (console.active) {
+            ConsoleUpdate(&console, &state);
+        }
+        else {
+            if (fan_key_down(FanKey_W)) {
+                p_input->direction.y += 1;
+            }
+            if (fan_key_down(FanKey_S)) {
+                p_input->direction.y -= 1;
+            }
+            if (fan_key_down(FanKey_A)) {
+                p_input->direction.x -= 1;
+            }
+            if (fan_key_down(FanKey_D)) {
+                p_input->direction.x += 1;
+            }
 
-        p_input->actions[3] = fan_key_pressed(FanKey_H);
-        if (!p_input->actions[3]) p_input->actions[4] = fan_key_pressed(FanKey_J);
-        if (!p_input->actions[4]) p_input->actions[5] = fan_key_pressed(FanKey_K);
-        if (!p_input->actions[5]) p_input->actions[6] = fan_key_pressed(FanKey_L);
+            p_input->actions[0] = fan_key_pressed(FanKey_E);
+            p_input->actions[1] = fan_key_pressed(FanKey_R) ? not p_input->actions[1] : p_input->actions[1];
+            p_input->actions[2] = fan_key_pressed(FanKey_F) ? not p_input->actions[2] : p_input->actions[2];
+
+            p_input->actions[3] = fan_key_pressed(FanKey_H);
+            if (!p_input->actions[3]) p_input->actions[4] = fan_key_pressed(FanKey_J);
+            if (!p_input->actions[4]) p_input->actions[5] = fan_key_pressed(FanKey_K);
+            if (!p_input->actions[5]) p_input->actions[6] = fan_key_pressed(FanKey_L);
+        }
 
 #ifdef DEBUG
         if (fan_key_pressed(FanKey_P)) {
@@ -161,6 +232,7 @@ int GameMain(void) {
             fan_camera_begin(camera);
             game.update_and_render(&arena_allocator, &world, &state, dt);
             fan_camera_end();
+            ConsoleDraw(&console, state.window_width, state.window_height);
             fan_draw_fps(2, 2);
         fan_draw_end();
 

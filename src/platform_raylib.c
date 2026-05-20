@@ -293,14 +293,22 @@ int32 fan_random_int(int32 min, int32 max) {
     return result;
 }
 
-int32 fan_key_pressed(fan_key key) {
-    int32 result = IsKeyPressed(key);
+bool32 fan_key_pressed(fan_key key) {
+    bool32 result = IsKeyPressed(key);
     return result;
 }
 
-int32 fan_key_down(fan_key key) {
-    int32 result = IsKeyDown(key);
+bool32 fan_key_down(fan_key key) {
+    bool32 result = IsKeyDown(key);
     return result;
+}
+
+fan_key fan_key_current_char(void) {
+    return GetCharPressed();
+}
+
+fan_key fan_key_current(void) {
+    return GetKeyPressed();
 }
 
 fan_texture fan_texture_load(const char *filepath) {
@@ -403,7 +411,7 @@ void fan_draw_texture(fan_texture texture, fan_rect src, fan_rect dst, fan_vec2 
     DrawTexturePro(rl_texture, rl_src, rl_dst, rl_origin, angle, rl_color);
 }
 
-void fan_draw_text(const char *buf, fan_vec2 origin, fan_color text_color, fan_color background_color) {
+void fan_draw_text(char *buf, fan_vec2 origin, fan_color text_color, fan_color background_color) {
     // DrawTextPro();
     (void)background_color;
     Color rl_text_color = fan_color_rl(text_color);
