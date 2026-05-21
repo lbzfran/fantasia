@@ -474,12 +474,26 @@ void LightingProcessPost(
     int32 window_width,
     int32 window_height
 ) {
+    float32 target_width = (float32)lightmap.texture.width;
+    float32 target_height = (float32)lightmap.texture.height;
+
+    float32 scale = min(
+                        (float32)window_width  / target_width,
+                        (float32)window_height / target_height
+                       );
+
+    float32 render_width  = target_width  * scale;
+    float32 render_height = target_height * scale;
+
+    float32 offset_x = ((float32)window_width  - render_width)  * 0.5f;
+    float32 offset_y = ((float32)window_height - render_height) * 0.5f;
+
     fan_mode_blend_begin(FanBlend_MULTIPLIED);
 
         fan_draw_texture(
             lightmap.texture,
             (fan_rect){ 0, 0, (float32)lightmap.texture.width, (float32)-lightmap.texture.height },
-            (fan_rect){ 0, 0, (float32)window_width, (float32)window_height },
+            (fan_rect){ offset_x, offset_y, render_width, render_height },
             fan_vec2_zero(),
             0.0f,
             fan_color_WHITE
