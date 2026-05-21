@@ -8,17 +8,23 @@
 #define TILE_SIZE 64
 #define MAX_ENTITY_CAP kilobytes(1)
 
+#define CONSOLE_MAX_INPUT   256
+#define CONSOLE_MAX_OUTPUT  14
+#define CONSOLE_MAX_HISTORY 10
+
 typedef struct {
     bool32 active;
-    char8 input[256];
+    char8 input[CONSOLE_MAX_INPUT];
     ssize input_size;
     int32 cursor_position;
 
-    char8 output[20][256];
+    char8 output[CONSOLE_MAX_OUTPUT][CONSOLE_MAX_INPUT];
+    ssize output_size[CONSOLE_MAX_OUTPUT];
     int32 output_start;
     int32 output_count;
 
-    char8 history[10][256];
+    char8 history[CONSOLE_MAX_HISTORY][CONSOLE_MAX_INPUT];
+    ssize history_size[CONSOLE_MAX_HISTORY];
     int32 history_position;
     int32 history_count;
 

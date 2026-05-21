@@ -26,20 +26,42 @@ World world         = {};
 
 // TODO(liam): implement these console functions
 static void ConsoleOutputAdd(GameConsole *console, fan_str8 text) {
-    for (ssize i = 0; i < text.length; i++) {
-        console->output[console->output_count][i] = text.data[i];
+    int32 index = (console->output_start + console->output_count) % CONSOLE_MAX_OUTPUT;
+    for (ssize i = 0; i < CONSOLE_MAX_INPUT; i++) {
+        console->output[index][i] = text.data[i];
     }
-    console->output[console->output_count][text.length + 1] = '\0';
-    console->output_count++;
+    console->output[index][CONSOLE_MAX_INPUT - 1] = '\0';
+    if (console->output_count < CONSOLE_MAX_OUTPUT) {
+        console->output_count++;
+    }
+    else {
+        console->output_start = (console->output_start + 1) % CONSOLE_MAX_OUTPUT;
+    }
 }
 
-static void fan_console_history_add(fan_str8 text);
+static void ConsoleHistoryAdd(GameConsole *console, fan_str8 cmd) {
+    if (cmd.length == 0) return;
+    if (console->history_count > 0 &&
+        fan_str8_equals(fan_str8_cstr(console->history[(console->history_count - 1) % 256]), cmd)) {
+        return;
+    }
+    int32 index = console->history_count % CONSOLE_MAX_INPUT;
+    // strncpy(console->history[index], cmd, CONSOLE_MAX_INPUT - 1);
+    // console->history[index][CONSOLE_MAX_INPUT - 1] = '\0';
+    console->history_count++;
+    console->history_position = console->history_count;
+}
 
 static void ConsoleExecute(GameConsole *console, fan_str8 cmd) {
     if (cmd.length == 0) return;
 
     if (fan_str8_equals(cmd, fan_str8_cstr("exit"))) {
         console->active = false;
+        return;
+    }
+    if (fan_str8_equals(cmd, fan_str8_cstr("help"))) {
+        ConsoleOutputAdd(console, fan_str8_cstr("Available commands: exit, help"));
+        return;
     }
 }
 
@@ -47,7 +69,7 @@ static void ConsoleUpdate(GameConsole *console, GameState *state) {
     // if (!console->active) return;
     int32 key = fan_key_current_char();
     while (key > 0) {
-        if ((key >= 32) && (key <= 125) && console->cursor_position < (256 - 1)) {
+        if ((key >= 32) && (key <= 125) && console->cursor_position < (CONSOLE_MAX_INPUT - 1)) {
             fan_memory_move(&console->input[console->cursor_position + 1],
                             &console->input[console->cursor_position],
                             console->input_size - console->cursor_position + 1);
@@ -97,8 +119,32 @@ static void ConsoleUpdate(GameConsole *console, GameState *state) {
             case FanKey_END: {
                 console->cursor_position = console->input_size;
             } break;
+            case FanKey_UP: {
+                if (console->history_count > 0) {
+                    if (console->history_position > 0) console->history_position--;
+                    int32 index = console->history_position % CONSOLE_MAX_INPUT;
+                    // strcpy(console->input, console->history[index]);
+                    console->cursor_position = console->input_size;
+                }
+            } break;
+            case FanKey_DOWN: {
+                if (console->history_count > 0 && console->history_position < console->history_count) {
+                    console->history_position++;
+                    if (console->history_position == console->history_count) {
+                        console->input[0] = '\0';
+                    }
+                    else {
+                        int32 index = console->history_position % CONSOLE_MAX_INPUT;
+                        // strcpy(console->input, console->history[index]);
+                    }
+                    console->cursor_position = console->input_size;
+                }
+            } break;
             case FanKey_ENTER: {
-                ConsoleExecute(console, (fan_str8){ (uint8 *)console->input, console->input_size });
+                if (console->input_size > 0) {
+                    ConsoleOutputAdd(console, (fan_str8){ (uint8 *)console->input, console->input_size });
+                    ConsoleExecute(console, (fan_str8){ (uint8 *)console->input, console->input_size });
+                }
                 console->input[0] = '\0';
                 console->input_size = 0;
                 console->cursor_position = 0;
@@ -125,9 +171,9 @@ static void ConsoleDraw(GameConsole *console, int32 width, int32 height) {
     // fan_draw_rect(0, 0,
     //               width, line_height + margin * 2, (fan_color){ 0, 0, 0, 150 });
 
-    for (int32 i = 0; i < console->output_count && i < 20; i++) {
-        int32 index = (console->output_start + i) % 20;
-        fan_draw_text(console->output[index], (fan_vec2){ (float32)margin, (float32)margin + (float32)i * line_height * 4 }, line_height, fan_color_WHITE);
+    for (int32 i = 0; i < console->output_count && i < CONSOLE_MAX_OUTPUT; i++) {
+        int32 index = (console->output_start + i) % CONSOLE_MAX_OUTPUT;
+        fan_draw_text(console->output[index], (fan_vec2){ (float32)margin, (float32)margin + (float32)i * line_height }, line_height, fan_color_WHITE);
     }
 
     fan_draw_text(console->input, (fan_vec2){ (float32)margin, (float32)input_y }, line_height, fan_color_BLACK);
@@ -297,7 +343,7 @@ int GameMain(void) {
             game.update_and_render(&arena_allocator, &world, &state, dt);
             fan_camera_end();
             ConsoleDraw(&console, state.window_width, state.window_height);
-            fan_draw_fps(2, 2);
+            fan_draw_fps(state.window_width - 100, 2);
         fan_draw_end();
 
 #ifdef DEBUG
