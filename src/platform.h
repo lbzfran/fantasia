@@ -269,7 +269,8 @@ FAN_API void fan_draw_circle(int32 x, int32 y, float32 r, fan_color color);
 FAN_API void fan_draw_circle_grad(int32 x, int32 y, float32 r, fan_color in, fan_color out);
 
 FAN_API void fan_draw_texture(fan_texture texture, fan_rect src, fan_rect dst, fan_vec2 origin, float32 angle, fan_color);
-FAN_API void fan_draw_text(char8 *buf, fan_vec2 origin, fan_color text_color, fan_color background_color);
+FAN_API void fan_draw_text(char8 *buf, fan_vec2 origin, int32 font_size, fan_color text_color);
+FAN_API int32 fan_text_measure(const char8 *text, int32 font_size);
 
 FAN_API void fan_camera_begin(fan_camera2D);
 FAN_API void fan_camera_end(void);

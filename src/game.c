@@ -169,7 +169,7 @@ bool32 CollisionCheckV(fan_vec2 aPos, fan_vec2 aSize, fan_vec2 bPos, fan_vec2 bS
     return result;
 }
 
-inline fan_rect CollisionAdjusted(const fan_rect boundary, const fan_vec2 position) {
+fan_rect CollisionAdjusted(const fan_rect boundary, const fan_vec2 position) {
     return (fan_rect) {
         position.x + boundary.x,
         position.y + boundary.y,

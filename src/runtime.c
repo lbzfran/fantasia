@@ -19,17 +19,29 @@ fan_allocator heap_allocator = {
     .ctx    = null
 };
 
+GameConsole console = {};
+GameAPI game        = {};
+GameState state     = {};
+World world         = {};
+
 // TODO(liam): implement these console functions
 static void ConsoleOutputAdd(GameConsole *console, fan_str8 text) {
     for (ssize i = 0; i < text.length; i++) {
         console->output[console->output_count][i] = text.data[i];
     }
-    console->output[console->output_count][text.length] = '\0';
+    console->output[console->output_count][text.length + 1] = '\0';
     console->output_count++;
 }
 
 static void fan_console_history_add(fan_str8 text);
-static void fan_console_execute(fan_str8 cmd);
+
+static void ConsoleExecute(GameConsole *console, fan_str8 cmd) {
+    if (cmd.length == 0) return;
+
+    if (fan_str8_equals(cmd, fan_str8_cstr("exit"))) {
+        console->active = false;
+    }
+}
 
 static void ConsoleUpdate(GameConsole *console, GameState *state) {
     // if (!console->active) return;
@@ -40,7 +52,7 @@ static void ConsoleUpdate(GameConsole *console, GameState *state) {
                             &console->input[console->cursor_position],
                             console->input_size - console->cursor_position + 1);
             console->input[console->cursor_position] = (char8)key;
-            console->input[console->cursor_position + 1] = '\0';
+            // console->input[console->cursor_position + 1] = '\0';
             console->input_size++;
             console->cursor_position++;
         }
@@ -50,9 +62,10 @@ static void ConsoleUpdate(GameConsole *console, GameState *state) {
     int32 pressed = fan_key_current();
     while (pressed != 0) {
         switch (pressed) {
-            case FanKey_GRAVE: [[ fallthrough ]]
             case FanKey_ESCAPE: {
+                console->input[0] = '\0';
                 console->input_size = 0;
+                console->cursor_position = 0;
                 console->active = not console->active;
             } break;
             case FanKey_BACKSPACE: {
@@ -64,11 +77,32 @@ static void ConsoleUpdate(GameConsole *console, GameState *state) {
                     console->cursor_position--;
                 }
             } break;
+            case FanKey_DELETE: {
+                if (console->input[console->cursor_position] != '\0') {
+                    fan_memory_move(&console->input[console->cursor_position],
+                                    &console->input[console->cursor_position + 1],
+                                    console->input_size - console->cursor_position);
+                    console->input_size--;
+                }
+            } break;
             case FanKey_LEFT: {
                 console->cursor_position = max(0, console->cursor_position - 1);
             } break;
             case FanKey_RIGHT: {
                 console->cursor_position = min(console->cursor_position + 1, console->input_size);
+            } break;
+            case FanKey_HOME: {
+                console->cursor_position = 0;
+            } break;
+            case FanKey_END: {
+                console->cursor_position = console->input_size;
+            } break;
+            case FanKey_ENTER: {
+                ConsoleExecute(console, (fan_str8){ (uint8 *)console->input, console->input_size });
+                console->input[0] = '\0';
+                console->input_size = 0;
+                console->cursor_position = 0;
+                console->history_position = console->history_count;
             } break;
             default:
                 break;
@@ -86,21 +120,25 @@ static void ConsoleDraw(GameConsole *console, int32 width, int32 height) {
     int32 input_y = height - margin - line_height;
 
     fan_draw_rect(0, 0, width, console_height, (fan_color){ 0, 0, 0, 100 });
-    fan_draw_rect(0, input_y - line_height - margin,
-                  width, line_height + margin * 2, (fan_color){ 0, 0, 0, 150 });
+    // fan_draw_rect(0, input_y - line_height - margin,
+    //               width, line_height + margin * 2, (fan_color){ 0, 0, 0, 150 });
+    // fan_draw_rect(0, 0,
+    //               width, line_height + margin * 2, (fan_color){ 0, 0, 0, 150 });
 
     for (int32 i = 0; i < console->output_count && i < 20; i++) {
         int32 index = (console->output_start + i) % 20;
-        fan_draw_text(console->output[index], (fan_vec2){ (float32)margin, (float32)margin + (float32)i * line_height }, fan_color_GRAY, fan_color_GRAY);
+        fan_draw_text(console->output[index], (fan_vec2){ (float32)margin, (float32)margin + (float32)i * line_height * 4 }, line_height, fan_color_WHITE);
     }
 
-    fan_draw_text(console->input, (fan_vec2){ (float32)margin, (float32)margin + (float32)(input_y - line_height - margin) }, fan_color_BLACK, (fan_color){ 0 });
-}
+    fan_draw_text(console->input, (fan_vec2){ (float32)margin, (float32)input_y }, line_height, fan_color_BLACK);
 
-GameConsole console = {};
-GameAPI game        = {};
-GameState state     = {};
-World world         = {};
+    // char8 prompt[20 + 16];
+
+    int32 cursor_x = margin + fan_text_measure(console->input, line_height) -
+        fan_text_measure(console->input + console->cursor_position, line_height);
+
+    fan_draw_rect(cursor_x, input_y, 2, line_height, fan_color_WHITE);
+}
 
 static void GameAPIClose(GameAPI *game) {
     fan_lib_close(game->library);
@@ -185,7 +223,7 @@ int GameMain(void) {
     camera.zoom = 0.8f;
     PlayerInput *p_input = &state.player_input;
 
-    ConsoleOutputAdd(&console, fan_str8_cstr("Test!\n"));
+    ConsoleOutputAdd(&console, fan_str8_cstr("Test!"));
 
     game.init(&arena_allocator, &world, &state);
     while (running) {
@@ -234,19 +272,20 @@ int GameMain(void) {
             if (!p_input->actions[3]) p_input->actions[4] = fan_key_pressed(FanKey_J);
             if (!p_input->actions[4]) p_input->actions[5] = fan_key_pressed(FanKey_K);
             if (!p_input->actions[5]) p_input->actions[6] = fan_key_pressed(FanKey_L);
-        }
 
 #ifdef DEBUG
-        if (fan_key_pressed(FanKey_P)) {
-            state.player_called_object_dump = true;
-            fan_log_debug("[[START DUMP]]\n");
-        }
-        if (fan_key_pressed(FanKey_T) ||
-            fan_file_time_last_written(GAME_LIB_PATH,
-                                         &last_mod_time) == 1) {
-            requested_reload = true;
-        }
+            if (fan_key_pressed(FanKey_P)) {
+                state.player_called_object_dump = true;
+                fan_log_debug("[[START DUMP]]\n");
+            }
+            if (fan_key_pressed(FanKey_T) ||
+                fan_file_time_last_written(GAME_LIB_PATH,
+                                           &last_mod_time) == 1) {
+                requested_reload = true;
+            }
 #endif
+        }
+
 
         state.current_time = fan_time_get();
         CTransform *cam_transform = fan_component_get(&world.c_transform, world.spec_id.camera);

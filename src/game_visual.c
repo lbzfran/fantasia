@@ -290,8 +290,8 @@ void RenderSystem(
                 fan_f32_round(screen_pos.x),
                 fan_f32_round(screen_pos.y - (screen_scale.y * 0.25f))
             },
-            fan_color_BLACK,
-            fan_color_WHITE
+            14,
+            fan_color_BLACK
         );
 
     }
