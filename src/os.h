@@ -367,7 +367,6 @@ FAN_API void     fan_os_wait(uint32 ms);
 
 FAN_API void fan_memory_set(uint8 *ptr, ssize value, ssize length);
 FAN_API void *fan_memory_copy(void *dst, void *src, ssize size);
-FAN_API void *fan_memory_move(void *dst, void *src, ssize size);
 
 FAN_API bool32 fan_file_copy(const char *src, const char *dst);
 FAN_API bool32 fan_file_delete(const char *path);

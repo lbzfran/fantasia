@@ -399,11 +399,14 @@ void fan_memory_set(uint8 *ptr, ssize value, ssize length) {
 }
 
 void *fan_memory_copy(void *dst, void *src, ssize size) {
-    return memcpy(dst, src, size);
-}
+    uintptr d = (uintptr)dst;
+    uintptr s = (uintptr)src;
 
-void *fan_memory_move(void *dst, void *src, ssize size) {
-    return memmove(dst, src, size);
+    if ((d < s + size) && (s < d + size)) {
+        return memmove(dst, src, size);
+    }
+
+    return memcpy(dst, src, size);
 }
 
 void fan_str8_print(fan_str8 buf) {
