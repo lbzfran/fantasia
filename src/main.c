@@ -50,7 +50,7 @@ int TestMain(void) {
     fan_cvar *test_returned = fan_cvar_get(fan_str8_cstr("test"), &cvar_sys);
     assert(test_returned != nullptr);
     // fan_str8_print(test_returned->name);
-    fan_log_debug("value of '%*s' is '%.6f'.\n", FAN_STR8_ARG(test_returned->name), test_returned->value.f);
+    fan_log_debug("value of " FAN_STR8_FMT " is '%.6f'.\n", FAN_STR8_ARG(test_returned->name), test_returned->value.f);
 
     fan_cvar *test_failure = fan_cvar_get(fan_str8_cstr("woo"), &cvar_sys);
     assert(test_failure == nullptr);

@@ -279,6 +279,7 @@ typedef struct {
     uint8 *data;
     ssize  length;
 } fan_str8;
+#define FAN_STR8_FMT "%.*s"
 #define FAN_STR8_ARG(s) ((int32)(s).length), (s).data
 
 typedef struct {
