@@ -12,17 +12,17 @@
 #include "core.c"
 
 // NOTE(liam): internal-only import of stbds.
-#define FAN_PLATFORM_STBDS
-#ifdef  FAN_PLATFORM_STBDS
-# define STBDS_NO_SHORT_NAMES
-# define STBDS_SIPHASH_2_4
-# define STB_DS_IMPLEMENTATION
-# include "stb_ds.h"
-# define fan_ht_hmdefault stbds_hmdefault
-# define fan_ht_shput stbds_shput
-# define fan_ht_shget stbds_shget
-# define fan_ht_shlen stbds_shlen
-#endif
+// #define FAN_PLATFORM_STBDS
+// #ifdef  FAN_PLATFORM_STBDS
+// # define STBDS_NO_SHORT_NAMES
+// # define STBDS_SIPHASH_2_4
+// # define STB_DS_IMPLEMENTATION
+// # include "stb_ds.h"
+// # define fan_ht_hmdefault stbds_hmdefault
+// # define fan_ht_shput stbds_shput
+// # define fan_ht_shget stbds_shget
+// # define fan_ht_shlen stbds_shlen
+// #endif
 
 inline void fan_dsl_array_append(fan_allocator *mem, fan_dsl_token_array *arr, fan_dsl_token x) {
     assume(mem->resize != nullptr);
