@@ -73,7 +73,7 @@ static void ConsoleExecute(GameConsole *console, fan_str8 cmd) {
 
 static void ConsoleUpdate(GameConsole *console, GameState *state) {
     // if (!console->active) return;
-    int32 key = fan_key_current_char();
+    int32 key = fan_key_current_char8();
     while (key > 0) {
         if ((key >= 32) && (key <= 125) && console->cursor_position < (CONSOLE_MAX_INPUT - 1)) {
             fan_memory_copy(&console->input[console->cursor_position + 1],
@@ -84,7 +84,7 @@ static void ConsoleUpdate(GameConsole *console, GameState *state) {
             console->input_size++;
             console->cursor_position++;
         }
-        key = fan_key_current_char();
+        key = fan_key_current_char8();
     }
 
     int32 pressed = fan_key_current();
@@ -276,7 +276,7 @@ int GameMain(void) {
     bool32 requested_reload   = false;
     uint64 last_mod_time      = 0;
 
-    console.font = fan_font_load("./resources/quattro-400-normal.ttf", &arena_allocator);
+    console.font = fan_font_load("./resources/quattro/quattro-400-normal.ttf", &arena_allocator);
     ConsoleOutputAdd(&console, fan_str8_cstr("fantasia v0.0.0-dev."));
 #endif
 
