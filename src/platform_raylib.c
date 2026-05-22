@@ -422,7 +422,7 @@ void fan_draw_text(char8 *buf, fan_vec2 origin, int32 font_size, fan_color text_
         rl_font = *((Font *)font.internal);
     }
 
-    DrawTextEx(rl_font, buf, (Vector2){ origin.x, origin.y }, font_size, 1.0f, rl_text_color);
+    DrawTextEx(rl_font, buf, (Vector2){ origin.x, origin.y }, (float32)font_size, 1.0f, rl_text_color);
 }
 
 void fan_camera_begin(fan_camera2D camera) {
@@ -459,7 +459,7 @@ fan_rtexture fan_rtexture_load(int32 width, int32 height) {
         .format  = rl_rtx.depth.format
     };
 
-    fan_rtexture rtx = (fan_rtexture) {
+    fan_rtexture rtx = (fan_rtexture){
         .id      = rl_rtx.id,
         .texture = texture,
         .depth   = depth
@@ -518,6 +518,8 @@ int32 fan_text_measure(const char8 *text, int32 font_size) {
     return MeasureText(text, font_size);
 }
 
+// TODO(liam): remove the allocator dependency;
+// As in, replace the .internal with actual parameters.
 fan_font fan_font_load(const char8 *filepath, fan_allocator *mem) {
     Font *rl_font = fan_make(mem, sizeof(Font));
     *rl_font = LoadFont(filepath);
