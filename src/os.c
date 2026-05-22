@@ -320,7 +320,7 @@ void fan_freelist_coalesce(fan_freelist *fl, fan_freelist_node *prev_node, fan_f
     }
 }
 
-fan_str8 fan_str8_span(uchar8 *beg, uchar8 *end) {
+fan_str8 fan_str8_span(uint8 *beg, uint8 *end) {
     fan_str8 r = {0};
     r.data = beg;
     r.length  = beg ? end-beg : 0;
@@ -328,7 +328,7 @@ fan_str8 fan_str8_span(uchar8 *beg, uchar8 *end) {
 }
 
 fan_str8 fan_str8_cstrv(const char8 *s) {
-    return (fan_str8){ (uchar8 *)s, (ssize)strlen(s) };
+    return (fan_str8){ (uint8 *)s, (ssize)strlen(s) };
 }
 
 int fan_str8_equal(fan_str8 a, fan_str8 b) {
@@ -353,12 +353,12 @@ fan_str8 fan_str8_substr(fan_str8 s, ssize i) {
     return s;
 }
 
-fan_cutstr8 fan_str8_cut(fan_str8 s, uchar8 c) {
+fan_cutstr8 fan_str8_cut(fan_str8 s, uint8 c) {
     fan_cutstr8 r = { 0 };
     if (!s.length) return r;  // null pointer special case
-    uchar8 *beg = s.data;
-    uchar8 *end = s.data + s.length;
-    uchar8 *cut = beg;
+    uint8 *beg = s.data;
+    uint8 *end = s.data + s.length;
+    uint8 *cut = beg;
     for (; cut<end && *cut != c; cut++) {}
     r.ok   = cut < end;
     r.head = fan_str8_span(beg, cut);

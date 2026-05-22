@@ -12,6 +12,10 @@
 #include <stdint.h>
 #include <stdalign.h>
 
+#if defined(__cplusplus)
+# error "Codebase does not explicitly support c++."
+#endif
+
 #if defined(__GNUC__)
 #define COMPILER_GCC 1
 #elif defined(__clang__)
@@ -56,7 +60,6 @@
     #define FAN_API extern
 #endif
 
-typedef unsigned char uchar8;
 typedef char          char8;
 typedef char16_t      char16;
 
@@ -96,7 +99,7 @@ static inline void assume(bool32 condition) {
  #ifdef COMPILER_GCC
   #define offsetof(st, m) __builtin_offsetof(st, m)
  #else
-  #define offsetof(st, m) ((size_t)((char *)&((st*)0)->m - (char *)0))
+  #define offsetof(st, m) ((size_t)((char8 *)&((st*)0)->m - (char8 *)0))
  #endif
 #endif
 #ifndef alignas
@@ -265,7 +268,7 @@ typedef enum {
 } fan_pipe;
 
 typedef struct {
-    uchar8        *buf;
+    uint8         *buf;
     ssize          length;
     ssize          capacity;
     fan_pipe       pipe;
@@ -273,7 +276,7 @@ typedef struct {
 } fan_fbuf8;
 
 typedef struct {
-    uchar8 *data;
+    uint8 *data;
     ssize   length;
 } fan_str8;
 
@@ -288,17 +291,17 @@ typedef struct {
 #define fan_resize(mem, ...) ((mem)->resize((mem)->ctx, __VA_ARGS__))
 
 #define FAN_ARRAY_INITIAL_CAPACITY 32
-#define fan_array_append(allocator, arr, x) do{                                             \
-    assume((allocator)->resize != null && "allocator 'resize' must be defined.");              \
-    if ((arr)->size >= (arr)->capacity) {                                                     \
-        ssize new_capacity = max((arr)->capacity * 2, FAN_ARRAY_INITIAL_CAPACITY);             \
+#define fan_array_append(allocator, arr, x) do{                                                                      \
+    assume((allocator)->resize != null && "allocator 'resize' must be defined.");                                    \
+    if ((arr)->size >= (arr)->capacity) {                                                                            \
+        ssize new_capacity = max((arr)->capacity * 2, FAN_ARRAY_INITIAL_CAPACITY);                                   \
         void *new_data = fan_resize((allocator), (arr)->data, (arr)->capacity, sizeof(*(arr)->data) * new_capacity); \
-        assume(new_data != nullptr); \
-        (arr)->data = new_data; \
-        (arr)->capacity = new_capacity;                                                        \
-    }                                                                                       \
-    (arr)->data[(arr)->size] = x;                                                                 \
-    (arr)->size++;                                                                             \
+        assume(new_data != nullptr);                                                                                 \
+        (arr)->data = new_data;                                                                                      \
+        (arr)->capacity = new_capacity;                                                                              \
+    }                                                                                                                \
+    (arr)->data[(arr)->size] = x;                                                                                    \
+    (arr)->size++;                                                                                                   \
 }while(0)
 
 // NOTE(liam): array definitions
@@ -309,11 +312,11 @@ typedef struct {
 
 
 // NOTE(liam): string definitions
-#define fan_str8_cstr(s) (fan_str8){ (uchar8 *)s, sizeof(s) - 1 }
+#define fan_str8_cstr(s) (fan_str8){ (uint8 *)s, sizeof(s) - 1 }
 
 FAN_API void fan_str8_print(fan_str8);
 
-FAN_API fan_str8 fan_str8_span(uchar8 *, uchar8 *);
+FAN_API fan_str8 fan_str8_span(uint8 *, uint8 *);
 FAN_API fan_str8 fan_str8_cstrv(const char8 *);
 FAN_API int32 fan_str8_equal(fan_str8, fan_str8);
 // trims spaces
@@ -321,7 +324,7 @@ FAN_API fan_str8 fan_str8_triml(fan_str8);
 FAN_API fan_str8 fan_str8_trimr(fan_str8);
 FAN_API fan_str8 fan_str8_substr(fan_str8, ssize);
 
-FAN_API fan_cutstr8 fan_str8_cut(fan_str8, uchar8);
+FAN_API fan_cutstr8 fan_str8_cut(fan_str8, uint8);
 
 FAN_API ssize fan_cstr_copy_str8(char8 *dst, fan_str8 src);
 FAN_API fan_str8 fan_str8_copy(fan_str8 src, fan_allocator *mem);
@@ -345,7 +348,9 @@ FAN_API void *fan_arena_make(void *ctx, ssize size);
 FAN_API void  fan_arena_free(void *ctx, void *ptr, ssize size);
 FAN_API void *fan_arena_resize(void *ctx, void *ptr, ssize old, ssize new);
 
-FAN_API void  fan_arena_clear(fan_arena *a);
+FAN_API void           fan_arena_clear(fan_arena *a);
+FAN_API fan_arena_temp fan_arena_temp_begin(fan_arena *a);
+FAN_API void           fan_arena_temp_end(fan_arena_temp temp);
 
 FAN_API void *fan_freelist_make(void *ctx, ssize size);
 FAN_API void  fan_freelist_free(void *ctx, void *ptr, ssize size);
@@ -354,25 +359,20 @@ FAN_API void *fan_freelist_resize(void *ctx, void *ptr, ssize old, ssize new);
 FAN_API void fan_freelist_clear(fan_freelist *fl);
 FAN_API void fan_freelist_init(fan_freelist *fl, void *data, ssize size);
 
-FAN_API fan_arena_temp fan_arena_temp_begin(fan_arena *a);
-FAN_API void           fan_arena_temp_end(fan_arena_temp temp);
-
-FAN_API void *fan_lib_open(const char *path);
-FAN_API void *fan_lib_load(void *lib, const char *name);
+FAN_API void *fan_lib_open(const char8 *path);
+FAN_API void *fan_lib_load(void *lib, const char8 *name);
 FAN_API void  fan_lib_close(void *lib);
 
 FAN_API bool32   fan_os_write(fan_pipe pipe, void *data, ssize length);
-FAN_API fan_str8 fan_os_read(fan_allocator *mem, const char *path);
+FAN_API fan_str8 fan_os_read(fan_allocator *mem, const char8 *path);
 FAN_API void     fan_os_wait(uint32 ms);
 
 FAN_API void fan_memory_set(uint8 *ptr, ssize value, ssize length);
 FAN_API void *fan_memory_copy(void *dst, void *src, ssize size);
 
-FAN_API bool32 fan_file_copy(const char *src, const char *dst);
-FAN_API bool32 fan_file_delete(const char *path);
-FAN_API bool32 fan_file_time_last_written(const char *path, uint64 *last_ms);
-
-// char* LibGetError(void);
+FAN_API bool32 fan_file_copy(const char8 *src, const char8 *dst);
+FAN_API bool32 fan_file_delete(const char8 *path);
+FAN_API bool32 fan_file_time_last_written(const char8 *path, uint64 *last_ms);
 
 // typedef void *(*ThreadFunc)(void *);
 // typedef struct FanThread FanThread;

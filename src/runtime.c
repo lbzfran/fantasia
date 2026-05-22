@@ -275,6 +275,7 @@ int GameMain(void) {
 #ifdef DEBUG
     bool32 requested_reload   = false;
     uint64 last_mod_time      = 0;
+    ConsoleOutputAdd(&console, fan_str8_cstr("fantasia v0.0.0-dev."));
 #endif
 
     fan_random_seed(12398);
@@ -283,7 +284,6 @@ int GameMain(void) {
     camera.zoom = 0.8f;
     PlayerInput *p_input = &state.player_input;
 
-    ConsoleOutputAdd(&console, fan_str8_cstr("fantasia v0.0.0-dev."));
 
     game.init(&arena_allocator, &world, &state);
     while (running) {
@@ -300,7 +300,9 @@ int GameMain(void) {
         p_input->direction = (fan_vec2){ 0 };
 
         if (console.active) {
+#ifdef DEBUG
             ConsoleUpdate(&console, &state);
+#endif
         }
         else {
             if (fan_key_pressed(FanKey_ESCAPE)) {
@@ -356,8 +358,11 @@ int GameMain(void) {
             fan_camera_begin(camera);
             game.update_and_render(&arena_allocator, &world, &state, dt);
             fan_camera_end();
+
+#ifdef DEBUG
             ConsoleDraw(&console, state.window_width, state.window_height);
             fan_draw_fps(state.window_width - 100, 2);
+#endif
         fan_draw_end();
 
 #ifdef DEBUG
