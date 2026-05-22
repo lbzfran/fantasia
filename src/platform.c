@@ -95,21 +95,12 @@ static fan_str8 fan_str8_strip_ext(fan_str8 s) {
     return s;
 }
 
-void fan_sprite_init(fan_asset *assets, fan_texture fallback) {
-    assets->sprites = nullptr;
-    assets->default_sprite = fallback;
+void fan_sprite_init(fan_asset *assets, fan_texture fallback, fan_allocator *mem) {
+    assets->sprites = (fan_ht_entry_texture *)fan_ht_create(sizeof(fan_texture), 32, &fallback, mem);
 }
 
-void fan_sprite_unload(fan_asset *assets, fan_allocator *mem) {
-    fan_asset_sprite_entry *table = assets->sprites;
-    for (ssize i = 0; i < fan_ht_shlen(table); i++) {
-        fan_free(mem, table[i].key, fan_cstr_length(table[i].key) + 1);
-        fan_texture_unload(table[i].value);
-    }
-}
-
-void fan_sprite_load(fan_asset *assets, fan_allocator *mem, char8 *const path) {
-    fan_asset_sprite_entry *table = assets->sprites;
+void fan_sprite_load(char8 *const path, fan_asset *assets, fan_allocator *mem) {
+    fan_ht_entry_texture *table = assets->sprites;
 
     struct dirent *dp;
     DIR *dir = opendir(path);
@@ -121,31 +112,43 @@ void fan_sprite_load(fan_asset *assets, fan_allocator *mem, char8 *const path) {
         if (!dp->d_name[0] || dp->d_name[0] == '.') continue;
 
         fan_str8 file_name = fan_str8_cstrv(dp->d_name);
-        fan_str8 base_name = fan_str8_strip_ext(file_name);
+        fan_str8 key = fan_str8_strip_ext(file_name);
 
         ssize path_len = fan_cstr_copy_str8(full_path, fan_str8_cstrv(path));
         full_path[path_len++] = '/';
         fan_cstr_copy_str8(full_path + path_len, file_name);
         full_path[path_len + file_name.length] = '\0';
-        fan_texture tex = fan_texture_load(full_path);
 
-        ssize key_len = base_name.length;
-        char8 *key = fan_make(mem, key_len + 1);
-        fan_cstr_copy_str8(key, base_name);
-        key[key_len] = '\0';
+        fan_texture texture = fan_texture_load(full_path);
 
-        fan_ht_shput(table, key, tex);
+        table = fan_ht_put(key, &texture, table, mem);
+        // ssize key_len = base_name.length;
+        // char8 *key = fan_make(mem, key_len + 1);
+        // fan_cstr_copy_str8(key, base_name);
+        // key[key_len] = '\0';
+
+        // fan_ht_shput(table, key, tex);
     }
 
     assets->sprites = table;
 }
 
+void fan_sprite_unload(fan_asset *assets, fan_allocator *mem) {
+    // fan_ht_entry_texture *table = assets->sprites;
+    // for (ssize i = 0; i < fan_ht_shlen(table); i++) {
+    //     fan_free(mem, table[i].key, fan_cstr_length(table[i].key) + 1);
+    //     fan_texture_unload(table[i].value);
+    // }
+    fan_ht_free(assets->sprites, mem);
+}
+
 fan_texture fan_sprite_get(fan_asset *assets, char8 *const name) {
-    fan_texture tex = fan_ht_shget(assets->sprites, name);
-    if (tex.id == 0) {
-        return assets->default_sprite;
-    }
-    return tex;
+    // fan_texture tex = fan_ht_shget(assets->sprites, name);
+    // if (tex.id == 0) {
+    //     return assets->default_sprite;
+    // }
+    // return tex;
+    return *((fan_texture *)fan_ht_get(fan_str8_cstr(name), assets->sprites));
 }
 
 // djb2 hash by Dan Bernstein
@@ -210,10 +213,18 @@ void *fan_ht_create(ssize value_size, ssize capacity, void *default_value, fan_a
 
     header->size = 0;
     header->capacity = capacity;
-    header->key_offset = offsetof(fan_ht_entry_str8, key);
+    header->key_offset = 0;
     header->value_size = value_size;
-    header->default_value = default_value;
-    // header->default_value = fan_memory_copy(header->default_value, default_value, value_size);
+    // header->default_value = default_value;
+    if (default_value != nullptr) {
+        header->default_value = fan_make(mem, value_size);
+        if (header->default_value) {
+            fan_memory_copy(header->default_value, default_value, value_size);
+        }
+    }
+    else {
+        header->default_value = nullptr;
+    }
 
     void *table = (void *)((uint8 *)header + sizeof(fan_ht_header));
 
@@ -342,7 +353,7 @@ static void *fan_ht_resize(fan_ht_header *h, fan_allocator *mem) {
 static inline void fan_ht_put_(fan_str8 key, void *value, fan_ht_header *h, fan_allocator *mem) {
     assert(h != nullptr);
     assert(h->capacity > 0);
-    fan_log_debug("ht capacity is: %zu\n", h->capacity);
+    // fan_log_debug("ht capacity is: %zu\n", h->capacity);
     assert(is_power_of_two(h->capacity));
     ssize entry_size = fan_ht_entry_size(h);
     assert(entry_size > 0);
@@ -470,7 +481,7 @@ fan_cvar *fan_cvar_register_(fan_cvar params, fan_cvar_system *sys) {
         }
     }
 
-    fan_ht_put(result->name, result, sys->table, mem);
+    sys->table = fan_ht_put(result->name, result, sys->table, mem);
     if (sys->head == nullptr) {
         sys->head = result;
     }
@@ -482,7 +493,7 @@ fan_cvar_system fan_cvar_system_create(fan_freelist *fl) {
     fan_allocator *mem = fan_freelist_map(fl);
 
     fan_cvar_system sys = {
-        .table    =  fan_ht_create(sizeof(fan_ht_entry_cvar), 8, nullptr, mem),
+        .table    =  fan_ht_create(sizeof(fan_cvar), 8, nullptr, mem),
         .head     =  nullptr,
         .freelist = *fl
     };

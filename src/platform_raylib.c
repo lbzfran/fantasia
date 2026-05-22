@@ -304,7 +304,7 @@ bool32 fan_key_down(fan_key key) {
     return result;
 }
 
-fan_key fan_key_current_char(void) {
+fan_key fan_key_current_char8(void) {
     return GetCharPressed();
 }
 

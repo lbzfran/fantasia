@@ -20,17 +20,17 @@ inline int32 fan_rect_i32_isempty(fan_rect_i32 rect) {
 }
 
 inline int32 fan_rect_f32_isempty(fan_rect_f32 rect) {
-    return fan_f32_equals(rect.x, 0.0f) &&
-           fan_f32_equals(rect.y, 0.0f) &&
-           fan_f32_equals(rect.w, 0.0f) &&
-           fan_f32_equals(rect.h, 0.0f);
+    return fan_f32_equal(rect.x, 0.0f) &&
+           fan_f32_equal(rect.y, 0.0f) &&
+           fan_f32_equal(rect.w, 0.0f) &&
+           fan_f32_equal(rect.h, 0.0f);
 }
 
 inline float32 fan_f32_lerp(float32 a, float32 t, float32 b) {
     return a + (b - a) * t;
 }
 
-inline int32 fan_f32_equals(float32 x, float32 y) {
+inline int32 fan_f32_equal(float32 x, float32 y) {
     float32 epsilon = 0.000001f;
     return (fabsf(x - y)) <= (epsilon * fmaxf(1.0f, fmaxf(fabsf(x), fabsf(y))));
 }
@@ -61,7 +61,7 @@ inline fan_vec2 fan_vec2_subv(fan_vec2 v, float32 x) {
 
 fan_vec2 fan_vec2_normalize(fan_vec2 v) {
     float32 magnitude = fan_vec2_length(v);
-    if (!fan_f32_equals(magnitude, 0.0f)) {
+    if (!fan_f32_equal(magnitude, 0.0f)) {
         return (fan_vec2){ v.x / magnitude, v.y / magnitude };
     }
     return fan_vec2_zero();

@@ -26,20 +26,34 @@ typedef struct {
     void             *ctx_data;
 } fan_music;
 
-typedef struct {
-    char8      *key;
-    fan_texture value;
-} fan_asset_sprite_entry;
+FAN_API void fan_dev_audio_create(void);
+FAN_API void fan_dev_audio_close(void);
 
-typedef struct {
-    fan_asset_sprite_entry *sprites;
-    fan_texture             default_sprite;
-} fan_asset;
+FAN_API fan_sound fan_sound_load(const char8 *filepath);
+FAN_API void      fan_sound_unload(fan_sound);
+FAN_API void      fan_sound_play(fan_sound);
+FAN_API void      fan_sound_stop(fan_sound);
+FAN_API void      fan_sound_pause(fan_sound sound);
+FAN_API void      fan_sound_resume(fan_sound sound);
 
-FAN_API void fan_sprite_load(fan_asset *assets, fan_allocator *mem, char8 *const path);
-FAN_API void fan_sprite_unload(fan_asset *assets, fan_allocator *mem);
-FAN_API void fan_sprite_init(fan_asset *assets, fan_texture fallback);
-FAN_API fan_texture fan_sprite_get(fan_asset *assets, char8 *const name);
+FAN_API void      fan_sound_volume_set(fan_sound, float32);
+FAN_API void      fan_sound_pitch_set(fan_sound, float32);
+FAN_API void      fan_sound_pan_set(fan_sound, float32);
+
+FAN_API fan_music fan_music_load(const char8 *filepath);
+FAN_API void      fan_music_unload(fan_music);
+FAN_API void      fan_music_update(fan_music);
+FAN_API void      fan_music_play(fan_music);
+FAN_API void      fan_music_stop(fan_music);
+FAN_API void      fan_music_pause(fan_music music);
+FAN_API void      fan_music_resume(fan_music music);
+FAN_API void      fan_music_seek(fan_music, float32);
+FAN_API void      fan_music_volume_set(fan_music, float32);
+FAN_API void      fan_music_pitch_set(fan_music, float32);
+FAN_API void      fan_music_pan_set(fan_music, float32);
+
+FAN_API float32   fan_music_time_played(fan_music music);
+FAN_API float32   fan_music_time_length(fan_music music);
 
 typedef enum {
     FanKey_NULL            = 0,        // Key: NULL, used for no key pressed
@@ -153,6 +167,11 @@ typedef enum {
     FanKey_KP_EQUAL        = 336,      // Key: Keypad =
 } fan_key;
 
+FAN_API bool32 fan_key_pressed(fan_key key);
+FAN_API bool32 fan_key_down(fan_key key);
+FAN_API fan_key fan_key_current_char8(void);
+FAN_API fan_key fan_key_current(void);
+
 typedef enum {
     FanWindow_VSYNC_HINT         = 0x00000040,   // Set to try enabling V-Sync on GPU
     FanWindow_FULLSCREEN_MODE    = 0x00000002,   // Set to run program in fullscreen
@@ -172,6 +191,24 @@ typedef enum {
     FanWindow_INTERLACED_HINT    = 0x00010000    // Set to try enabling interlaced video format (for V3D)
 } fan_flag_window;
 
+FAN_API void  fan_window_create(int32 width, int32 height, const char8 *title);
+FAN_API void  fan_window_close(void);
+FAN_API int32 fan_window_shouldclose(void);
+
+typedef struct {
+    uint32 id;
+    int32  width;
+    int32  height;
+    int32  mipmaps;
+    int32  format;
+} fan_texture;
+
+typedef struct {
+    int32 id;
+    fan_texture texture;
+    fan_texture depth;
+} fan_rtexture;
+
 typedef enum {
     FanBlend_ALPHA = 0,                // Blend textures considering alpha (default)
     FanBlend_ADDITIVE,                 // Blend textures adding colors
@@ -183,86 +220,49 @@ typedef enum {
     FanBlend_CUSTOM_SEPARATE           // Blend textures using custom rgb/alpha separate src/dst factors (use rlSetBlendFactorsSeparate())
 } fan_flag_blend;
 
+FAN_API fan_texture  fan_texture_load(const char8 *filepath);
+FAN_API void         fan_texture_unload(fan_texture texture);
+FAN_API fan_rtexture fan_rtexture_load(int32, int32);
+FAN_API void         fan_rtexture_unload(fan_rtexture);
+
+
+FAN_API void fan_mode_texture_begin(fan_rtexture);
+FAN_API void fan_mode_texture_end(void);
+FAN_API void fan_draw_texture(fan_texture texture, fan_rect src, fan_rect dst, fan_vec2 origin, float32 angle, fan_color);
+FAN_API void fan_mode_blend_begin(int32);
+FAN_API void fan_mode_blend_end(void);
+
 typedef struct {
     void *internal;
 } fan_font;
 #define fan_font_DEFAULT (fan_font){ .internal = nullptr }
 
-#define fan_color_WHITE   (fan_color){ 210, 210, 210, 255 }
-#define fan_color_GRAY    (fan_color){  80,  80,  80, 255 }
-#define fan_color_BLACK   (fan_color){   0,   0,   0, 255 }
-#define fan_color_RED     (fan_color){ 255,   0,   0, 255 }
-#define fan_color_ORANGE  (fan_color){ 255, 165,   0, 255 }
-#define fan_color_YELLOW  (fan_color){ 255, 255,   0, 255 }
-#define fan_color_GREEN   (fan_color){   0, 255,   0, 255 }
-#define fan_color_CYAN    (fan_color){   0, 255, 255, 255 }
-#define fan_color_BLUE    (fan_color){   0,   0, 255, 255 }
-#define fan_color_MAGENTA (fan_color){ 255,   0, 255, 255 }
-
-#define PI 3.14159265358979323846f
+FAN_API fan_font fan_font_load(const char8 *filepath, fan_allocator *mem);
+FAN_API void     fan_font_unload(fan_font font);
+FAN_API int32    fan_text_measure(const char8 *text, int32 font_size);
+FAN_API void     fan_draw_text(char8 *buf, fan_vec2 origin, int32 font_size, fan_color text_color, fan_font font);
 
 
-FAN_API void  fan_window_create(int32 width, int32 height, const char8 *title);
-FAN_API void  fan_window_close(void);
-FAN_API int32 fan_window_shouldclose(void);
-
-FAN_API void fan_window_config(int32);
+FAN_API void   fan_fps_target(int32 fps);
+FAN_API void   fan_draw_fps(int32 x, int32 y);
+FAN_API void   fan_log_set(int32);
+FAN_API void   fan_window_config(int32);
 FAN_API bool32 fan_window_resized(void);
-FAN_API void fan_log_set(int32);
+FAN_API int32  fan_window_width(void);
+FAN_API int32  fan_window_height(void);
 
-FAN_API int32 fan_window_width(void);
-FAN_API int32 fan_window_height(void);
-
-FAN_API void fan_fps_target(int32 fps);
-
-FAN_API void fan_dev_audio_create(void);
-FAN_API void fan_dev_audio_close(void);
-
-FAN_API fan_sound fan_sound_load(const char8 *filepath);
-FAN_API void      fan_sound_unload(fan_sound);
-FAN_API void      fan_sound_play(fan_sound);
-FAN_API void      fan_sound_stop(fan_sound);
-FAN_API void      fan_sound_pause(fan_sound sound);
-FAN_API void      fan_sound_resume(fan_sound sound);
-
-FAN_API void     fan_sound_volume_set(fan_sound, float32);
-FAN_API void     fan_sound_pitch_set(fan_sound, float32);
-FAN_API void     fan_sound_pan_set(fan_sound, float32);
-
-FAN_API fan_music fan_music_load(const char8 *filepath);
-FAN_API void      fan_music_unload(fan_music);
-FAN_API void      fan_music_update(fan_music);
-FAN_API void      fan_music_play(fan_music);
-FAN_API void      fan_music_stop(fan_music);
-FAN_API void      fan_music_pause(fan_music music);
-FAN_API void      fan_music_resume(fan_music music);
-FAN_API void      fan_music_seek(fan_music, float32);
-FAN_API void      fan_music_volume_set(fan_music, float32);
-FAN_API void      fan_music_pitch_set(fan_music, float32);
-FAN_API void      fan_music_pan_set(fan_music, float32);
-
-FAN_API float32  fan_music_time_played(fan_music music);
-FAN_API float32  fan_music_time_length(fan_music music);
 
 FAN_API float32 fan_frametime_get(void);
 FAN_API float32 fan_time_get(void);
 FAN_API int32   fan_fps_get(void);
 
-FAN_API void fan_random_seed(int32 seed);
-FAN_API int32  fan_random_int(int32 min, int32 max);
-
-FAN_API bool32 fan_key_pressed(fan_key key);
-FAN_API bool32 fan_key_down(fan_key key);
-FAN_API fan_key fan_key_current_char(void);
-FAN_API fan_key fan_key_current(void);
-
-FAN_API fan_texture fan_texture_load(const char8 *filepath);
-FAN_API void        fan_texture_unload(fan_texture texture);
+// NOTE(liam): random
+FAN_API void  fan_random_seed(int32 seed);
+FAN_API int32 fan_random_int(int32 min, int32 max);
 
 FAN_API void fan_draw_begin(void);
-FAN_API void fan_draw_clear(fan_color color);
-FAN_API void fan_draw_fps(int32 x, int32 y);
 FAN_API void fan_draw_end(void);
+FAN_API void fan_draw_clear(fan_color color);
 
 FAN_API void fan_draw_pixel(int32, int32, fan_color color);
 FAN_API void fan_draw_line(int32, int32, int32, int32, fan_color color);
@@ -273,22 +273,15 @@ FAN_API void fan_draw_rectr(fan_rect rect, fan_color color);
 FAN_API void fan_draw_circle(int32 x, int32 y, float32 r, fan_color color);
 FAN_API void fan_draw_circle_grad(int32 x, int32 y, float32 r, fan_color in, fan_color out);
 
-FAN_API void fan_draw_texture(fan_texture texture, fan_rect src, fan_rect dst, fan_vec2 origin, float32 angle, fan_color);
-FAN_API void fan_draw_text(char8 *buf, fan_vec2 origin, int32 font_size, fan_color text_color, fan_font font);
-FAN_API int32 fan_text_measure(const char8 *text, int32 font_size);
-
-FAN_API fan_font fan_font_load(const char8 *filepath, fan_allocator *mem);
-FAN_API void fan_font_unload(fan_font font);
+typedef struct {
+    fan_vec2 target;
+    fan_vec2 offset;
+    float32 rotation;
+    float32 zoom;
+} fan_camera2D;
 
 FAN_API void fan_camera_begin(fan_camera2D);
 FAN_API void fan_camera_end(void);
-
-FAN_API fan_rtexture fan_rtexture_load(int32, int32);
-FAN_API void fan_rtexture_unload(fan_rtexture);
-FAN_API void fan_mode_texture_begin(fan_rtexture);
-FAN_API void fan_mode_texture_end(void);
-FAN_API void fan_mode_blend_begin(int32);
-FAN_API void fan_mode_blend_end(void);
 
 // DSL parsing
 typedef enum {
@@ -319,6 +312,20 @@ typedef struct {
     int32 value_count;
 } fan_dsl_field;
 
+FAN_API void fan_dsl_array_append(fan_allocator *mem, fan_dsl_token_array *arr, fan_dsl_token x);
+FAN_API fan_dsl_token_array fan_dsl_tokenize(fan_allocator *mem, fan_str8 buf);
+
+/* NOTE(liam):
+ * HashTable properties.
+ *  - the entry table is owned by the allocator.
+ *  - each entry's key is owned by the allocator.
+ *  - each entry's value can be a pointer to either a value or struct, or
+ *    be in itself a pointer to something else. There is no explicit
+ *    ownership to the value if it is a pointer.
+ *  - The HashTable's metadata is hidden at the header level.
+ *  - The actual table's memory starts directly after the header,
+ *    and the user is only ever exposed to the start of the table's pointer.
+ */
 typedef struct {
     void *default_value;
     ssize size;
@@ -334,7 +341,19 @@ typedef struct {                   \
     TYPE     value;                \
 } fan_ht_entry_##NAME
 
-fan_ht_define(str8, fan_str8);
+fan_ht_define(str8,    fan_str8);
+fan_ht_define(texture, fan_texture);
+
+FAN_API usize   fan_hash_str8(fan_str8);
+FAN_API usize   fan_hash_bytes(const void *ptr, usize len);
+
+FAN_API void   *fan_ht_create(ssize entry_size, ssize capacity, void *default_value, fan_allocator *mem);
+FAN_API void    fan_ht_free(void *table, fan_allocator *mem);
+FAN_API ssize   fan_ht_cap(void *table);
+FAN_API ssize   fan_ht_len(void *table);
+FAN_API void   *fan_ht_get(fan_str8 key, void *table);
+FAN_API void   *fan_ht_put(fan_str8 key, void *value, void *table, fan_allocator *mem);
+FAN_API bool32  fan_ht_delete(fan_str8 key, void *table, fan_allocator *mem);
 
 typedef union {
     int32    i;
@@ -360,17 +379,6 @@ typedef enum : uint32 {
     FanCVar_NONCHEAT = 1 << 10,
 } fan_cvar_flags;
 
-// typedef struct {
-//     fan_str8          name;
-//     fan_str8          description;
-//     fan_cvar_type     type;
-//     fan_cvar_value    value;
-//     fan_str8          valueString;
-//     fan_str8          resetString;
-//     fan_cvar_flags    flags;
-//     float32           min_value, max_value;
-// } fan_cvar_internal_;
-
 typedef struct {
     fan_str8 *data;
     ssize size;
@@ -392,28 +400,14 @@ struct fan_cvar {
     fan_cvar          *next;
 };
 
-fan_ht_define(cvar, fan_cvar);
+fan_ht_define(cvar,    fan_cvar);
 
-// TODO(liam): figure out what to do with the hashtable.
-// make str8-to-str8 and str8-to-ptr, or use a generic macro
-// like the generic array?
 typedef struct {
     fan_ht_entry_cvar  *table;
     fan_cvar           *head;
 
     fan_freelist        freelist;
 } fan_cvar_system;
-
-FAN_API usize fan_hash_str8(fan_str8);
-FAN_API usize fan_hash_bytes(const void *ptr, usize len);
-
-FAN_API void *fan_ht_create(ssize entry_size, ssize capacity, void *default_value, fan_allocator *mem);
-FAN_API void fan_ht_free(void *table, fan_allocator *mem);
-FAN_API ssize fan_ht_cap(void *table);
-FAN_API ssize fan_ht_len(void *table);
-FAN_API void *fan_ht_get(fan_str8 key, void *table);
-FAN_API void *fan_ht_put(fan_str8 key, void *value, void *table, fan_allocator *mem);
-FAN_API bool32 fan_ht_delete(fan_str8 key, void *table, fan_allocator *mem);
 
 
 static inline fan_cvar_value fan_cvar_value_i32(int32 v) {
@@ -439,18 +433,26 @@ FAN_API fan_cvar *fan_cvar_register_(fan_cvar params, fan_cvar_system *sys);
                                                                     .name = (var_name), \
                                                                     .default_value = FAN_CVAR_VALUE(var_value), \
                                                                     __VA_ARGS__}, (sys))
-FAN_API fan_cvar_system fan_cvar_system_create(fan_freelist *fl);
-FAN_API void fan_cvar_system_free(fan_cvar_system *sys);
+FAN_API fan_cvar_system  fan_cvar_system_create(fan_freelist *fl);
+FAN_API void             fan_cvar_system_free(fan_cvar_system *sys);
 
-FAN_API void      fan_cvar_set(fan_str8, fan_str8);
-FAN_API fan_cvar *fan_cvar_get(fan_str8, fan_cvar_system *sys);
+FAN_API void             fan_cvar_set(fan_str8, fan_str8);
+FAN_API fan_cvar        *fan_cvar_get(fan_str8, fan_cvar_system *sys);
 
 // FAN_API int32   fan_cvar_get_int32(fan_str8);
 // FAN_API float32 fan_cvar_get_float32(fan_str8);
 // FAN_API bool32  fan_cvar_get_bool32(fan_str8);
 
-FAN_API void fan_dsl_array_append(fan_allocator *mem, fan_dsl_token_array *arr, fan_dsl_token x);
-FAN_API fan_dsl_token_array fan_dsl_tokenize(fan_allocator *mem, fan_str8 buf);
+typedef struct {
+    fan_ht_entry_texture *sprites;
+    // fan_texture             default_sprite;
+} fan_asset;
+
+FAN_API void        fan_sprite_init(fan_asset *assets, fan_texture fallback, fan_allocator *mem);
+FAN_API void        fan_sprite_load(char8 *const path, fan_asset *assets, fan_allocator *mem);
+FAN_API void        fan_sprite_unload(fan_asset *assets, fan_allocator *mem);
+FAN_API fan_texture fan_sprite_get(fan_asset *assets, char8 *const name);
+
 
 // Components
 #define fan_component_declare(name, T)  \
