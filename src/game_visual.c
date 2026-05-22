@@ -291,7 +291,8 @@ void RenderSystem(
                 fan_f32_round(screen_pos.y - (screen_scale.y * 0.25f))
             },
             14,
-            fan_color_BLACK
+            fan_color_BLACK,
+            fan_font_DEFAULT
         );
 
     }

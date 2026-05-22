@@ -28,6 +28,7 @@ typedef struct {
     int32 history_position;
     int32 history_count;
 
+    fan_font font;
     // fan_cvar cvars[32];
 } GameConsole;
 

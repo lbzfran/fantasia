@@ -186,10 +186,10 @@ static void ConsoleDraw(GameConsole *console, int32 width, int32 height) {
 
     for (int32 i = 0; i < console->output_count && i < CONSOLE_MAX_OUTPUT; i++) {
         int32 index = (console->output_start + i) % CONSOLE_MAX_OUTPUT;
-        fan_draw_text(console->output[index], (fan_vec2){ (float32)margin, (float32)margin + (float32)(i * line_height) }, line_height, fan_color_WHITE);
+        fan_draw_text(console->output[index], (fan_vec2){ (float32)margin, (float32)margin + (float32)(i * line_height) }, line_height, fan_color_WHITE, console->font);
     }
 
-    fan_draw_text(console->input, (fan_vec2){ (float32)margin, (float32)input_y }, line_height, fan_color_WHITE);
+    fan_draw_text(console->input, (fan_vec2){ (float32)margin, (float32)input_y }, line_height, fan_color_WHITE, console->font);
 
     // char8 prompt[20 + 16];
     int32 cursor_x = margin + fan_text_measure(console->input, line_height) -
@@ -275,6 +275,8 @@ int GameMain(void) {
 #ifdef DEBUG
     bool32 requested_reload   = false;
     uint64 last_mod_time      = 0;
+
+    console.font = fan_font_load("./resources/quattro-400-normal.ttf", &arena_allocator);
     ConsoleOutputAdd(&console, fan_str8_cstr("fantasia v0.0.0-dev."));
 #endif
 
@@ -395,6 +397,7 @@ int GameMain(void) {
 #endif
     }
 
+    fan_font_unload(console.font);
     game.close(&arena_allocator, &world, &state);
     heap_allocator.free(null, world.arena.data, world.arena.capacity);
     fan_dev_audio_close();

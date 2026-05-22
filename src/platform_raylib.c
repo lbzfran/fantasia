@@ -412,10 +412,17 @@ void fan_draw_texture(fan_texture texture, fan_rect src, fan_rect dst, fan_vec2 
     DrawTexturePro(rl_texture, rl_src, rl_dst, rl_origin, angle, rl_color);
 }
 
-void fan_draw_text(char *buf, fan_vec2 origin, int32 font_size, fan_color text_color) {
-    // DrawTextPro();
+void fan_draw_text(char8 *buf, fan_vec2 origin, int32 font_size, fan_color text_color, fan_font font) {
     Color rl_text_color = fan_color_rl(text_color);
-    DrawText(buf, (int32)origin.x, (int32)origin.y, font_size, rl_text_color);
+    Font rl_font;
+    if (font.internal == nullptr) {
+        rl_font = GetFontDefault();
+    }
+    else {
+        rl_font = *((Font *)font.internal);
+    }
+
+    DrawTextEx(rl_font, buf, (Vector2){ origin.x, origin.y }, font_size, 1.0f, rl_text_color);
 }
 
 void fan_camera_begin(fan_camera2D camera) {
@@ -509,4 +516,13 @@ void fan_fps_target(int32 fps) {
 
 int32 fan_text_measure(const char8 *text, int32 font_size) {
     return MeasureText(text, font_size);
+}
+
+fan_font fan_font_load(const char8 *filepath, fan_allocator *mem) {
+    Font *rl_font = fan_make(mem, sizeof(Font));
+    *rl_font = LoadFont(filepath);
+    return (fan_font) { .internal = (void *)rl_font };
+}
+void fan_font_unload(fan_font font) {
+    UnloadFont(*((Font *)font.internal));
 }

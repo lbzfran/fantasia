@@ -183,6 +183,11 @@ typedef enum {
     FanBlend_CUSTOM_SEPARATE           // Blend textures using custom rgb/alpha separate src/dst factors (use rlSetBlendFactorsSeparate())
 } fan_flag_blend;
 
+typedef struct {
+    void *internal;
+} fan_font;
+#define fan_font_DEFAULT (fan_font){ .internal = nullptr }
+
 #define fan_color_WHITE   (fan_color){ 210, 210, 210, 255 }
 #define fan_color_GRAY    (fan_color){  80,  80,  80, 255 }
 #define fan_color_BLACK   (fan_color){   0,   0,   0, 255 }
@@ -269,8 +274,11 @@ FAN_API void fan_draw_circle(int32 x, int32 y, float32 r, fan_color color);
 FAN_API void fan_draw_circle_grad(int32 x, int32 y, float32 r, fan_color in, fan_color out);
 
 FAN_API void fan_draw_texture(fan_texture texture, fan_rect src, fan_rect dst, fan_vec2 origin, float32 angle, fan_color);
-FAN_API void fan_draw_text(char8 *buf, fan_vec2 origin, int32 font_size, fan_color text_color);
+FAN_API void fan_draw_text(char8 *buf, fan_vec2 origin, int32 font_size, fan_color text_color, fan_font font);
 FAN_API int32 fan_text_measure(const char8 *text, int32 font_size);
+
+FAN_API fan_font fan_font_load(const char8 *filepath, fan_allocator *mem);
+FAN_API void fan_font_unload(fan_font font);
 
 FAN_API void fan_camera_begin(fan_camera2D);
 FAN_API void fan_camera_end(void);

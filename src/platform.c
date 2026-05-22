@@ -508,7 +508,7 @@ void fan_cvar_system_free(fan_cvar_system *sys) {
 }
 
 void fan_cvar_set(fan_str8 name, fan_str8 value) {
-
+    /* TODO(liam): make this based on register func. */
 }
 
 fan_cvar *fan_cvar_get(fan_str8 name, fan_cvar_system *sys) {
