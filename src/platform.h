@@ -393,7 +393,7 @@ typedef struct {
     fan_ht_entry_cvar  *table;
     fan_cvar           *head;
 
-    fan_arena  arena;
+    fan_freelist        freelist;
 } fan_cvar_system;
 
 FAN_API usize fan_hash_str8(fan_str8);
@@ -407,7 +407,6 @@ FAN_API void *fan_ht_get(fan_str8 key, void *table);
 FAN_API void *fan_ht_put(fan_str8 key, void *value, void *table, fan_allocator *mem);
 FAN_API bool32 fan_ht_delete(fan_str8 key, void *table, fan_allocator *mem);
 
-FAN_API fan_cvar *fan_cvar_register_(fan_cvar v, fan_cvar_system *sys);
 
 static inline fan_cvar_value fan_cvar_value_i32(int32 v) {
     return (fan_cvar_value){ .i = v };
@@ -423,21 +422,24 @@ static inline fan_cvar_value fan_cvar_value_b32(bool32 v) {
 
 #define FAN_CVAR_VALUE(v) \
     _Generic((v), \
-             int32: fan_cvar_value_int \
+             int32: fan_cvar_value_i32, \
+             float32: fan_cvar_value_f32 \
              )(v)
 
-#define fan_cvar_register(sys, name, value, ...) fan_cvar_register_((fan_cvar){ \
-                                                                    .name = (name), \
-                                                                    .default_value = FAN_CVAR_VALUE(value), \
+FAN_API fan_cvar *fan_cvar_register_(fan_cvar params, fan_cvar_system *sys);
+#define fan_cvar_register(sys, var_name, var_value, ...) fan_cvar_register_((fan_cvar){ \
+                                                                    .name = (var_name), \
+                                                                    .default_value = FAN_CVAR_VALUE(var_value), \
                                                                     __VA_ARGS__}, (sys))
+FAN_API fan_cvar_system fan_cvar_system_create(fan_freelist *fl);
+FAN_API void fan_cvar_system_free(fan_cvar_system *sys);
 
-FAN_API void     fan_cvar_set(fan_str8, fan_str8);
-FAN_API fan_str8 fan_cvar_get(fan_str8);
+FAN_API void      fan_cvar_set(fan_str8, fan_str8);
+FAN_API fan_cvar *fan_cvar_get(fan_str8, fan_cvar_system *sys);
 
-FAN_API int32   fan_cvar_get_int32(fan_str8);
-FAN_API float32 fan_cvar_get_float32(fan_str8);
-FAN_API bool32  fan_cvar_get_bool32(fan_str8);
-
+// FAN_API int32   fan_cvar_get_int32(fan_str8);
+// FAN_API float32 fan_cvar_get_float32(fan_str8);
+// FAN_API bool32  fan_cvar_get_bool32(fan_str8);
 
 FAN_API void fan_dsl_array_append(fan_allocator *mem, fan_dsl_token_array *arr, fan_dsl_token x);
 FAN_API fan_dsl_token_array fan_dsl_tokenize(fan_allocator *mem, fan_str8 buf);

@@ -202,6 +202,7 @@ void *fan_ht_create(ssize value_size, ssize capacity, void *default_value, fan_a
     ssize total = sizeof(fan_ht_header) + (capacity * entry_size);
 
     fan_ht_header *header = fan_make(mem, total);
+    fan_log_debug("created header.\n");
     fan_memory_set((uint8 *)header, 0, total);
     if (header is nullptr) {
         return nullptr;
@@ -294,6 +295,7 @@ static void *fan_ht_resize(fan_ht_header *h, fan_allocator *mem) {
     }
 
     fan_ht_header *new_header = fan_make(mem, new_total);
+    fan_log_debug("created upsized header.\n");
     if (new_header is nullptr) return nullptr;
     fan_memory_set((uint8 *)new_header, 0, new_total);
 
@@ -340,7 +342,7 @@ static void *fan_ht_resize(fan_ht_header *h, fan_allocator *mem) {
 static inline void fan_ht_put_(fan_str8 key, void *value, fan_ht_header *h, fan_allocator *mem) {
     assert(h != nullptr);
     assert(h->capacity > 0);
-    fan_log_debug("capacity is: %zu\n", h->capacity);
+    fan_log_debug("ht capacity is: %zu\n", h->capacity);
     assert(is_power_of_two(h->capacity));
     ssize entry_size = fan_ht_entry_size(h);
     assert(entry_size > 0);
@@ -361,6 +363,7 @@ static inline void fan_ht_put_(fan_str8 key, void *value, fan_ht_header *h, fan_
 
         if (entry_key->length == 0) {
             *entry_key = fan_str8_copy(key, mem);
+            fan_log_debug("copying string.\n");
             fan_memory_copy(entry_value, value, h->value_size);
             h->size++;
             return;
@@ -432,19 +435,26 @@ bool32 fan_ht_delete(fan_str8 key, void *table, fan_allocator *mem) {
     return false;
 }
 
+#define fan_freelist_map(fl_ptr) &(fan_allocator){ \
+    .make   = fan_freelist_make,                   \
+    .free   = fan_freelist_free,                   \
+    .resize = nullptr,                             \
+    .ctx    = fl_ptr                               \
+};
+
+
 fan_cvar *fan_cvar_register_(fan_cvar params, fan_cvar_system *sys) {
+    assert(sys != nullptr);
     assert(params.name.length > 0);
 
-    fan_allocator *mem = &(fan_allocator){
-        .make   = fan_arena_make,
-        .free   = fan_arena_free,
-        .resize = fan_arena_resize,
-        .ctx    = &sys->arena
-    };
-    fan_cvar *result = fan_make(mem, sizeof(fan_cvar));
+    fan_allocator *mem = fan_freelist_map(&sys->freelist);
+    fan_cvar *result   = fan_make(mem, sizeof(fan_cvar));
+    fan_log_debug("created cvar.\n");
 
     result->name          = fan_str8_copy(params.name, mem);
+    fan_log_debug("copying string.\n");
     result->description   = fan_str8_copy(params.description, mem);
+    fan_log_debug("copying string.\n");
     result->default_value = params.default_value;
     result->value         = result->default_value;
     result->flags         = params.flags;
@@ -456,8 +466,51 @@ fan_cvar *fan_cvar_register_(fan_cvar params, fan_cvar_system *sys) {
         for (ssize i = 0; i < params.string_values.size; i++) {
             fan_str8 s = params.string_values.data[i];
             fan_array_append(mem, &result->string_values, fan_str8_copy(s, mem));
+            fan_log_debug("copying string.\n");
         }
     }
 
+    fan_ht_put(result->name, result, sys->table, mem);
+    if (sys->head == nullptr) {
+        sys->head = result;
+    }
+
     return result;
+}
+
+fan_cvar_system fan_cvar_system_create(fan_freelist *fl) {
+    fan_allocator *mem = fan_freelist_map(fl);
+
+    fan_cvar_system sys = {
+        .table    =  fan_ht_create(sizeof(fan_ht_entry_cvar), 8, nullptr, mem),
+        .head     =  nullptr,
+        .freelist = *fl
+    };
+
+    return sys;
+}
+
+void fan_cvar_system_free(fan_cvar_system *sys) {
+    assert(sys != nullptr);
+
+    fan_allocator *mem = fan_freelist_map(&sys->freelist);
+
+    fan_cvar *current = sys->head;
+    while (current != nullptr) {
+        fan_cvar *next = current->next;
+
+        fan_array_clear(mem, current->string_values);
+        fan_free(mem, current, sizeof(fan_cvar));
+
+        current = next;
+    }
+    sys->head = nullptr;
+}
+
+void fan_cvar_set(fan_str8 name, fan_str8 value) {
+
+}
+
+fan_cvar *fan_cvar_get(fan_str8 name, fan_cvar_system *sys) {
+    return fan_ht_get(name, sys->table);
 }

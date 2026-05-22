@@ -277,8 +277,9 @@ typedef struct {
 
 typedef struct {
     uint8 *data;
-    ssize   length;
+    ssize  length;
 } fan_str8;
+#define FAN_STR8_ARG(s) ((int32)(s).length), (s).data
 
 typedef struct {
     fan_str8 head;
@@ -286,10 +287,11 @@ typedef struct {
     int32    ok;
 } fan_cutstr8;
 
-#define fan_make(mem, ...)   ((mem)->make((mem)->ctx, __VA_ARGS__))
-#define fan_free(mem, ...)   ((mem)->free((mem)->ctx, __VA_ARGS__))
+#define fan_make(mem, ...)   ((mem)->make((mem)->ctx,   __VA_ARGS__))
+#define fan_free(mem, ...)   ((mem)->free((mem)->ctx,   __VA_ARGS__))
 #define fan_resize(mem, ...) ((mem)->resize((mem)->ctx, __VA_ARGS__))
 
+// NOTE(liam): array definitions
 #define FAN_ARRAY_INITIAL_CAPACITY 32
 #define fan_array_append(allocator, arr, x) do{                                                                      \
     assume((allocator)->resize != null && "allocator 'resize' must be defined.");                                    \
@@ -304,7 +306,6 @@ typedef struct {
     (arr)->size++;                                                                                                   \
 }while(0)
 
-// NOTE(liam): array definitions
 #define fan_array_clear(allocator, arr) do{                                 \
     assume(allocator->free != null && "allocator 'free' must be defined."); \
     fan_free((allocator), (arr).data, (arr).capacity);                      \
