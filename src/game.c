@@ -535,18 +535,18 @@ void UpdateEntities(
             MovementSystem(move, transform, direction, state->world_bound_zone, fixed_dt);
 
             if (last_iter and state->player_called_object_dump) {
-                fan_log_debug("\tid: %td\n", id);
+                fan_log_nested_debug("\tid: %td\n", id);
 
                 if (id == world->spec_id.player) {
-                    fan_log_debug("\t");
+                    fan_log_nested_debug("\t");
                     fan_vec2_print(transform->position);
-                    fan_log_debug("\t");
+                    fan_log_nested_debug("\t");
                     fan_vec2_print(transform->scale);
 
                     if (move) {
-                        fan_log_debug("\t");
+                        fan_log_nested_debug("\t");
                         fan_vec2_print(move->velocity_input);
-                        fan_log_debug("\t");
+                        fan_log_nested_debug("\t");
                         fan_vec2_print(move->direction);
                         fan_log_debug("\tmove->speed: %f\n", (float64)move->speed);
                     }
@@ -941,14 +941,14 @@ void GameInit(fan_allocator *a, World *world, GameState *state) {
     fan_component_create(&world->c_question,       a, component_size);
     fan_component_create(&world->c_tag_answer,     a, component_size);
 
-    world->split.dynamic_entities = a->make(a->ctx, split_size);
+    world->split.dynamic_entities = fan_make(a, split_size);
     world->split.dynamic_capacity = split_size;
 
-    world->split.static_entities  = a->make(a->ctx, split_size);
+    world->split.static_entities  = fan_make(a, split_size);
     world->split.static_capacity  = split_size;
 
     fan_sprite_init(&world->assets, fan_texture_load("./resources/Citizens/Male/Artun/Artun.png"));
-    world->tilesets = a->make(a->ctx, sizeof(fan_texture) * 2);
+    world->tilesets = fan_make(a, sizeof(fan_texture) * 2);
 
     fan_sprite_load(&world->assets, a, "./resources/Citizens/Female");
 

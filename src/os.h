@@ -292,7 +292,7 @@ typedef struct {
     assume((allocator)->resize != null && "allocator 'resize' must be defined.");              \
     if ((arr)->size >= (arr)->capacity) {                                                     \
         ssize new_capacity = max((arr)->capacity * 2, FAN_ARRAY_INITIAL_CAPACITY);             \
-        void *new_data = allocator->resize((allocator)->ctx, (arr)->data, (arr)->capacity, sizeof(*(arr)->data) * new_capacity); \
+        void *new_data = fan_resize((allocator), (arr)->data, (arr)->capacity, sizeof(*(arr)->data) * new_capacity); \
         assume(new_data != nullptr); \
         (arr)->data = new_data; \
         (arr)->capacity = new_capacity;                                                        \
@@ -302,9 +302,9 @@ typedef struct {
 }while(0)
 
 // NOTE(liam): array definitions
-#define fan_array_clear(allocator, arr) do{                                \
+#define fan_array_clear(allocator, arr) do{                                 \
     assume(allocator->free != null && "allocator 'free' must be defined."); \
-    allocator.free(allocator.ctx, arr.data, arr.capacity);                 \
+    fan_free((allocator), (arr).data, (arr).capacity);                      \
 }while(0)
 
 
@@ -315,7 +315,7 @@ FAN_API void fan_str8_print(fan_str8);
 
 FAN_API fan_str8 fan_str8_span(uchar8 *, uchar8 *);
 FAN_API fan_str8 fan_str8_cstrv(const char8 *);
-FAN_API int32 fan_str8_equals(fan_str8, fan_str8);
+FAN_API int32 fan_str8_equal(fan_str8, fan_str8);
 // trims spaces
 FAN_API fan_str8 fan_str8_triml(fan_str8);
 FAN_API fan_str8 fan_str8_trimr(fan_str8);

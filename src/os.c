@@ -29,12 +29,7 @@ void *fan_heap_resize(void *ctx, void *ptr, ssize old, ssize new) {
     void *result = fan_heap_make(ctx, new);
 
     if (ptr isnt null) {
-        if (new > old) {
-            fan_memory_copy(result, ptr, old);
-        }
-        else {
-            fan_memory_move(result, ptr, old);
-        }
+        fan_memory_copy(result, ptr, old);
         fan_heap_free(ctx, ptr, old);
     }
 
@@ -336,7 +331,7 @@ fan_str8 fan_str8_cstrv(const char8 *s) {
     return (fan_str8){ (uchar8 *)s, (ssize)strlen(s) };
 }
 
-int fan_str8_equals(fan_str8 a, fan_str8 b) {
+int fan_str8_equal(fan_str8 a, fan_str8 b) {
     return a.length==b.length && (!a.length || !memcmp(a.data, b.data, a.length));
 }
 
@@ -384,7 +379,7 @@ ssize fan_cstr_copy_str8(char8 *dst, fan_str8 src) {
 
 fan_str8 fan_str8_copy(fan_str8 src, fan_allocator *mem) {
     fan_str8 result = {
-        .data = mem->make(mem->ctx, src.length),
+        .data = fan_make(mem, src.length),
         .length = src.length
     };
     assert(result.data != nullptr);

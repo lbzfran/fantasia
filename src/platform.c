@@ -28,7 +28,7 @@ inline void fan_dsl_array_append(fan_allocator *mem, fan_dsl_token_array *arr, f
     assume(mem->resize != nullptr);
     if (arr->size >= arr->capacity) {
         ssize new_cap = max(arr->capacity * 2, FAN_ARRAY_INITIAL_CAPACITY) * sizeof(fan_dsl_token);
-        fan_dsl_token *new_data = mem->resize(mem->ctx, arr->data, arr->capacity, new_cap);
+        fan_dsl_token *new_data = fan_resize(mem, arr->data, arr->capacity, new_cap);
         assume(new_data != nullptr);
         arr->data = new_data;
         arr->capacity = new_cap;
@@ -58,7 +58,7 @@ fan_dsl_token_array fan_dsl_tokenize(fan_allocator *mem, fan_str8 buf) {
 
         cut = fan_str8_cut(buf, ' ');
         if (!cut.ok) break;
-        assume(fan_str8_equals(cut.head, fan_str8_cstr("{")));
+        assume(fan_str8_equal(cut.head, fan_str8_cstr("{")));
         fan_dsl_token lb = { FanToken_LBRACKET, cut.head };
         buf = fan_str8_triml(cut.tail);
 
@@ -67,7 +67,7 @@ fan_dsl_token_array fan_dsl_tokenize(fan_allocator *mem, fan_str8 buf) {
         // TODO(liam): below cut fails to find end of file.
         cut = fan_str8_cut(buf, ' ');
         if (!cut.ok) break;
-        assume(fan_str8_equals(cut.head, fan_str8_cstr("}")));
+        assume(fan_str8_equal(cut.head, fan_str8_cstr("}")));
         fan_dsl_token rb = { FanToken_RBRACKET, cut.head };
         buf = fan_str8_triml(cut.tail);
 
@@ -103,7 +103,7 @@ void fan_sprite_init(fan_asset *assets, fan_texture fallback) {
 void fan_sprite_unload(fan_asset *assets, fan_allocator *mem) {
     fan_asset_sprite_entry *table = assets->sprites;
     for (ssize i = 0; i < fan_ht_shlen(table); i++) {
-        mem->free(mem->ctx, table[i].key, fan_cstr_length(table[i].key) + 1);
+        fan_free(mem, table[i].key, fan_cstr_length(table[i].key) + 1);
         fan_texture_unload(table[i].value);
     }
 }
@@ -130,7 +130,7 @@ void fan_sprite_load(fan_asset *assets, fan_allocator *mem, char8 *const path) {
         fan_texture tex = fan_texture_load(full_path);
 
         ssize key_len = base_name.length;
-        char8 *key = mem->make(mem->ctx, key_len + 1);
+        char8 *key = fan_make(mem, key_len + 1);
         fan_cstr_copy_str8(key, base_name);
         key[key_len] = '\0';
 
@@ -268,7 +268,7 @@ void *fan_ht_get(fan_str8 key, void *table) {
         if (entry_key->length == 0) {
             break;
         }
-        else if (fan_str8_equals(key, *entry_key)) {
+        else if (fan_str8_equal(key, *entry_key)) {
             return fan_ht_value(h, entry);
         }
         index = (index + 1) & (h->capacity - 1);
@@ -365,7 +365,7 @@ static inline void fan_ht_put_(fan_str8 key, void *value, fan_ht_header *h, fan_
             h->size++;
             return;
         }
-        else if (fan_str8_equals(key, *entry_key)) {
+        else if (fan_str8_equal(key, *entry_key)) {
             fan_memory_copy(entry_value, value, h->value_size);
 
             return;
@@ -415,7 +415,7 @@ bool32 fan_ht_delete(fan_str8 key, void *table, fan_allocator *mem) {
         if (entry_key->length == 0) {
             break;
         }
-        else if (fan_str8_equals(key, *entry_key)) {
+        else if (fan_str8_equal(key, *entry_key)) {
             fan_free(mem, entry_key->data, entry_key->length);
             entry_key->data = nullptr;
             entry_key->length = 0;

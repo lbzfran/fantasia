@@ -118,7 +118,7 @@ fan_str8 fan_os_read(fan_allocator *mem, const char *path) {
         return result;
     }
 
-    uint8 *buf = mem->make(mem->ctx, (ssize)size.QuadPart);
+    uint8 *buf = fan_make(mem, (ssize)size.QuadPart);
     if (!buf) {
         CloseHandle(file);
         return result;
@@ -134,7 +134,7 @@ fan_str8 fan_os_read(fan_allocator *mem, const char *path) {
                       (DWORD)size.QuadPart - total_read,
                       &bytes_read,
                       NULL) || bytes_read == 0) {
-            mem->free(mem->ctx, buf, (ssize)size.QuadPart);
+            fan_free(mem, buf, (ssize)size.QuadPart);
             CloseHandle(file);
             return result;
         }

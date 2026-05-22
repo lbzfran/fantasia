@@ -24,13 +24,13 @@ int TestMain(void) {
     fan_str8 found     = *((fan_str8 *)fan_ht_get(fan_str8_cstr("key"),  ht));
     fan_str8 not_found = *((fan_str8 *)fan_ht_get(fan_str8_cstr("keys"), ht));
 
-    assert(fan_str8_equals(found, fan_str8_cstr("value")));
-    assert(fan_str8_equals(not_found, fan_str8_cstr("0")));
+    assert(fan_str8_equal(found, fan_str8_cstr("value")));
+    assert(fan_str8_equal(not_found, fan_str8_cstr("0")));
 
     (void)fan_ht_delete(fan_str8_cstr("key"), ht, mem);
     found = *((fan_str8 *)fan_ht_get(fan_str8_cstr("key"),  ht));
 
-    assert(fan_str8_equals(found, fan_str8_cstr("0")));
+    assert(fan_str8_equal(found, fan_str8_cstr("0")));
 
     fan_ht_free(ht, mem);
     fan_freelist_clear(&fl);
@@ -42,7 +42,7 @@ int TestMain(void) {
 int main(int argc, char **argv) {
     if (argc > 1) {
         // fan_str8 arg = fan_str8_trimr(fan_str8_cstr(argv[1]));
-        // if (fan_str8_equals(arg, fan_str8_cstr("test"))) {
+        // if (fan_str8_equal(arg, fan_str8_cstr("test"))) {
             return TestMain();
         // }
         // else {

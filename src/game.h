@@ -15,16 +15,16 @@
 typedef struct {
     bool32 active;
     char8 input[CONSOLE_MAX_INPUT];
-    ssize input_size;
+    int32 input_size;
     int32 cursor_position;
 
     char8 output[CONSOLE_MAX_OUTPUT][CONSOLE_MAX_INPUT];
-    ssize output_size[CONSOLE_MAX_OUTPUT];
+    int32 output_size[CONSOLE_MAX_OUTPUT];
     int32 output_start;
     int32 output_count;
 
     char8 history[CONSOLE_MAX_HISTORY][CONSOLE_MAX_INPUT];
-    ssize history_size[CONSOLE_MAX_HISTORY];
+    int32 history_size[CONSOLE_MAX_HISTORY];
     int32 history_position;
     int32 history_count;
 

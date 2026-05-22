@@ -70,14 +70,14 @@ FAN_API uint32 fan_i32_reduce(uint32 x, uint32 N);
 
 FAN_API float32 fan_f32_clamp(float32 value, float32 min, float32 max);
 FAN_API float32 fan_f32_lerp(float32 a, float32 x, float32 b);
-FAN_API int32 fan_f32_equals(float32 x, float32 y);
+FAN_API int32   fan_f32_equals(float32 x, float32 y);
 FAN_API float32 fan_inf(void);
 FAN_API float32 fan_neg_inf(void);
 FAN_API float32 fan_f32_exp(float32);
-FAN_API bool32 fan_f32_isvalid(float32);
+FAN_API bool32  fan_f32_isvalid(float32);
 
 FAN_API float32 fan_f32_round(float32);
-FAN_API int32 fan_f32_truncate(float32);
+FAN_API int32   fan_f32_truncate(float32);
 FAN_API float32 fan_f32_abs(float32);
 
 FAN_API float32 fan_f32_sin(float32);
@@ -94,9 +94,11 @@ FAN_API void fan_vec2_print_(fan_vec2, const char8 *);
 FAN_API void fan_color_print_(fan_color, const char8 *);
 FAN_API void fan_rect_i32_print_(fan_rect_i32, const char8 *);
 FAN_API void fan_rect_f32_print_(fan_rect_f32, const char8 *);
-#define fan_vec2_print(v) fan_vec2_print_(v, #v)
+#define fan_vec2_print(v)  fan_vec2_print_(v, #v)
 #define fan_color_print(c) fan_color_print_(c, #c)
-#define fan_rect_print(r) _Generic((r), fan_rect_i32: fan_rect_i32_print_, fan_rect_f32: fan_rect_f32_print_)(r, #r)
+#define fan_rect_print(r)  _Generic((r), \
+                        fan_rect_i32: fan_rect_i32_print_, \
+                        fan_rect_f32: fan_rect_f32_print_)(r, #r)
 
 FAN_API int32 fan_i32_clamp(int32 v, int32 min, int32 max);
 FAN_API int32 fan_rect_i32_isempty(fan_rect_i32 rect);
@@ -129,7 +131,7 @@ FAN_API fan_vec2 fan_vec2_rotate(fan_vec2 v, float32 angle);
 FAN_API fan_vec2 fan_vec2_lerp(fan_vec2 v1, float32 t, fan_vec2 v2);
 
 FAN_API fan_matrix fan_matrix_create_(ssize, ssize, int32 *);
-#define fan_matrix_create(a, row, col) fan_matrix_create_(row, col, (a)->make((a)->ctx,sizeof(int32) * row * col))
+#define fan_matrix_create(a, row, col) fan_matrix_create_(row, col, fan_make((a), sizeof(int32) * row * col))
 #define fan_matrix_at(mat, i, j) ((mat).V[(int32)((ssize)(i) * (mat).cols + (ssize)(j))])
 
 FAN_API void fan_matrix_fill(fan_matrix, int32);
