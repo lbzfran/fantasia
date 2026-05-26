@@ -95,8 +95,8 @@ static fan_str8 fan_str8_strip_ext(fan_str8 s) {
     return s;
 }
 
-void fan_sprite_init(fan_asset *assets, fan_texture fallback, fan_allocator *mem) {
-    assets->sprites = (fan_ht_entry_texture *)fan_ht_create(sizeof(fan_texture), 32, &fallback, mem);
+void fan_sprite_init(fan_asset *assets, fan_texture *fallback, fan_allocator *mem) {
+    assets->sprites = (fan_ht_entry_texture *)fan_ht_create(sizeof(fan_texture), 32, fallback, mem);
 }
 
 void fan_sprite_load(char8 *const path, fan_asset *assets, fan_allocator *mem) {
@@ -115,6 +115,9 @@ void fan_sprite_load(char8 *const path, fan_asset *assets, fan_allocator *mem) {
         fan_str8 key = fan_str8_strip_ext(file_name);
 
         ssize path_len = fan_cstr_copy_str8(full_path, fan_str8_cstrv(path));
+
+        assert(path_len + 1 + file_name.length < sizeof(full_path));
+
         full_path[path_len++] = '/';
         fan_cstr_copy_str8(full_path + path_len, file_name);
         full_path[path_len + file_name.length] = '\0';
@@ -122,6 +125,7 @@ void fan_sprite_load(char8 *const path, fan_asset *assets, fan_allocator *mem) {
         fan_texture texture = fan_texture_load(full_path);
 
         table = fan_ht_put(key, &texture, table, mem);
+        assert(table != nullptr);
         // ssize key_len = base_name.length;
         // char8 *key = fan_make(mem, key_len + 1);
         // fan_cstr_copy_str8(key, base_name);
@@ -148,7 +152,9 @@ fan_texture fan_sprite_get(fan_asset *assets, char8 *const name) {
     //     return assets->default_sprite;
     // }
     // return tex;
-    return *((fan_texture *)fan_ht_get(fan_str8_cstr(name), assets->sprites));
+    fan_texture *result = (fan_texture *)fan_ht_get(fan_str8_cstr(name), assets->sprites);
+    assert(result);
+    return *result;
 }
 
 // djb2 hash by Dan Bernstein
@@ -158,7 +164,7 @@ usize fan_hash_str8(fan_str8 buf) {
     int32 c;
 
     while (buf.length--) {
-        c = *(buf.data++);
+        c = (int32)((uint8)*(buf.data++));
         result = ((result << 5) + result) + c;
     }
 
@@ -179,24 +185,26 @@ usize fan_hash_bytes(const void *ptr, usize len) {
 }
 
 static inline ssize fan_ht_entry_size(fan_ht_header *h) {
-    return sizeof(fan_str8) + h->value_size;
+    ssize size = sizeof(fan_str8) + h->value_size;
+    ssize align = alignof(fan_str8);
+    return fan_align_forward((uintptr)size, align);
 }
 
 static inline fan_ht_header *fan_ht_header_get(void *table) {
-    return (fan_ht_header *)((uint8 *)table - sizeof(fan_ht_header));
+    return (fan_ht_header *)((uintptr)table - sizeof(fan_ht_header));
 }
 
 static inline fan_str8 *fan_ht_key(fan_ht_header *h, void *entry) {
-    return (fan_str8 *)((uint8 *)entry + h->key_offset);
+    return (fan_str8 *)((uintptr)entry + h->key_offset);
 }
 
 static inline void *fan_ht_value(fan_ht_header *h, void *entry) {
-    return (void *)((uint8 *)entry + h->key_offset + sizeof(fan_str8));
+    return (void *)((uintptr)entry + h->key_offset + sizeof(fan_str8));
 }
 
 static inline void *fan_ht_at(fan_ht_header *h, ssize index) {
     ssize entry_size = fan_ht_entry_size(h);
-    return (void *)((uint8 *)h + sizeof(fan_ht_header) + index * entry_size);
+    return (void *)((uintptr)h + sizeof(fan_ht_header) + index * entry_size);
 }
 
 void *fan_ht_create(ssize value_size, ssize capacity, void *default_value, fan_allocator *mem) {
@@ -205,11 +213,11 @@ void *fan_ht_create(ssize value_size, ssize capacity, void *default_value, fan_a
     ssize total = sizeof(fan_ht_header) + (capacity * entry_size);
 
     fan_ht_header *header = fan_make(mem, total);
-    fan_log_debug("created header.\n");
-    fan_memory_set((uint8 *)header, 0, total);
     if (header is nullptr) {
         return nullptr;
     }
+    fan_log_debug("created header.\n");
+    fan_memory_set((uint8 *)header, 0, total);
 
     header->size = 0;
     header->capacity = capacity;
@@ -275,13 +283,16 @@ void *fan_ht_get(fan_str8 key, void *table) {
 
     for (ssize i = 0; i < h->capacity; i++) {
         void *entry = fan_ht_at(h, index);
+        if (entry != nullptr) {
+            fan_str8 *entry_key = fan_ht_key(h, entry);
 
-        fan_str8 *entry_key = fan_ht_key(h, entry);
-        if (entry_key->length == 0) {
-            break;
-        }
-        else if (fan_str8_equal(key, *entry_key)) {
-            return fan_ht_value(h, entry);
+            assert(entry_key != nullptr);
+            // if (entry_key->length == 0) {
+            //     break;
+            // }
+            if (fan_str8_equal(key, *entry_key)) {
+                return fan_ht_value(h, entry);
+            }
         }
         index = (index + 1) & (h->capacity - 1);
     }
@@ -364,17 +375,24 @@ static inline void fan_ht_put_(fan_str8 key, void *value, fan_ht_header *h, fan_
 
     while (true) {
         void *entry = fan_ht_at(h, index);
-
-        uint8 *table_start = (uint8 *)h + sizeof(fan_ht_header);
-        uint8 *table_end   = table_start + h->capacity * entry_size;
-        assert((uint8 *)entry >= table_start && (uint8 *)entry <table_end);
+        uintptr table_start = (uintptr)h + sizeof(fan_ht_header);
+        uintptr table_end   = table_start + h->capacity * entry_size;
+        assert((uintptr)entry >= table_start && (uintptr)entry < table_end);
 
         fan_str8 *entry_key   = fan_ht_key(h, entry);
         void     *entry_value = fan_ht_value(h, entry);
 
+        assert(entry_key != nullptr);
+        assert(entry_value != nullptr);
+        fan_log_debug("passed assertions.\n");
+        if ((uintptr_t)entry_key % alignof(fan_str8) != 0) {
+            fan_log_error("Key misaligned: %p\n", entry_key);
+        }
+
         if (entry_key->length == 0) {
+            fan_log_debug("copying key string.\n");
             *entry_key = fan_str8_copy(key, mem);
-            fan_log_debug("copying string.\n");
+            fan_log_debug("copying value.\n");
             fan_memory_copy(entry_value, value, h->value_size);
             h->size++;
             return;

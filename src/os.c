@@ -7,6 +7,16 @@
 #endif
 #include <string.h>
 
+inline bool32 is_power_of_two(uintptr x) {
+    return (x & (x - 1)) == 0;
+}
+
+inline uintptr fan_align_forward(uintptr ptr, ssize alignment) {
+    assert(is_power_of_two(alignment));
+    return (ptr + (alignment - 1)) & ~(alignment - 1);
+}
+
+
 void *fan_heap_make(void *ctx, ssize size) {
     (void)ctx;
     void *result = malloc(size);

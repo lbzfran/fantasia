@@ -2,6 +2,7 @@
 #include "game.h"
 
 fan_rect CollisionAdjusted(const fan_rect boundary, const fan_vec2 position);
+bool32 CollisionCheckR(fan_rect_f32 a, fan_rect_f32 b);
 
 #include "game_visual.c"
 #include "game_archetype.c"
@@ -912,7 +913,7 @@ void GameOnReload(World *world, GameState *state) {
     world->anim_table = anim_table;
 }
 
-void GameInit(fan_allocator *a, World *world, GameState *state) {
+void GameInit(fan_allocator *mem, World *world, GameState *state) {
     fan_fps_target(60);
 
     StateGetView(state);
@@ -920,44 +921,45 @@ void GameInit(fan_allocator *a, World *world, GameState *state) {
     ssize split_size      = kilobytes(1);
     ssize component_size  = 256;
 
-    fan_component_create(&world->c_transform,      a, component_size);
-    fan_component_create(&world->c_shape,          a, component_size);
-    fan_component_create(&world->c_movement,       a, component_size);
-    fan_component_create(&world->c_texture,        a, component_size);
-    fan_component_create(&world->c_behavior,       a, component_size);
-    fan_component_create(&world->c_animation,      a, component_size);
-    fan_component_create(&world->c_physics,        a, component_size);
-    fan_component_create(&world->c_sound,          a, component_size);
-    fan_component_create(&world->c_light,          a, component_size);
-    fan_component_create(&world->c_text,           a, component_size);
+    fan_component_create(&world->c_transform,      mem, component_size);
+    fan_component_create(&world->c_shape,          mem, component_size);
+    fan_component_create(&world->c_movement,       mem, component_size);
+    fan_component_create(&world->c_texture,        mem, component_size);
+    fan_component_create(&world->c_behavior,       mem, component_size);
+    fan_component_create(&world->c_animation,      mem, component_size);
+    fan_component_create(&world->c_physics,        mem, component_size);
+    fan_component_create(&world->c_sound,          mem, component_size);
+    fan_component_create(&world->c_light,          mem, component_size);
+    fan_component_create(&world->c_text,           mem, component_size);
 
-    fan_component_create(&world->c_interaction,    a, component_size);
-    fan_component_create(&world->c_interactable,   a, component_size);
-    fan_component_create(&world->c_collision,      a, component_size);
-    fan_component_create(&world->c_attack,         a, component_size);
+    fan_component_create(&world->c_interaction,    mem, component_size);
+    fan_component_create(&world->c_interactable,   mem, component_size);
+    fan_component_create(&world->c_collision,      mem, component_size);
+    fan_component_create(&world->c_attack,         mem, component_size);
 
-    fan_component_create(&world->c_tag_background, a, component_size);
-    fan_component_create(&world->c_tag_enemy,      a, component_size);
-    fan_component_create(&world->c_question,       a, component_size);
-    fan_component_create(&world->c_tag_answer,     a, component_size);
+    fan_component_create(&world->c_tag_background, mem, component_size);
+    fan_component_create(&world->c_tag_enemy,      mem, component_size);
+    fan_component_create(&world->c_question,       mem, component_size);
+    fan_component_create(&world->c_tag_answer,     mem, component_size);
 
-    world->split.dynamic_entities = fan_make(a, split_size);
+    world->split.dynamic_entities = fan_make(mem, split_size);
     world->split.dynamic_capacity = split_size;
 
-    world->split.static_entities  = fan_make(a, split_size);
+    world->split.static_entities  = fan_make(mem, split_size);
     world->split.static_capacity  = split_size;
 
-    fan_sprite_init(&world->assets, fan_texture_load("./resources/Citizens/Male/Artun/Artun.png"), a);
-    world->tilesets = fan_make(a, sizeof(fan_texture) * 2);
+    fan_texture default_sprite = fan_texture_load("./resources/Citizens/Male/Artun/Artun.png");
+    fan_sprite_init(&world->assets, &default_sprite, mem);
+    world->tilesets = fan_make(mem, sizeof(fan_texture) * 2);
 
-    fan_sprite_load("./resources/Citizens/Female", &world->assets, a);
+    fan_sprite_load("./resources/Citizens/Female", &world->assets, mem);
 
 	int32 map_size_x = 8;
     int32 map_size_y = 8;
     TileMap map = (TileMap) {
         .tile_size    = 16,
-		.logic_tiles  = fan_matrix_create(a, map_size_x, map_size_y),
-        .visual_tiles = fan_matrix_create(a, map_size_x, map_size_y)
+		.logic_tiles  = fan_matrix_create(mem, map_size_x, map_size_y),
+        .visual_tiles = fan_matrix_create(mem, map_size_x, map_size_y)
     };
 
     world->tile_atlas = GridAtlasCreate(map.tile_size);

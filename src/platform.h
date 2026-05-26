@@ -344,7 +344,7 @@ typedef struct {                   \
 fan_ht_define(str8,    fan_str8);
 fan_ht_define(texture, fan_texture);
 
-FAN_API usize   fan_hash_str8(fan_str8);
+FAN_API usize   fan_hash_str8(const fan_str8);
 FAN_API usize   fan_hash_bytes(const void *ptr, usize len);
 
 FAN_API void   *fan_ht_create(ssize entry_size, ssize capacity, void *default_value, fan_allocator *mem);
@@ -448,7 +448,7 @@ typedef struct {
     // fan_texture             default_sprite;
 } fan_asset;
 
-FAN_API void        fan_sprite_init(fan_asset *assets, fan_texture fallback, fan_allocator *mem);
+FAN_API void        fan_sprite_init(fan_asset *assets, fan_texture *fallback, fan_allocator *mem);
 FAN_API void        fan_sprite_load(char8 *const path, fan_asset *assets, fan_allocator *mem);
 FAN_API void        fan_sprite_unload(fan_asset *assets, fan_allocator *mem);
 FAN_API fan_texture fan_sprite_get(fan_asset *assets, char8 *const name);
