@@ -952,7 +952,11 @@ void GameInit(fan_allocator *mem, World *world, GameState *state) {
     fan_sprite_init(&world->assets, &default_sprite, mem);
     world->tilesets = fan_make(mem, sizeof(fan_texture) * 2);
 
+<<<<<<< HEAD
     fan_sprite_load("./resources/Citizens/Female", &world->assets);
+=======
+    fan_sprite_load("./resources/Citizens/Female", &world->assets, mem);
+>>>>>>> origin/main
 
 	int32 map_size_x = 8;
     int32 map_size_y = 8;
