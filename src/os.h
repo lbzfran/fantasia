@@ -315,6 +315,7 @@ typedef struct {
 
 // NOTE(liam): string definitions
 #define fan_str8_cstr(s) (fan_str8){ (uint8 *)s, sizeof(s) - 1 }
+#define fan_str8_cstr_ex(s, l) (fan_str8){ (uint8 *)s, l }
 
 FAN_API void fan_str8_print(fan_str8);
 

@@ -38,7 +38,16 @@ static inline int32 SpawnWanderer(World *world, fan_vec2 position, fan_vec2 dire
         "Seza",
         "Vash",
     };
-    fan_texture girl_texture = fan_sprite_get(&world->assets, texture_choices[fan_random_int(0, 4)]);
+    ssize texture_choices_size[] = {
+        5,
+        4,
+        3,
+        4,
+        4,
+    };
+    int32 index = fan_random_int(0, 4);
+    fan_str8 choice = fan_str8_cstr_ex(texture_choices[index], texture_choices_size[index]);
+    fan_texture girl_texture = fan_sprite_get(&world->assets, choice);
     fan_vec2 citizen_size = (fan_vec2){ (float32)16.0f, (float32)16.0f };
 
     fan_component_add(&world->c_transform, world->entity_count,
@@ -104,7 +113,7 @@ static inline void SpawnCamera(World *world, fan_vec2 position, int32 target_id)
 }
 
 static inline int32 SpawnPlayer(World *world, fan_vec2 position, fan_vec2 direction) {
-    fan_texture tex_girl_01 = fan_sprite_get(&world->assets, "Hana");
+    fan_texture tex_girl_01 = fan_sprite_get(&world->assets, fan_str8_cstr_ex("Hana", 4));
     fan_vec2 citizen_size = (fan_vec2){ (float32)16.0f, (float32)16.0f };
 
     fan_component_add(&world->c_transform, world->entity_count,
