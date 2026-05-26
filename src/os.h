@@ -333,14 +333,8 @@ FAN_API fan_str8 fan_str8_copy(fan_str8 src, fan_allocator *mem);
 
 FAN_API ssize fan_cstr_length(char8 const *);
 
-inline bool32 is_power_of_two(uintptr x) {
-    return (x & (x - 1)) == 0;
-}
-
-inline uintptr fan_align_forward(uintptr ptr, ssize alignment) {
-    assert(is_power_of_two(alignment));
-    return (ptr + (alignment - 1)) & ~(alignment - 1);
-}
+FAN_API bool32 is_power_of_two(uintptr x);
+FAN_API uintptr fan_align_forward(uintptr ptr, ssize alignment);
 
 FAN_API void *fan_heap_make(void *ctx, ssize size);
 FAN_API void  fan_heap_free(void *ctx, void *ptr, ssize size);

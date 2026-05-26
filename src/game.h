@@ -421,7 +421,7 @@ typedef struct {
     CAnswerTagStorage      c_tag_answer;
 } World;
 
-void GameInit(fan_allocator *a, World *world, GameState *state);
+void GameInit(fan_allocator *mem, World *world, GameState *state);
 void GameUpdateAndRender(fan_allocator *a, World *world, GameState *state, float32 dt);
 void GameClose(fan_allocator *a, World *world, GameState *state);
 void GameOnReload(World *world, GameState *state);

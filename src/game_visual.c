@@ -3,6 +3,7 @@
 #include "os.h"
 #include "platform.h"
 
+CAnimation AnimationApply_(AnimationData *table, int32 new_id, int32 flags, AnimationRequest ar);
 
 fan_vec2 WorldToScreen(
     fan_vec2 world_coord,

@@ -15,7 +15,7 @@ BIN_DIR := bin
 
 CC := gcc
 
-CFLAGS := -std=c23 -Wall -Wextra -I include -L lib -g3 -O1 -Wconversion -Wdouble-promotion -Wno-unused-parameter -Wno-unused-function -Wno-sign-conversion -fno-trapping-math -fno-math-errno
+CFLAGS := -std=c23 -Wall -Wextra -I include -L lib -g3 -O0 -Wconversion -Wdouble-promotion -Wno-unused-parameter -Wno-unused-function -Wno-sign-conversion -fno-trapping-math -fno-math-errno
 LDFLAGS := -L bin -lplatform
 MAIN_FLAGS := -Wl,-rpath,'$$ORIGIN'
 PLATFORM_FLAGS :=
