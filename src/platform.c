@@ -97,10 +97,12 @@ static fan_str8 fan_str8_strip_ext(fan_str8 s) {
 
 void fan_sprite_init(fan_asset *assets, fan_texture *fallback, fan_allocator *mem) {
     assets->sprites = (fan_ht_entry_texture *)fan_ht_create(sizeof(fan_texture), 32, fallback, mem);
+    assets->allocator = mem;
 }
 
-void fan_sprite_load(char8 *const path, fan_asset *assets, fan_allocator *mem) {
+void fan_sprite_load(char8 *const path, fan_asset *assets) {
     fan_ht_entry_texture *table = assets->sprites;
+    fan_allocator *mem = assets->allocator;
 
     struct dirent *dp;
     DIR *dir = opendir(path);
@@ -126,35 +128,19 @@ void fan_sprite_load(char8 *const path, fan_asset *assets, fan_allocator *mem) {
 
         table = fan_ht_put(key, &texture, table, mem);
         assert(table != nullptr);
-        // ssize key_len = base_name.length;
-        // char8 *key = fan_make(mem, key_len + 1);
-        // fan_cstr_copy_str8(key, base_name);
-        // key[key_len] = '\0';
-
-        // fan_ht_shput(table, key, tex);
     }
 
     assets->sprites = table;
 }
 
-void fan_sprite_unload(fan_asset *assets, fan_allocator *mem) {
-    // fan_ht_entry_texture *table = assets->sprites;
-    // for (ssize i = 0; i < fan_ht_shlen(table); i++) {
-    //     fan_free(mem, table[i].key, fan_cstr_length(table[i].key) + 1);
-    //     fan_texture_unload(table[i].value);
-    // }
-    fan_ht_free(assets->sprites, mem);
+void fan_sprite_unload(fan_asset *assets) {
+    fan_ht_free(assets->sprites, assets->allocator);
 }
 
 fan_texture fan_sprite_get(fan_asset *assets, fan_str8 name) {
-    // fan_texture tex = fan_ht_shget(assets->sprites, name);
-    // if (tex.id == 0) {
-    //     return assets->default_sprite;
-    // }
-    // return tex;
-    fan_log_debug("Getting name.\n");
-    fan_str8_print(name);
-    fan_log_debug("\nEnd name.\n");
+    // fan_log_debug("Getting name.\n");
+    // fan_str8_print(name);
+    // fan_log_debug("\nEnd name.\n");
 
     fan_texture *result = (fan_texture *)fan_ht_get(name, assets->sprites);
     assert(result);
@@ -242,7 +228,7 @@ void *fan_ht_create(ssize value_size, ssize capacity, void *default_value, fan_a
     }
 
     void *table = (void *)((uint8 *)header + sizeof(fan_ht_header));
-    fan_memory_set((uint8 *)table, 0, (capacity * entry_size));
+    // fan_memory_set((uint8 *)table, 0, (capacity * entry_size));
 
     return table;
 }

@@ -445,12 +445,12 @@ FAN_API fan_cvar        *fan_cvar_get(fan_str8, fan_cvar_system *sys);
 
 typedef struct {
     fan_ht_entry_texture *sprites;
-    // fan_texture             default_sprite;
+    fan_allocator *allocator;
 } fan_asset;
 
 FAN_API void        fan_sprite_init(fan_asset *assets, fan_texture *fallback, fan_allocator *mem);
-FAN_API void        fan_sprite_load(char8 *const path, fan_asset *assets, fan_allocator *mem);
-FAN_API void        fan_sprite_unload(fan_asset *assets, fan_allocator *mem);
+FAN_API void        fan_sprite_load(char8 *const path, fan_asset *assets);
+FAN_API void        fan_sprite_unload(fan_asset *assets);
 FAN_API fan_texture fan_sprite_get(fan_asset *assets, fan_str8 name);
 
 
