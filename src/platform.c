@@ -146,13 +146,17 @@ void fan_sprite_unload(fan_asset *assets, fan_allocator *mem) {
     fan_ht_free(assets->sprites, mem);
 }
 
-fan_texture fan_sprite_get(fan_asset *assets, char8 *const name) {
+fan_texture fan_sprite_get(fan_asset *assets, fan_str8 name) {
     // fan_texture tex = fan_ht_shget(assets->sprites, name);
     // if (tex.id == 0) {
     //     return assets->default_sprite;
     // }
     // return tex;
-    fan_texture *result = (fan_texture *)fan_ht_get(fan_str8_cstr(name), assets->sprites);
+    fan_log_debug("Getting name.\n");
+    fan_str8_print(name);
+    fan_log_debug("\nEnd name.\n");
+
+    fan_texture *result = (fan_texture *)fan_ht_get(name, assets->sprites);
     assert(result);
     return *result;
 }
@@ -209,14 +213,17 @@ static inline void *fan_ht_at(fan_ht_header *h, ssize index) {
 
 void *fan_ht_create(ssize value_size, ssize capacity, void *default_value, fan_allocator *mem) {
     assert(is_power_of_two(capacity));
-    ssize entry_size = sizeof(fan_str8) + value_size;
+    ssize size_ = sizeof(fan_str8) + value_size;
+    ssize align_ = alignof(fan_str8);
+    ssize entry_size = fan_align_forward((uintptr)size_, align_);
+
     ssize total = sizeof(fan_ht_header) + (capacity * entry_size);
 
     fan_ht_header *header = fan_make(mem, total);
     if (header is nullptr) {
         return nullptr;
     }
-    fan_log_debug("created header.\n");
+    // fan_log_debug("created header.\n");
     fan_memory_set((uint8 *)header, 0, total);
 
     header->size = 0;
@@ -235,6 +242,7 @@ void *fan_ht_create(ssize value_size, ssize capacity, void *default_value, fan_a
     }
 
     void *table = (void *)((uint8 *)header + sizeof(fan_ht_header));
+    fan_memory_set((uint8 *)table, 0, (capacity * entry_size));
 
     return table;
 }
