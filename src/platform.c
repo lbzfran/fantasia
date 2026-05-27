@@ -97,10 +97,19 @@ static fan_str8 fan_str8_strip_ext(fan_str8 s) {
 
 void fan_sprite_init(fan_asset *assets, fan_texture *fallback, fan_allocator *mem) {
     assets->sprites = (fan_ht_entry_texture *)fan_ht_create(sizeof(fan_texture), 32, fallback, mem);
+<<<<<<< HEAD
 }
 
 void fan_sprite_load(char8 *const path, fan_asset *assets, fan_allocator *mem) {
     fan_ht_entry_texture *table = assets->sprites;
+=======
+    assets->allocator = mem;
+}
+
+void fan_sprite_load(char8 *const path, fan_asset *assets) {
+    fan_ht_entry_texture *table = assets->sprites;
+    fan_allocator *mem = assets->allocator;
+>>>>>>> d20c408 (fixed broken commits)
 
     struct dirent *dp;
     DIR *dir = opendir(path);
