@@ -336,6 +336,7 @@ int GameMain(void) {
             if (!p_input->actions[3]) p_input->actions[4] = fan_key_pressed(FanKey_J);
             if (!p_input->actions[4]) p_input->actions[5] = fan_key_pressed(FanKey_K);
             if (!p_input->actions[5]) p_input->actions[6] = fan_key_pressed(FanKey_L);
+            p_input->actions[7] = fan_key_down(FanKey_LEFT_SHIFT) ? true : false;
 
 #ifdef DEBUG
             if (fan_key_pressed(FanKey_P)) {

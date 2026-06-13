@@ -571,6 +571,15 @@ void UpdateEntities(
             CQuestion *question = fan_component_get(&world->c_question, id);
             CAnswer *answer = fan_component_get(&world->c_tag_answer,   id);
 
+            if (id == world->spec_id.player) {
+                if (state->player_input.actions[7]) {
+                    move->speed = 6.0f;
+                }
+                else {
+                    move->speed = 4.0f;
+                }
+            }
+
             if (answer exists and id == world->spec_id.player) {
                 *answer = CAnswer_NONE;
                 if (state->player_input.actions[3])
@@ -952,11 +961,7 @@ void GameInit(fan_allocator *mem, World *world, GameState *state) {
     fan_sprite_init(&world->assets, &default_sprite, mem);
     world->tilesets = fan_make(mem, sizeof(fan_texture) * 2);
 
-<<<<<<< HEAD
-    fan_sprite_load("./resources/Citizens/Female", &world->assets);
-=======
     fan_sprite_load("./resources/Citizens/Female", &world->assets, mem);
->>>>>>> origin/main
 
 	int32 map_size_x = 8;
     int32 map_size_y = 8;
@@ -1015,7 +1020,7 @@ void GameUpdateAndRender(fan_allocator *a, World *world, GameState *state, float
 
 void GameClose(fan_allocator *a, World *world, GameState *state) {
     (void)a;
-    fan_sprite_unload(&world->assets);
+    fan_sprite_unload(&world->assets, a);
     for (ssize i = 0; i < world->c_sound.size; i++) {
         if (world->c_texture.dense[i] == -1)
             continue;
