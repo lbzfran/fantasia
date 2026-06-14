@@ -95,7 +95,6 @@ void PhysicsSystem(
     float32 render_height,
     float32 dt
 ) {
-    // RepairTransform(t);
 
     if (not p->initialized) {
         init_if_null(p->last_position.x, t->position.x);
@@ -329,6 +328,129 @@ void AttackTick(CAttack *a, CMovement *m, float32 dt) {
         a->attacking = false;
         a->timer = 0.0f;
         m->lock_time = coalesce(a->cooldown_time, 0.2f);
+    }
+}
+
+typedef enum {
+    CombatItem_EQUIP = 0,  // NOTE(liam): no moveset; effectively a 'stat-stick'
+    CombatItem_DAMAGE,
+    CombatItem_HEAL,
+    CombatItem_SELF,
+} CombatItemType;
+
+typedef enum {
+    CombatStatus_NONE = 0,
+    CombatStatus_PIERCE,   // NOTE(liam): ignore defense
+} CombatStatus;
+
+typedef struct {
+    int32 effect;
+    int32 defense;
+    int32 wait;
+} CombatStats;
+
+typedef struct {
+    CombatStats  stats;
+    CombatStatus status;
+
+    uint8 level;
+    uint8 type;
+
+    uint8 priority;
+} CombatItem;
+
+typedef struct {
+    int32 health;
+    int32 max_health;
+
+    CombatStats base_stats;  // calculated at start of battle.
+    CombatStats stats;       // dynamic.
+    CombatStatus status;
+
+    CombatItem items[8];
+    uint8 item_count;
+    int32 total_level;   // calculated at start of battle based on total item levels.
+} Combatant;
+
+void CombatSetMove(Combatant *p, CombatItem move) {
+    p->stats = p->base_stats;
+    p->stats.effect  += move.stats.effect;
+    p->stats.defense += move.stats.defense;
+    p->stats.wait    += move.stats.wait;
+    p->status = move.status;
+}
+
+bool32 CombatApplyMove(Combatant *p1, Combatant *p2) {
+    bool32 fight_is_over = false;
+    if (p1->stats.effect <= p2->stats.defense and
+        p1->status isnt CombatStatus_PIERCE) {
+        // negate
+    }
+    p2->health -= p1->stats.effect;
+    if (p2->health <= 0) {
+        fight_is_over = true;
+    }
+
+    return fight_is_over;
+}
+
+void CombatSystem(bool32 *game_over, bool32 start_fight, float32 dt) {
+    assume(game_over isnt nullptr);
+
+    static Combatant player = {};
+    static Combatant enemy = {};
+    static bool32 is_fighting = false;
+    static float32 accumulator = 0.0f;
+
+    if (start_fight is true) {
+        is_fighting = true;
+        player = (Combatant){ 0 };
+        enemy  = (Combatant){ 0 };
+    }
+    if (is_fighting is false) {
+        return;
+    }
+
+    accumulator += dt;
+    if (accumulator >= 1.0f) {
+        accumulator = 0.0f;
+
+        player.stats.wait -= 1;
+        enemy.stats.wait  -= 1;
+
+        if (player.stats.wait <= 0) {
+            // apply move
+            is_fighting = CombatApplyMove(&player, &enemy);
+            if (is_fighting is false) {
+                // distribute xp
+                if (enemy.total_level >= player.total_level) {
+                    // reward more xp
+                }
+                else {
+                    // reward base xp
+                }
+                return;
+            }
+
+            // select new move
+            int32 selected_move = 0;
+            CombatItem move = player.items[selected_move];
+            CombatSetMove(&player, move);
+        }
+        if (enemy.stats.wait <= 0) {
+            // apply move
+            is_fighting = CombatApplyMove(&enemy, &player);
+            if (is_fighting is false) {
+                *game_over = true;
+
+                return;
+            }
+
+            // select new move
+            int32 selected_move = fan_random_int(0, enemy.item_count - 1);
+            CombatItem move = enemy.items[selected_move];
+            CombatSetMove(&enemy, move);
+        }
     }
 }
 
