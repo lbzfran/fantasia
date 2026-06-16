@@ -24,7 +24,6 @@ GameAPI game        = {};
 GameState state     = {};
 World world         = {};
 
-// TODO(liam): implement these console functions
 static void ConsoleOutputAdd(GameConsole *console, fan_str8 text) {
     int32 index = (console->output_start + console->output_count) % CONSOLE_MAX_OUTPUT;
     fan_memory_copy(console->output[index], text.data, CONSOLE_MAX_INPUT);
@@ -171,14 +170,21 @@ static void ConsoleUpdate(GameConsole *console, GameState *state) {
 
 static void ConsoleDraw(GameConsole *console, int32 width, int32 height) {
     static int32 timer = 0;
+    static int32 last_size = 0;
     if (!console->active) return;
     timer += 1;
-    if (timer >= 100) timer = 0;
+    if (timer >= 100 || last_size != console->input_size) {
+        last_size = console->input_size;
+        timer = 0;
+    }
 
+    int32 font_size = 16;
     int32 console_height = height / 2;
     int32 line_height = 20;
     int32 margin = 10;
     int32 input_y = height - margin - line_height;
+
+    int32 char_width = fan_text_measure("A", font_size);
 
     fan_draw_rect(0, 0, width, console_height, (fan_color){ 0, 0, 0, 100 });
     fan_draw_rect(0, input_y - margin,
@@ -186,17 +192,16 @@ static void ConsoleDraw(GameConsole *console, int32 width, int32 height) {
 
     for (int32 i = 0; i < console->output_count && i < CONSOLE_MAX_OUTPUT; i++) {
         int32 index = (console->output_start + i) % CONSOLE_MAX_OUTPUT;
-        fan_draw_text(console->output[index], (fan_vec2){ (float32)margin, (float32)margin + (float32)(i * line_height) }, line_height, fan_color_WHITE, console->font);
+        fan_draw_text(console->output[index], (fan_vec2){ (float32)margin, (float32)margin + (float32)(i * line_height) }, font_size, fan_color_WHITE, console->font);
     }
 
-    fan_draw_text(console->input, (fan_vec2){ (float32)margin, (float32)input_y }, line_height, fan_color_WHITE, console->font);
+    fan_draw_text(console->input, (fan_vec2){ (float32)margin, (float32)input_y }, font_size, fan_color_WHITE, console->font);
 
     // char8 prompt[20 + 16];
-    int32 cursor_x = margin + fan_text_measure(console->input, line_height) -
-        fan_text_measure(console->input + console->cursor_position, line_height);
+    int32 cursor_x = margin + (console->cursor_position * char_width);
 
-    if ((timer) > 25) {
-        fan_draw_rect(cursor_x, input_y, 2, line_height, fan_color_WHITE);
+    if ((timer) <= 75) {
+        fan_draw_rect(cursor_x, input_y, 2, font_size, fan_color_WHITE);
     }
 }
 
@@ -277,6 +282,7 @@ int GameMain(void) {
     uint64 last_mod_time      = 0;
 
     console.font = fan_font_load("./resources/quattro/quattro-400-normal.ttf", &arena_allocator);
+    console.font = fan_font_load("./resources/Px437_IBM_VGA_8x16.ttf", &arena_allocator);
     ConsoleOutputAdd(&console, fan_str8_cstr("fantasia v0.0.0-dev."));
 #endif
 
