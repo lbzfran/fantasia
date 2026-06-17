@@ -363,14 +363,26 @@ typedef struct {
     int32 health;
     int32 max_health;
 
-    CombatStats base_stats;  // calculated at start of battle.
-    CombatStats stats;       // dynamic.
+    CombatStats  base_stats;  // calculated at start of battle.
+    CombatStats  stats;       // dynamic.
     CombatStatus status;
 
     CombatItem items[8];
-    uint8 item_count;
-    int32 total_level;   // calculated at start of battle based on total item levels.
+    uint8      item_count;
+    int32      level;   // calculated at start of battle based on total item levels.
 } Combatant;
+
+typedef struct {
+    bool32 initialized;
+
+    int32 health;
+    int32 max_health;
+
+    uint8 experience_points;
+
+    uint8 items[8];
+    uint8 item_count;
+} CCombatant; // component "overworld" version
 
 void CombatSetMove(Combatant *p, CombatItem move) {
     p->stats = p->base_stats;
@@ -394,7 +406,17 @@ bool32 CombatApplyMove(Combatant *p1, Combatant *p2) {
     return fight_is_over;
 }
 
-void CombatSystem(bool32 *game_over, bool32 start_fight, float32 dt) {
+bool32 CombatEnemyLookup(Combatant *e) {
+    // TODO(liam): complete this function.
+    bool32 result = false;
+
+    return result;
+}
+
+void CombatSystem(CCombatant *player_data,
+                  int32       enemy_id,
+                  bool32     *game_over,
+                  float32     dt) {
     assume(game_over isnt nullptr);
 
     static Combatant player = {};
@@ -402,10 +424,15 @@ void CombatSystem(bool32 *game_over, bool32 start_fight, float32 dt) {
     static bool32 is_fighting = false;
     static float32 accumulator = 0.0f;
 
-    if (start_fight is true) {
+    if (enemy_id) {
         is_fighting = true;
-        player = (Combatant){ 0 };
-        enemy  = (Combatant){ 0 };
+        player = (Combatant){
+            .health     = player_data->health,
+            .max_health = player_data->max_health,
+        };
+
+        enemy = (Combatant){ 0 };
+        assume(CombatEnemyLookup(&enemy) && "Failed to lookup enemy data.");
     }
     if (is_fighting is false) {
         return;
@@ -423,11 +450,13 @@ void CombatSystem(bool32 *game_over, bool32 start_fight, float32 dt) {
             is_fighting = CombatApplyMove(&player, &enemy);
             if (is_fighting is false) {
                 // distribute xp
-                if (enemy.total_level >= player.total_level) {
+                if (enemy.level >= player.level) {
                     // reward more xp
+                    player_data->experience_points += 2 * fan_random_int(1, 5);
                 }
                 else {
                     // reward base xp
+                    player_data->experience_points += fan_random_int(1, 5);
                 }
                 return;
             }
